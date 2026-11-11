@@ -24,6 +24,9 @@ async function capture(page: Page, name: string) {
   });
 }
 
+const scopeText =
+  "A clear plan for the first milestone, followed by a review of the work together.";
+
 async function sent(
   request: APIRequestContext,
   title: string,
@@ -34,7 +37,8 @@ async function sent(
   const clientId = uid(),
     template = uid(),
     item = uid(),
-    scope = uid();
+    scope = uid(),
+    paragraph = uid();
   for (const [path, data] of [
     ["workspace_settings", settings],
     [
@@ -67,9 +71,9 @@ async function sent(
         content: [
           { id: scope, type: "heading", text: "Scope", level: 1 },
           {
-            id: uid(),
+            id: paragraph,
             type: "paragraph",
-            text: "A clear plan for the first milestone, followed by a review of the work together.",
+            text: scopeText,
           },
           { id: uid(), type: "pricing_table" },
           { id: uid(), type: "signature_block", role: "client" },
@@ -115,7 +119,7 @@ async function sent(
     },
   });
   expect(response.ok(), await response.text()).toBe(true);
-  return { p: (await response.json()) as Proposal, scope };
+  return { p: (await response.json()) as Proposal, scope, paragraph };
 }
 
 test("client question reaches staff, receives a plain-text reply on the same link, and leaves review and signing intact", async ({
@@ -124,7 +128,7 @@ test("client question reaches staff, receives a plain-text reply on the same lin
 }) => {
   page.setDefaultTimeout(12000);
   await page.setViewportSize({ width: 1440, height: 1000 });
-  const { p, scope } = await sent(request, "Website project");
+  const { p, scope, paragraph } = await sent(request, "Website project");
   const clientUrl = `/p/${p.token}`,
     staffUrl = `/proposals/${p.id}`;
   const log = async () =>
@@ -148,6 +152,12 @@ test("client question reaches staff, receives a plain-text reply on the same lin
   expect(
     Math.abs(pageButton.y + pageButton.height / 2 - frame.y),
   ).toBeLessThanOrEqual(1);
+  const totals = page.getByRole("group", { name: "Proposal totals" });
+  await expect(totals).toContainText("$2,750");
+  await expect(totals.getByText("Monthly", { exact: true })).toHaveCount(0);
+  await expect(
+    page.locator("#proposal-document .signature-date").first(),
+  ).toHaveText(`${p.client.company} | Date signed`);
   await capture(page, "client-ask-1440");
   const block = page.locator(`[data-document-block="${scope}"]`);
   await expect(block).toHaveAttribute("tabindex", "0");
@@ -164,13 +174,17 @@ test("client question reaches staff, receives a plain-text reply on the same lin
   await block.focus();
   await block.press("Enter");
   const form = page.getByRole("dialog", { name: "Ask a question" });
-  await expect(form.getByText("Scope", { exact: true }).first()).toBeVisible();
-  await expect(form.locator(".question-excerpt")).toHaveText("Scope");
+  await expect(form.getByText("Scope", { exact: true })).toHaveCount(1);
+  await expect(form.locator(".question-excerpt")).toHaveCount(0);
   await form.getByRole("button", { name: "Change" }).click();
   await expect(form.getByRole("combobox", { name: "Section" })).toHaveValue(
     `section:${scope}`,
   );
-  await form.getByRole("button", { name: "Change" }).click();
+  await form.getByRole("button", { name: "Cancel" }).click();
+  await expect(block).toBeFocused();
+  await page.locator(`[data-document-block="${paragraph}"]`).press("Enter");
+  await expect(form.getByText("Scope", { exact: true })).toBeVisible();
+  await expect(form.locator(".question-excerpt")).toHaveText(scopeText);
   await expect(form.getByLabel("Your email")).toHaveCount(0);
   const text = process.env.CAPTURE_QUESTIONS
     ? "Can we review the first milestone together before moving to the next phase?"
@@ -199,8 +213,8 @@ test("client question reaches staff, receives a plain-text reply on the same lin
   ).json();
   const id = threadData.threads[0].id;
   expect(threadData.threads[0]).toMatchObject({
-    block_id: scope,
-    excerpt: "Scope",
+    block_id: paragraph,
+    excerpt: scopeText,
   });
   await expect(
     page.getByRole("button", { name: "Review and sign", exact: true }),
@@ -281,9 +295,31 @@ test("client question reaches staff, receives a plain-text reply on the same lin
   await expect(history.getByText(/set up a call to review/)).toBeVisible();
   await capture(page, "r25-phone-history");
   await history.getByRole("button", { name: "Close", exact: true }).click();
-  const phoneBlock = page.locator(`[data-document-block="${scope}"]`);
+  await expect(totals.getByText("Monthly", { exact: true })).toHaveCount(0);
+  await expect(
+    page.locator("#proposal-document .signature-date").first(),
+  ).toHaveText(`${p.client.company} | Date signed`);
+  const phoneHeading = page.locator(`[data-document-block="${scope}"]`);
+  await phoneHeading.tap();
+  await expect(phoneHeading).not.toHaveAttribute("tabindex", "0");
+  await expect(
+    page.getByRole("button", { name: "Ask about this heading" }),
+  ).toHaveCount(0);
+  await expect(form).toHaveCount(0);
+  await header
+    .getByRole("button", { name: "Ask a question", exact: true })
+    .tap();
+  await form.getByRole("button", { name: "Change" }).click();
+  await form
+    .getByRole("combobox", { name: "Section" })
+    .selectOption(`section:${scope}`);
+  await expect(form.getByText("Scope", { exact: true })).toHaveCount(1);
+  await form.getByRole("button", { name: "Cancel" }).click();
+  const phoneBlock = page.locator(`[data-document-block="${paragraph}"]`);
   await phoneBlock.tap();
-  const phoneAsk = page.getByRole("button", { name: "Ask about this heading" });
+  const phoneAsk = page.getByRole("button", {
+    name: "Ask about this paragraph",
+  });
   await expect(phoneAsk).toHaveCSS("height", "44px");
   await capture(page, "r25-phone-block");
   await phoneAsk.tap();

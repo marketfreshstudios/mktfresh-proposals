@@ -1440,7 +1440,7 @@ function NewClientFlow({
                         billing={recurring || requiresCheckout}
                       />
                       <h2>Your choices</h2>
-                      <ChosenItems proposal={p} />
+                      <ChosenItems proposal={p} inlineAmounts />
                     </div>
                     <ReviewTotals proposal={p} />
                     <div className="flow-review-actions">
@@ -1581,16 +1581,12 @@ function FlowStage({
   );
 }
 function ReviewTotals({ proposal: p }: { proposal: PublicProposal }) {
-  const yearly = p.quote.some((item) =>
-    item.sublines.some((line) => line.interval === "year"),
-  );
   const entries = [
     { label: "One-time", amount: p.totals.one_time_total, suffix: "" },
     { label: "Monthly", amount: p.totals.monthly_total, suffix: "/mo" },
-    ...(yearly
-      ? [{ label: "Yearly", amount: p.totals.yearly_total, suffix: "/yr" }]
-      : []),
-  ];
+    { label: "Yearly", amount: p.totals.yearly_total, suffix: "/yr" },
+  ].filter(({ amount }) => amount !== 0);
+  if (!entries.length) return null;
   return (
     <div
       className="totals flow-totals review-totals"
@@ -1716,9 +1712,11 @@ function Terms({ line: l, currency }: { line: BillingLine; currency: string }) {
 function ChosenItems({
   proposal: p,
   terms = false,
+  inlineAmounts = false,
 }: {
   proposal: PublicProposal;
   terms?: boolean;
+  inlineAmounts?: boolean;
 }) {
   return (
     <ul className="flow-chosen">
@@ -1738,14 +1736,26 @@ function ChosenItems({
                 />
               )}
             </span>
-            <span>
-              {i.sublines.map((s) => (
-                <span key={s.id} style={{ display: "block" }}>
-                  {formatMoney(s.amount * s.qty, p.currency, p.money_cents)}
-                  {intervalSuffix(s.interval)}
-                </span>
-              ))}
-            </span>
+            {inlineAmounts ? (
+              <span className="flow-choice-amounts">
+                {i.sublines.map((s, index) => (
+                  <span key={s.id} className="flow-choice-amount">
+                    {index > 0 && " + "}
+                    {formatMoney(s.amount * s.qty, p.currency, p.money_cents)}
+                    {intervalSuffix(s.interval)}
+                  </span>
+                ))}
+              </span>
+            ) : (
+              <span>
+                {i.sublines.map((s) => (
+                  <span key={s.id} style={{ display: "block" }}>
+                    {formatMoney(s.amount * s.qty, p.currency, p.money_cents)}
+                    {intervalSuffix(s.interval)}
+                  </span>
+                ))}
+              </span>
+            )}
           </li>
         ))}
     </ul>

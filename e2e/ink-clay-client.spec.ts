@@ -262,10 +262,20 @@ async function clientFixture(page: Page) {
   async function open(
     state: "read" | "gate" | "billing" | "existing" | "expired",
     color?: string,
+    recurringOnly = false,
   ) {
     value = structuredClone(
       state === "billing" ? billing : state === "existing" ? existing : read,
     );
+    if (recurringOnly) {
+      value.quote = value.quote.flatMap((item) => {
+        const sublines = item.sublines.filter(
+          (line) => line.interval !== "one_time",
+        );
+        return sublines.length ? [{ ...item, sublines }] : [];
+      });
+      value.totals = totals(value.quote as QuoteItem[]);
+    }
     if (color) {
       value.company.accent_colour = color;
       value.company.name = "Violet Studio";
@@ -285,6 +295,22 @@ async function clientFixture(page: Page) {
     forbidPreview: () => (authorized = false),
   };
 }
+
+test("the reading summary omits a zero one-time amount on desktop and phone", async ({
+  page,
+}) => {
+  const fixture = await clientFixture(page);
+  for (const width of [1440, 375]) {
+    await page.setViewportSize({ width, height: 900 });
+    await fixture.open("read", undefined, true);
+    const totals = page.getByRole("group", { name: "Proposal totals" });
+    await expect(totals.getByText("One-time", { exact: true })).toHaveCount(0);
+    await expect(totals).toContainText("$260/mo");
+    await expect(
+      page.getByRole("button", { name: "Review and sign" }),
+    ).toBeVisible();
+  }
+});
 
 for (const width of [1440, 1024, 768, 375]) {
   test(`tenant client screens, controls and flows are accessible at ${width}px`, async ({
@@ -345,6 +371,16 @@ for (const width of [1440, 1024, 768, 375]) {
     await expect(checked).toHaveCSS("box-shadow", /40, 88, 71.*3px.*inset/);
     await inspect("reading");
     if (width === 1440) {
+      const ownIt = choices
+        .locator(".flow-chosen li")
+        .filter({ hasText: "Own It Over Time" });
+      const amounts = ownIt.locator(".flow-choice-amount");
+      await expect(ownIt.locator(".flow-choice-amounts")).toHaveText(
+        "$500 + $175/mo",
+      );
+      expect((await amounts.first().boundingBox())!.y).toBe(
+        (await amounts.last().boundingBox())!.y,
+      );
       const document = page.locator(".client-document-sheets");
       await expect(document).toHaveCSS("width", "720px");
       await expect(document.locator(".client-page-frame").first()).toHaveCSS(
@@ -361,6 +397,15 @@ for (const width of [1440, 1024, 768, 375]) {
       ).toHaveAttribute("href", "#your-questions");
       await capture(page, "client-cover-1440");
       await captureR25(page, "1g");
+      if (process.env.CAPTURE_R25_LAYOUT === "1") {
+        await page.locator('[data-document-block="choose"]').press("Enter");
+        const form = page.getByRole("dialog", { name: "Ask a question" });
+        await form
+          .getByRole("textbox", { name: "Your question" })
+          .fill("Can we keep our current domain, harbordental.com?");
+        await captureR25(page, "1h-questions");
+        await form.getByRole("button", { name: "Cancel" }).click();
+      }
     } else if (width === 375) {
       await expect(choices).toHaveCSS("width", "375px");
       await expect(

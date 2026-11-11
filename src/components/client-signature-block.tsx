@@ -23,6 +23,7 @@ export function ClientSignatureBlock({
         __html: signatureHtml({
           role,
           name,
+          separator: " | ",
           company:
             role === "client"
               ? p.variables["client.company"] || ""

@@ -72,7 +72,7 @@ export function ClientPageSheets({
 }) {
   const host = useRef<HTMLElement>(null);
   const projection = useMemo(() => {
-    const html = clientDocumentHtml(p, logo, undefined, logoIcon),
+    const html = clientDocumentHtml(p, logo, undefined, logoIcon, " | "),
       css = clientDocumentCss(p);
     // Response revisions/status and busy changes do not change the document.
     return {
@@ -354,6 +354,7 @@ export function ClientPageSheets({
           current.logo,
           undefined,
           current.logoIcon,
+          " | ",
         );
         const position = view && captureClientPosition(view);
         // A pricing block may span several sheets. Keep the active control's

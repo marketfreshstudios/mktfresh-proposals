@@ -3,7 +3,11 @@ import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import type { z } from "zod";
 import type { AskQuestionSchema } from "../lib/proposal-questions";
-import type { questionTargets, QuestionTarget } from "../lib/question-targets";
+import {
+  questionExcerpt,
+  type questionTargets,
+  type QuestionTarget,
+} from "../lib/question-targets";
 import { ToolbarPopover } from "./toolbar-popover";
 import { ToastSurface } from "./toast-surface";
 import {
@@ -641,9 +645,10 @@ function AskForm({
         ) : (
           <>
             <strong>{target.label}</strong>
-            {target.excerpt && (
-              <p className="question-excerpt">{target.excerpt}</p>
-            )}
+            {target.excerpt &&
+              target.excerpt !== questionExcerpt(target.label) && (
+                <p className="question-excerpt">{target.excerpt}</p>
+              )}
           </>
         )}
       </div>

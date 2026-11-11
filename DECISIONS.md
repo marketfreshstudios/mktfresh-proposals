@@ -1378,3 +1378,10 @@ existing question engagement event and email history remain. Apply
 `20261111051052_r25_client_question_edits.sql` before deploying the question
 follow-up. The function uses the existing service role access; there are no
 new table grants or changes to proposals.
+
+The phone composer offers section headings through Change; tapping a
+heading in the document does not open question controls. The About box
+omits an excerpt when it repeats the section name. The reading summary
+hides zero-value totals and joins an item's separate amounts on one line
+when space allows. The signature date separator changes on the client
+screen only, preserving the PDF and sealed rendering.

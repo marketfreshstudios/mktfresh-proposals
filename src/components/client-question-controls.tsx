@@ -64,6 +64,15 @@ function key(node: HTMLElement) {
     node.dataset.columnBlock
   );
 }
+function canAskAboutBlock(target: QuestionTarget, phone: boolean) {
+  return (
+    !phone ||
+    target.kind === "paragraph" ||
+    target.kind === "list" ||
+    target.kind === "image" ||
+    target.kind === "quote line"
+  );
+}
 function rootOf(wrapper: HTMLElement) {
   const document = wrapper.querySelector("#proposal-document");
   return document?.shadowRoot ?? document;
@@ -134,9 +143,10 @@ export function ClientQuestionSurface({
         const set = new Map<string, HTMLElement>();
         for (const node of nodes) {
           const id = key(node);
-          if (!id || !targets.has(id)) continue;
+          const target = id ? targets.get(id) : undefined;
+          if (!id || !target) continue;
           if (!set.has(id)) set.set(id, node);
-          if (onAsk) {
+          if (onAsk && canAskAboutBlock(target, phone)) {
             node.tabIndex = 0;
             node.dataset.clientAskTarget = "";
           } else if (node.hasAttribute("data-client-ask-target")) {
@@ -238,7 +248,10 @@ export function ClientQuestionSurface({
       )
         return;
       const target = targetFromEvent(event);
-      if (target) select(target, true);
+      const question =
+        target && handlers.current.targets.get(key(target) ?? "");
+      if (target && question && canAskAboutBlock(question, true))
+        select(target, true);
     };
     const focus = (event: FocusEvent) => {
       const target = targetFromEvent(event);
@@ -254,7 +267,12 @@ export function ClientQuestionSurface({
       const node = targetFromEvent(event);
       if (!node || event.composedPath()[0] !== node) return;
       const target = handlers.current.targets.get(key(node)!);
-      if (event.key === "Enter" && target && handlers.current.onAsk) {
+      if (
+        event.key === "Enter" &&
+        target &&
+        canAskAboutBlock(target, isPhoneReading()) &&
+        handlers.current.onAsk
+      ) {
         event.preventDefault();
         handlers.current.onAsk({ target, anchor: node, trigger: node });
       }
