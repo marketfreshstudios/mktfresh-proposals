@@ -422,12 +422,9 @@ for (const width of [1440, 1024, 768, 375]) {
       const ownIt = choices
         .locator(".flow-chosen li")
         .filter({ hasText: "Own It Over Time" });
-      const amounts = ownIt.locator(".flow-choice-amount");
+      // One line is covered by the combined-amount spacing test above.
       await expect(ownIt.locator(".flow-choice-amounts")).toHaveText(
         "$500 + $175/mo",
-      );
-      expect((await amounts.first().boundingBox())!.y).toBe(
-        (await amounts.last().boundingBox())!.y,
       );
       const document = page.locator(".client-document-sheets");
       await expect(document).toHaveCSS("width", "720px");
