@@ -746,6 +746,9 @@ export function BlockFrame({
           }
         }}
         onPointerOver={(e) => {
+          // A touch has no hover. Revealing block chrome on touch makes iOS
+          // treat the first tap as a hover preview and wait for a second tap.
+          if (e.pointerType !== "mouse") return;
           if ((e.target as Element).closest(".block-frame") === e.currentTarget)
             selection.hover(id);
         }}

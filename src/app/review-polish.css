@@ -144,9 +144,13 @@ button.contact-open {
   text-align: left;
   white-space: normal;
 }
-.mapping-state:hover .mapping-tooltip,
 .mapping-state:focus-visible .mapping-tooltip {
   display: block;
+}
+@media (hover: hover) {
+  .mapping-state:hover .mapping-tooltip {
+    display: block;
+  }
 }
 .product-mapping-details {
   border: 1px solid var(--border);
@@ -173,9 +177,13 @@ button.contact-open {
 .product-mapping {
   position: relative;
 }
-.product-mapping:hover .mapping-tooltip,
 .catalog-row:focus .mapping-tooltip {
   display: block;
+}
+@media (hover: hover) {
+  .product-mapping:hover .mapping-tooltip {
+    display: block;
+  }
 }
 
 @media (pointer: coarse) {

@@ -111,7 +111,7 @@ for (const width of [768, 924])
     // Header focus verifies document shortcuts, independently of a text block's
     // selection/history or any visible Undo/Redo control.
     await header
-      .getByRole("link", { name: "Back to proposals", exact: true })
+      .getByRole("link", { name: "Back to proposal", exact: true })
       .focus();
     for (const modifier of ["Control", "Meta"]) {
       await page.keyboard.press(`${modifier}+z`);

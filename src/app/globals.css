@@ -537,9 +537,13 @@ td strong {
   opacity: 0.6;
   font-family: var(--font-sans);
 }
-.block-actions:focus-within,
-.editor-block:hover .block-actions {
+.block-actions:focus-within {
   opacity: 1;
+}
+@media (hover: hover) {
+  .editor-block:hover .block-actions {
+    opacity: 1;
+  }
 }
 .editor-block input,
 .editor-block textarea {
@@ -1140,9 +1144,13 @@ select:hover:not(:disabled),
   padding: 3px 6px;
   font-size: 11px;
 }
-.field-editor:focus-within .rich-toolbar,
-.field-editor:hover .rich-toolbar {
+.field-editor:focus-within .rich-toolbar {
   opacity: 1;
+}
+@media (hover: hover) {
+  .field-editor:hover .rich-toolbar {
+    opacity: 1;
+  }
 }
 .field-editor .tiptap {
   min-height: 65px;
@@ -1174,9 +1182,13 @@ select:hover:not(:disabled),
   margin-top: 6px;
   opacity: 0.3;
 }
-.draft-block:focus-within .draft-block-actions,
-.draft-block:hover .draft-block-actions {
+.draft-block:focus-within .draft-block-actions {
   opacity: 1;
+}
+@media (hover: hover) {
+  .draft-block:hover .draft-block-actions {
+    opacity: 1;
+  }
 }
 .draft-block-actions .btn {
   font-size: 10px;
@@ -1720,11 +1732,17 @@ select:hover:not(:disabled),
   opacity: 0;
   margin: 0;
 }
-.draft-block:hover .draft-block-actions,
 .draft-block:focus-within .draft-block-actions {
   height: auto;
   opacity: 1;
   margin-top: 6px;
+}
+@media (hover: hover) {
+  .draft-block:hover .draft-block-actions {
+    height: auto;
+    opacity: 1;
+    margin-top: 6px;
+  }
 }
 [data-theme="dark"] .editor-sidepanel .editor-choice-group,
 [data-theme="dark"] .editor-sheet .editor-choice-group {

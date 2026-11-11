@@ -1107,11 +1107,22 @@
 .quickbooks-connect-button img + img {
   visibility: hidden;
 }
-.quickbooks-connect-button:is(:hover, :focus-visible):enabled img:first-child {
+.quickbooks-connect-button:is(:focus-visible):enabled img:first-child {
   visibility: hidden;
 }
-.quickbooks-connect-button:is(:hover, :focus-visible):enabled img + img {
+@media (hover: hover) {
+  .quickbooks-connect-button:is(:hover, :focus-visible):enabled
+    img:first-child {
+    visibility: hidden;
+  }
+}
+.quickbooks-connect-button:is(:focus-visible):enabled img + img {
   visibility: visible;
+}
+@media (hover: hover) {
+  .quickbooks-connect-button:is(:hover, :focus-visible):enabled img + img {
+    visibility: visible;
+  }
 }
 .studio-connections-v3 .connection-card > div {
   flex: 1;
@@ -1223,8 +1234,13 @@
   border-radius: 8px;
   display: none;
 }
-.catalog-row-v3:is(:hover, :focus-visible) .mapping-tooltip {
+.catalog-row-v3:is(:focus-visible) .mapping-tooltip {
   display: block;
+}
+@media (hover: hover) {
+  .catalog-row-v3:is(:hover, :focus-visible) .mapping-tooltip {
+    display: block;
+  }
 }
 .product-table {
   overflow: visible;

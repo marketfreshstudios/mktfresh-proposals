@@ -51,16 +51,28 @@
   > .column-canvas-actions {
   pointer-events: auto;
 }
-.editor-column:is([data-column-selected], [data-column-empty], :hover)
+.editor-column:is([data-column-selected], [data-column-empty])
   .column-canvas-label,
 .column-canvas-actions > button:focus-visible,
-.editor-column[data-column-paste-target]:is(:hover, :focus-within):not(
+.editor-column[data-column-paste-target]:is(:focus-within):not(
     [data-column-selected],
     [data-column-selected-child]
   )
   .column-canvas-paste {
   opacity: 1;
   pointer-events: auto;
+}
+@media (hover: hover) {
+  .editor-column:is([data-column-selected], [data-column-empty], :hover)
+    .column-canvas-label,
+  .editor-column[data-column-paste-target]:is(:hover, :focus-within):not(
+      [data-column-selected],
+      [data-column-selected-child]
+    )
+    .column-canvas-paste {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 /* Move the label away from a text toolbar, and give a hovered paste target
    the top edge until the user selects one of its text blocks. */

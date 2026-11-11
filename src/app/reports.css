@@ -201,8 +201,13 @@
   padding: 12px;
   box-shadow: var(--shadow-lg);
 }
-.report-tooltip:is(:hover, :focus-within) [role="tooltip"] {
+.report-tooltip:is(:focus-within) [role="tooltip"] {
   display: block;
+}
+@media (hover: hover) {
+  .report-tooltip:is(:hover, :focus-within) [role="tooltip"] {
+    display: block;
+  }
 }
 .report-tooltip p {
   margin: 6px 0 0;

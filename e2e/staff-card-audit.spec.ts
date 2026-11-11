@@ -1000,7 +1000,7 @@ test("Templates notes, Saved blocks heading and borderless ink editor headers", 
 
   for (const [url, back, name] of [
     [`/studio/templates/${starter.id}`, "Templates", "template-editor"],
-    [`/proposals/${f.draft.id}?action=edit`, "Proposals", "proposal-editor"],
+    [`/proposals/${f.draft.id}?action=edit`, "Proposal", "proposal-editor"],
     [`/studio/emails/${f.emails[0].key}`, "Emails", "email-editor"],
   ]) {
     await page.goto(url);
