@@ -1,0 +1,329 @@
+/* Question controls sit on the reading surface, outside the print projection. */
+.flow-question-surface {
+  position: relative;
+  min-width: 0;
+}
+.client-flow [data-stale="true"] > .flow-question-surface {
+  filter: brightness(0.9);
+}
+.client-flow .client-ask-icon {
+  position: absolute;
+  z-index: 2;
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--client-deep-accent);
+  color: white;
+  box-shadow: var(--shadow-sm);
+}
+.client-flow .client-ask-icon:hover {
+  background: color-mix(in srgb, var(--client-deep-accent) 85%, black);
+}
+.client-ask-page {
+  transform: translate(-50%, -50%);
+}
+.client-ask-block {
+  transform: translate(3px, -4px);
+}
+.client-flow .client-ask-header {
+  display: none;
+}
+.flow-question-surface [data-client-asking] {
+  outline: 1px solid var(--client-frame);
+  outline-offset: 3px;
+  border-radius: 8px;
+  background-color: var(--client-selection);
+}
+.client-question-marker {
+  position: absolute;
+  max-width: 130px;
+  transform: translate(6px, 38px);
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface));
+  border: 1px solid var(--client-frame);
+  border-radius: 6px;
+  color: var(--client-reading-link);
+  padding: 3px 7px;
+  font: 600 10px/1.35 var(--font-ui);
+  pointer-events: none;
+  z-index: 1;
+}
+.client-flow .client-question-list-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.client-flow .client-question-thread {
+  border-top: 1px solid var(--border);
+  padding: 10px 0;
+}
+.client-question-context > strong,
+.client-about-heading > strong {
+  color: var(--client-reading-link, var(--ink-muted));
+  font: 700 11px/1.3 var(--font-ui);
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+.client-flow .client-question-thread .question-text {
+  margin: 4px 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.client-question-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 6px;
+  color: var(--ink-muted);
+  font-size: 12px;
+}
+.client-question-actions > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: end;
+  gap: 8px;
+}
+.client-flow .question-text-action {
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--client-reading-link, var(--ink));
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  padding: 0;
+  font-weight: 600;
+  min-height: 28px;
+}
+.client-flow .client-question-thread .question-reply {
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface));
+  padding: 12px;
+  border-radius: 12px;
+  margin: 8px 0 0;
+  border: 0;
+}
+.client-flow .client-question-thread .question-reply time {
+  display: inline-block;
+  margin-inline-start: 8px;
+}
+.question-excerpt {
+  color: var(--ink-muted);
+  font: 400 14px/1.4 var(--client-font-heading, var(--font-serif));
+  margin: 5px 0 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.client-flow .client-ask-popover.toolbar-popover {
+  position: fixed;
+  inset: auto;
+  width: min(380px, 100vw - 16px);
+  max-width: none;
+  padding: 0;
+  margin: 0;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  box-shadow: var(--shadow-lg);
+  overflow: auto;
+}
+.client-ask-popover-body {
+  padding: 18px;
+}
+.client-ask-heading,
+.client-about-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.client-flow .client-ask-popover-body h2,
+.client-flow
+  .foundation-sheet:is(.client-question-sheet, .client-question-history)
+  h2 {
+  font: 600 22px/1.2 var(--client-font-heading, var(--font-doc-heading));
+  margin: 0;
+}
+.client-ask-popover-body h2:focus {
+  outline: none;
+}
+.client-flow .client-ask-heading .btn {
+  width: 44px;
+  padding: 0;
+}
+.client-flow .client-ask-about {
+  padding: 12px;
+  border-radius: 12px;
+  border-inline-start: 3px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface));
+}
+.client-about-heading {
+  margin-bottom: 4px;
+}
+.client-question-helper {
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  color: var(--ink-muted);
+  font: 400 13px/1.3 var(--font-ui);
+}
+.client-question-helper small {
+  white-space: nowrap;
+}
+.client-flow .question-form {
+  gap: 12px;
+}
+.client-flow .question-form .field {
+  margin: 0;
+}
+.client-flow .question-form .btn.primary {
+  background: var(--client-deep-accent, var(--client-accent-text));
+  border-color: var(--client-deep-accent, var(--client-accent-text));
+  color: white;
+}
+.client-flow .question-form .btn.primary:hover:not(:disabled) {
+  background: color-mix(
+    in srgb,
+    var(--client-deep-accent, var(--client-accent-text)) 86%,
+    black
+  );
+}
+.client-flow .foundation-sheet.client-question-history {
+  margin: 0;
+  inset: 0;
+  width: 100%;
+  max-width: none;
+  height: 100dvh;
+  max-height: 100dvh;
+  border: 0;
+  border-radius: 0;
+  padding: 20px;
+}
+.client-flow .client-question-history .client-question-thread {
+  margin-top: 12px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 0;
+  overflow: hidden;
+}
+.client-question-history .client-question-context {
+  padding: 12px 14px 4px;
+  background: var(--surface-page);
+}
+.client-flow .client-question-history .client-question-thread > .question-text,
+.client-question-history .client-question-actions {
+  padding: 0 14px;
+}
+.client-flow
+  .client-question-history
+  .client-question-thread
+  > .question-reply {
+  margin: 8px 14px 14px;
+}
+.client-flow .client-question-history .question-text-action,
+.client-flow .client-question-sheet .question-text-action {
+  min-height: 44px;
+}
+.client-flow .client-question-history .client-question-actions {
+  min-height: 44px;
+}
+.client-flow.flow-phone-preview
+  .foundation-sheet:is(.client-question-sheet, .client-question-history) {
+  width: min(100%, 375px);
+  margin-inline: auto;
+}
+
+@container client-stage (width < 700px) {
+  .client-flow .flow-header {
+    position: relative;
+  }
+  .client-flow .client-ask-icon {
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+  }
+  .client-flow .client-ask-header {
+    display: inline-grid;
+    right: 16px;
+    bottom: -22px;
+  }
+  .client-flow .client-ask-block-phone {
+    transform: translate(calc(-100% - 8px), -50%);
+  }
+  .flow-question-surface [data-client-asking="phone"] {
+    padding-inline-end: 60px !important;
+    min-block-size: 48px;
+  }
+  .flow-question-surface [data-client-question-marked] {
+    padding-block-end: 30px !important;
+  }
+  .client-question-marker {
+    transform: translate(calc(-100% - 8px), 0);
+    width: max-content;
+    max-width: 100%;
+  }
+  .flow-reading-rail .questions-panel {
+    display: none;
+  }
+}
+@media (max-width: 699px) {
+  .client-flow .client-question-sheet {
+    inset: auto 0 0;
+  }
+  .toast-surface.client-question-toast[popover] {
+    bottom: 108px;
+  }
+  .client-flow
+    .client-question-sheet
+    .question-form
+    :is(input, textarea, select) {
+    font-size: 16px;
+  }
+}
+
+.client-flow.flow-phone-preview .foundation-sheet.client-question-sheet {
+  inset: auto 0 0;
+  border-radius: 18px 18px 0 0;
+}
+
+.client-flow
+  :is(.client-question-sheet, .client-question-history)
+  > header
+  .btn {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+}
+.client-question-message-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  padding: 10px 14px 0;
+  font-size: 13px;
+}
+.client-question-message-meta time {
+  color: var(--ink-muted);
+}
+.client-flow .question-form .dialog-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+.client-flow .question-form .dialog-actions .btn {
+  width: 100%;
+  min-height: 48px;
+}
+@media (max-width: 699px) {
+  .client-flow .question-form .dialog-actions .btn {
+    min-height: 52px;
+  }
+}

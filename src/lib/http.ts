@@ -16,12 +16,17 @@ import {
   staffResetExpiryMinutes,
   staffResetRequest,
 } from "./staff-reset";
-import { AskQuestionSchema, StaffQuestionSchema } from "./proposal-questions";
+import {
+  AskQuestionSchema,
+  EditClientQuestionSchema,
+  StaffQuestionSchema,
+} from "./proposal-questions";
 import {
   askQuestion,
   changeQuestion,
   clientQuestions,
   deliverQuestionMail,
+  editClientQuestion,
   QuestionProposalChanged,
   staffQuestions,
 } from "./question-service";
@@ -625,6 +630,31 @@ async function handleRoute(
             }
           }
         }
+      }
+      if (
+        action === "questions" &&
+        path[3] &&
+        !path[4] &&
+        ["PATCH", "DELETE"].includes(method)
+      ) {
+        check(sameOrigin(req), "Same-origin request required", 403);
+        check(
+          /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(path[3]),
+          "Question not found",
+          404,
+        );
+        const text =
+          method === "PATCH"
+            ? EditClientQuestionSchema.parse(await body(req)).text
+            : null;
+        return json(
+          await editClientQuestion(
+            rt.repo,
+            await rt.service.byToken(token, password),
+            path[3],
+            text,
+          ),
+        );
       }
       if (method === "GET" && action === "state") {
         const proposal = await rt.service.byToken(token, password);

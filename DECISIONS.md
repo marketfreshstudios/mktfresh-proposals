@@ -1392,3 +1392,36 @@ authorizes changes to an unrelated subscription. Link storage requires
 the generated lookup column and unique workspace index from
 `20261111063827_linked_stripe_subscription_lookup.sql` before deploy.
 Existing proposal access rules are unchanged.
+### Client choice amount separators
+
+The desktop choices rail joins displayed sub-line amounts with a spaced
+plus in one text run. This keeps both spaces visible while allowing the
+amounts to wrap in a narrow rail. The amounts stay separate, and the
+signing summary keeps its stacked amounts.
+### R25 questions by page and block
+
+Page and block question controls sit outside the measured Letter content. A
+phone can reserve space for the control and marker in its flowing document;
+neither appears in the print projection. Preview uses an empty demo history
+and opens the same composer with its submit button disabled.
+
+Block references and their plain-text excerpts come from the currently
+published document or visible quote row. The API verifies the reference and
+saves the excerpt as it appeared when the question was sent. Staff see that
+excerpt on the proposal record even if later edits move or remove the block.
+
+Clients can edit or delete only before the first reply and while the existing
+public link accepts questions. The database locks the proposal and thread
+before checking those conditions. Delete removes the question, contact and
+excerpt from the thread, leaving a minimal receipt for the hourly limit. The
+existing question engagement event and email history remain. Apply
+`20261111051052_r25_client_question_edits.sql` before deploying the question
+follow-up. The function uses the existing service role access; there are no
+new table grants or changes to proposals.
+
+The phone composer offers section headings through Change; tapping a
+heading in the document does not open question controls. The About box
+omits an excerpt when it repeats the section name. The reading summary
+hides zero-value totals and joins an item's separate amounts on one line
+when space allows. The signature date separator changes on the client
+screen only, preserving the PDF and sealed rendering.

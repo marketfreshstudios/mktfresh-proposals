@@ -262,10 +262,20 @@ async function clientFixture(page: Page) {
   async function open(
     state: "read" | "gate" | "billing" | "existing" | "expired",
     color?: string,
+    recurringOnly = false,
   ) {
     value = structuredClone(
       state === "billing" ? billing : state === "existing" ? existing : read,
     );
+    if (recurringOnly) {
+      value.quote = value.quote.flatMap((item) => {
+        const sublines = item.sublines.filter(
+          (line) => line.interval !== "one_time",
+        );
+        return sublines.length ? [{ ...item, sublines }] : [];
+      });
+      value.totals = totals(value.quote as QuoteItem[]);
+    }
     if (color) {
       value.company.accent_colour = color;
       value.company.name = "Violet Studio";
@@ -285,6 +295,70 @@ async function clientFixture(page: Page) {
     forbidPreview: () => (authorized = false),
   };
 }
+
+test("desktop client choices show visible spaces on both sides of a combined amount's plus", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 1060 });
+  const f = await clientFixture(page);
+  await f.open("read");
+  const choices = page.getByRole("complementary", { name: "Your choices" });
+  const combined = choices
+    .getByRole("listitem")
+    .filter({ hasText: "Own It Over Time" })
+    .locator(".flow-choice-amounts");
+  await expect(combined).toBeVisible();
+  await expect(combined).toHaveText("$500 + $175/mo");
+  const layout = await combined.evaluate((el) => {
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    const text = el.textContent!;
+    const plus = text.indexOf("+");
+    function glyph(index: number) {
+      walker.currentNode = el;
+      let node: Node | null;
+      while ((node = walker.nextNode())) {
+        const length = node.textContent!.length;
+        if (index < length) {
+          const range = document.createRange();
+          range.setStart(node, index);
+          range.setEnd(node, index + 1);
+          const { top, width } = range.getBoundingClientRect();
+          return { top, width };
+        }
+        index -= length;
+      }
+      throw new Error("Character missing from combined amount");
+    }
+    return {
+      glyphs: [glyph(0), glyph(plus), glyph(text.length - 1)],
+      spaces: [glyph(plus - 1).width, glyph(plus + 1).width],
+    };
+  });
+  expect(new Set(layout.glyphs.map(({ top }) => top)).size).toBe(1);
+  for (const width of layout.spaces) expect(width).toBeGreaterThan(0);
+  await expect(
+    choices
+      .getByRole("listitem")
+      .filter({ hasText: "Care Standard" })
+      .locator(".flow-choice-amounts"),
+  ).toHaveText("$85/mo");
+});
+
+test("the reading summary omits a zero one-time amount on desktop and phone", async ({
+  page,
+}) => {
+  const fixture = await clientFixture(page);
+  for (const width of [1440, 375]) {
+    await page.setViewportSize({ width, height: 900 });
+    await fixture.open("read", undefined, true);
+    const totals = page.getByRole("group", { name: "Proposal totals" });
+    await expect(totals.getByText("One-time", { exact: true })).toHaveCount(0);
+    await expect(totals).toContainText("$260/mo");
+    await expect(
+      page.getByRole("button", { name: "Review and sign" }),
+    ).toBeVisible();
+  }
+});
 
 for (const width of [1440, 1024, 768, 375]) {
   test(`tenant client screens, controls and flows are accessible at ${width}px`, async ({
@@ -314,17 +388,16 @@ for (const width of [1440, 1024, 768, 375]) {
       page.getByRole("heading", { name: "Your investment", exact: true }),
     ).toHaveCount(1);
     if (width === 1440 || width === 1024) {
-      const ask = page.getByRole(width === 1440 ? "link" : "button", {
-        name: "Ask about this: Choose your plan",
-      });
+      const block = page.locator('[data-document-block="investment"]');
+      await block.hover();
+      const ask = page.getByRole("button", { name: "Ask about this heading" });
       await expect(ask).toBeVisible();
-      expect(
-        await ask.evaluate((el) => {
-          const range = document.createRange();
-          range.selectNodeContents(el);
-          return range.getClientRects().length;
-        }),
-      ).toBe(1);
+      expect((await ask.boundingBox())!.x).toBeGreaterThanOrEqual(
+        (await block.boundingBox())!.x + (await block.boundingBox())!.width,
+      );
+      await expect(
+        page.getByRole("link", { name: /Ask about this/ }),
+      ).toHaveCount(0);
     }
     const sign = choices.getByRole("button", {
       name: "Review and sign",
@@ -346,6 +419,13 @@ for (const width of [1440, 1024, 768, 375]) {
     await expect(checked).toHaveCSS("box-shadow", /40, 88, 71.*3px.*inset/);
     await inspect("reading");
     if (width === 1440) {
+      const ownIt = choices
+        .locator(".flow-chosen li")
+        .filter({ hasText: "Own It Over Time" });
+      // One line is covered by the combined-amount spacing test above.
+      await expect(ownIt.locator(".flow-choice-amounts")).toHaveText(
+        "$500 + $175/mo",
+      );
       const document = page.locator(".client-document-sheets");
       await expect(document).toHaveCSS("width", "720px");
       await expect(document.locator(".client-page-frame").first()).toHaveCSS(
@@ -362,6 +442,15 @@ for (const width of [1440, 1024, 768, 375]) {
       ).toHaveAttribute("href", "#your-questions");
       await capture(page, "client-cover-1440");
       await captureR25(page, "1g");
+      if (process.env.CAPTURE_R25_LAYOUT === "1") {
+        await page.locator('[data-document-block="choose"]').press("Enter");
+        const form = page.getByRole("dialog", { name: "Ask a question" });
+        await form
+          .getByRole("textbox", { name: "Your question" })
+          .fill("Can we keep our current domain, harbordental.com?");
+        await captureR25(page, "1h-questions");
+        await form.getByRole("button", { name: "Cancel" }).click();
+      }
     } else if (width === 375) {
       await expect(choices).toHaveCSS("width", "375px");
       await expect(

@@ -21,6 +21,8 @@ export const AskQuestionSchema = z
     id: z.string().uuid(),
     text: message,
     section: z.string().min(1).max(210).optional(),
+    block_id: z.string().min(1).max(200).optional(),
+    excerpt: z.string().max(200).transform(plain).optional(),
     contact: z
       .object({
         name: z
@@ -34,6 +36,7 @@ export const AskQuestionSchema = z
       .optional(),
   })
   .strict();
+export const EditClientQuestionSchema = z.object({ text: message }).strict();
 export const StaffQuestionSchema = z.discriminatedUnion("action", [
   z
     .object({
@@ -52,11 +55,29 @@ export type QuestionThread = {
   revision: number;
   status: "open" | "answered" | "resolved";
   section?: { key: string; label: string };
+  block_id?: string;
+  excerpt?: string;
   contact: { name: string; email: string };
   question: string;
   replies: { id: string; name: string; text: string; created_at: string }[];
   notify_users: string[];
 };
+export type QuestionTombstone = Pick<
+  QuestionThread,
+  "id" | "proposal_id" | "created_at" | "revision"
+> & {
+  status: "resolved";
+  deleted_at: string;
+};
+export type ClientQuestionMutation = {
+  proposal: string;
+  revision: number;
+  id: string;
+  text: string | null;
+};
+export type ClientQuestionMutationResult =
+  | { result: "saved"; thread?: QuestionThread }
+  | { result: "closed" | "stale" | "missing" | "replied" };
 export type QuestionMail = {
   id: string;
   proposal_id: string;
@@ -82,11 +103,22 @@ export function questionContact(p: Pick<Proposal, "client">) {
   return name && z.email().safeParse(email).success ? { name, email } : null;
 }
 export function publicQuestion(thread: QuestionThread) {
-  const { id, status, section, created_at, question, replies } = thread;
+  const {
+    id,
+    status,
+    section,
+    block_id,
+    excerpt,
+    created_at,
+    question,
+    replies,
+  } = thread;
   return {
     id,
     status,
     section,
+    block_id,
+    excerpt,
     created_at,
     question,
     replies,
