@@ -13,6 +13,16 @@ import type { PublicProposal } from "../src/components/client-proposal";
 import type { QuoteItem } from "../src/lib/model";
 
 const dir = "docs/screenshots/ink-and-clay-client-account";
+const r25Dir = ".data/evidence/r25-client-layout";
+const captureR25 = async (page: Page, frame: string) => {
+  if (process.env.CAPTURE_R25_LAYOUT !== "1") return;
+  await mkdir(r25Dir, { recursive: true });
+  await page.evaluate(() => document.fonts.ready);
+  await page.screenshot({
+    path: `${r25Dir}/${frame}.png`,
+    animations: "disabled",
+  });
+};
 const capture = async (page: Page, name?: string) => {
   if (!name || process.env.INK_CLAY_STAGE4_CAPTURE !== "1") return;
   await mkdir(dir, { recursive: true });
@@ -196,7 +206,12 @@ async function clientFixture(page: Page) {
     const path = new URL(req.url()).pathname;
     if (path.endsWith("/preview"))
       return authorized
-        ? route.fulfill({ json: previewResult(draft, f.settings) })
+        ? route.fulfill({
+            json:
+              new URL(req.url()).searchParams.get("mode") === "published"
+                ? previewResult(sent, f.settings, "published")
+                : previewResult(draft, f.settings),
+          })
         : route.fulfill({
             status: 401,
             json: { error: "Staff authorization required" },
@@ -216,7 +231,10 @@ async function clientFixture(page: Page) {
       });
     if (path.endsWith("/engagement"))
       return route.fulfill({ json: { ok: true } });
-    if (path.includes("/questions")) return route.fulfill({ json: [] });
+    if (path.endsWith("/questions"))
+      return route.fulfill({
+        json: { threads: [], can_ask: true, needs_contact: false },
+      });
     if (path.endsWith("/quote")) {
       if (stale)
         return route.fulfill({
@@ -289,10 +307,9 @@ for (const width of [1440, 1024, 768, 375]) {
       await expect(
         page.locator('.client-document-sheets[data-layout-ready="true"]'),
       ).toBeVisible();
-    await expect(choices).toHaveCSS(
-      "position",
-      width === 1440 ? "sticky" : "fixed",
-    );
+    await expect(
+      width === 1440 ? page.locator(".flow-reading-rail") : choices,
+    ).toHaveCSS("position", width === 1440 ? "sticky" : "fixed");
     await expect(
       page.getByRole("heading", { name: "Your investment", exact: true }),
     ).toHaveCount(1);
@@ -313,7 +330,12 @@ for (const width of [1440, 1024, 768, 375]) {
       name: "Review and sign",
       exact: true,
     });
-    await expect(sign).toHaveCSS("background-color", "rgb(40, 88, 71)");
+    await expect(sign).toHaveCSS(
+      "background-color",
+      width < 700
+        ? "rgb(255, 255, 255)"
+        : "color(srgb 0.0988235 0.217412 0.175412)",
+    );
     await expect(choices).toContainText("One-time");
     await expect(choices).toContainText("Monthly");
     const group = page.getByRole("radiogroup", { name: "Choose one" });
@@ -323,9 +345,37 @@ for (const width of [1440, 1024, 768, 375]) {
     await expect(checked).toHaveCount(1);
     await expect(checked).toHaveCSS("box-shadow", /40, 88, 71.*3px.*inset/);
     await inspect("reading");
-    if (width === 1440) await capture(page, "client-cover-1440");
+    if (width === 1440) {
+      const document = page.locator(".client-document-sheets");
+      await expect(document).toHaveCSS("width", "720px");
+      await expect(document.locator(".client-page-frame").first()).toHaveCSS(
+        "border-radius",
+        "20px",
+      );
+      const questions = page.getByRole("region", { name: "Your questions" });
+      expect((await questions.boundingBox())!.y).toBeGreaterThan(
+        (await choices.boundingBox())!.y +
+          (await choices.boundingBox())!.height,
+      );
+      await expect(
+        page.getByRole("link", { name: "Your questions (0)" }),
+      ).toHaveAttribute("href", "#your-questions");
+      await capture(page, "client-cover-1440");
+      await captureR25(page, "1g");
+    } else if (width === 375) {
+      await expect(choices).toHaveCSS("width", "375px");
+      await expect(
+        page.getByRole("link", { name: "Questions", exact: true }),
+      ).toBeVisible();
+      await expect(page.locator(".flow-header .flow-progress")).toBeVisible();
+      await expect(sign).toHaveCSS("height", "52px");
+      await expect(page.locator(".flow-document")).toHaveCSS("width", "375px");
+      await captureR25(page, "1a");
+    }
     await group.scrollIntoViewIfNeeded();
     await capture(page, name("client-choices"));
+    if (width === 1440) await captureR25(page, "1h");
+    if (width === 375) await captureR25(page, "1b");
     await options.nth(1).focus();
     await options.nth(1).press("ArrowLeft");
     await expect(options.first()).toBeChecked();
@@ -394,7 +444,10 @@ for (const width of [1440, 1024, 768, 375]) {
 
     if (width === 1440) {
       await f.open("read", "#634184");
-      await expect(sign).toHaveCSS("background-color", "rgb(99, 65, 132)");
+      await expect(sign).toHaveCSS(
+        "background-color",
+        "color(srgb 0.244588 0.160588 0.326118)",
+      );
       await group.scrollIntoViewIfNeeded();
       await capture(page, "client-choices-second-brand-1440");
       await page.goto(`/p/${f.draft.id}?preview=1`);
@@ -412,6 +465,30 @@ for (const width of [1440, 1024, 768, 375]) {
       ).toHaveCSS("background-color", "rgb(180, 83, 42)");
       await inspect("staff preview");
       await capture(page, "client-preview-1440");
+      await captureR25(page, "1i");
+      await preview.getByRole("button", { name: "Phone width" }).click();
+      await expect(page.locator(".flow-stage")).toHaveCSS("width", "375px");
+      await expect(page.locator(".flow-choices")).toHaveCSS("width", "375px");
+      await expect(preview).toHaveCSS("height", "60px");
+      const stage = (await page.locator(".flow-stage").boundingBox())!;
+      const art = (await page
+        .locator(".flow-document .cover-decoration")
+        .boundingBox())!;
+      expect(art.x).toBeGreaterThanOrEqual(stage.x - 1);
+      expect(art.x + art.width).toBeLessThanOrEqual(stage.x + stage.width + 1);
+      await expect(page.locator(".flow-header .flow-progress")).toBeVisible();
+      await captureR25(page, "1j");
+      await page.goto(`/p/${f.sent.id}?preview=published`);
+      await expect(
+        preview.getByText("Preview of published version"),
+      ).toBeVisible();
+      await expect(
+        preview.getByRole("link", { name: "Back to proposal" }),
+      ).toHaveAttribute("href", `/proposals/${f.sent.id}`);
+      await expect(
+        preview.getByRole("link", { name: "Send", exact: true }),
+      ).toHaveCount(0);
+      await page.goto(`/p/${f.draft.id}?preview=1`);
       f.forbidPreview();
       await page.reload();
       await expect(

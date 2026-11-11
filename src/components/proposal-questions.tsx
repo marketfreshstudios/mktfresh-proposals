@@ -112,12 +112,18 @@ export function ClientQuestions({
   password,
   requested,
   close,
+  inReadingRail,
+  onCountChange,
+  onAsk,
 }: {
   proposal: PublicProposal;
   token: string;
   password: string;
   requested: string | null;
   close: () => void;
+  inReadingRail?: boolean;
+  onCountChange?: (count: number) => void;
+  onAsk?: (section: string) => void;
 }) {
   const url = `/api/public/${token}/questions`;
   const headers = { "x-proposal-password": password };
@@ -141,23 +147,40 @@ export function ClientQuestions({
       active = false;
     };
   }, [url, password, proposal.status, requested]);
+  const count = result?.threads.length ?? 0;
+  useEffect(() => onCountChange?.(count), [count, onCountChange]);
   useQuestionAnchor(!!result);
   return (
     <>
-      {result?.threads.length || posted ? (
+      {inReadingRail || count || posted ? (
         <section
           className="card questions-panel"
+          id={inReadingRail ? "your-questions" : undefined}
           ref={history}
           aria-label="Your questions"
           tabIndex={-1}
         >
           <h2>Your questions</h2>
+          {inReadingRail && !count && (
+            <p className="muted">
+              {loadError
+                ? "Questions couldn’t be loaded."
+                : result
+                  ? "No questions yet."
+                  : "Loading questions…"}
+            </p>
+          )}
+          {inReadingRail && onAsk && (
+            <div className="flow-questions-phone-action">
+              <Button onClick={() => onAsk("")}>Ask a question</Button>
+            </div>
+          )}
           {posted && (
             <p role="status" className="question-note">
               Question sent. We’ll email you when there’s a reply.
             </p>
           )}
-          {!result?.can_ask && (
+          {result && !result.can_ask && (
             <p className="muted">This conversation is read-only.</p>
           )}
           {result?.threads.map((thread) => (

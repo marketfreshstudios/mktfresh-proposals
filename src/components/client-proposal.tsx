@@ -10,7 +10,7 @@ import { useTermsJump } from "./use-terms-jump";
 import { ClientQuestions } from "./proposal-questions";
 import { useClientEngagement } from "./use-client-engagement";
 import { accessibleAccent } from "../lib/brand";
-import { CircleAlert, LockKeyhole } from "lucide-react";
+import { ChevronLeft, CircleAlert, LockKeyhole } from "lucide-react";
 import { blockText } from "../lib/editor-document";
 import { sizeListMarkers } from "../lib/list-markers";
 import { DialogActions } from "./dialog-actions";
@@ -24,6 +24,7 @@ import {
 } from "./client-page-sheets";
 import {
   quoteLayout,
+  harborQuoteNeutrals,
   documentStyleCss,
   styleFontFaces,
 } from "../lib/proposal-styles";
@@ -63,6 +64,7 @@ import { ClientSignatureBlock } from "./client-signature-block";
 import { SignatureForm } from "./signature";
 import { api, ApiError, Banner, Button, Icon, date } from "./ui";
 import { Skeleton } from "./foundation";
+import { Select } from "./form-controls";
 import { StaffIconContext } from "./staff-icons";
 export type PublicProposal = ReturnType<typeof publicResult> & {
   preview_can_send?: boolean;
@@ -230,6 +232,7 @@ function NewClientFlow({
   const headers = { "x-proposal-password": password };
   const signed = !!p && ["signed_by_client", "completed"].includes(p.status);
   const [questionSection, setQuestionSection] = useState<string | null>(null);
+  const [questionCount, setQuestionCount] = useState(0);
   const canAsk =
     !!p &&
     !preview &&
@@ -540,13 +543,129 @@ function NewClientFlow({
           (v) => v.choice_group_id === i.choice_group_id && v.selected,
         ),
     );
+  const reading = !!p && review && !locked && !ended;
+  const palette = p?.resolved_styles?.layout?.quote_neutrals;
+  const progress = !!p && !locked && !ended && (
+    <FlowProgress
+      step={activeStep}
+      billing={recurring || requiresCheckout}
+      className={review ? "flow-review-progress" : "flow-top-progress"}
+    />
+  );
+  const questions = p && !preview && !ended && !locked && step !== "sign" && (
+    <ClientQuestions
+      proposal={p}
+      token={token}
+      password={password}
+      requested={questionSection}
+      close={() => setQuestionSection(null)}
+      inReadingRail={reading}
+      onCountChange={setQuestionCount}
+      onAsk={canAsk ? setQuestionSection : undefined}
+    />
+  );
   const go = (value: typeof step) => {
     setError("");
     setStep(value);
   };
+  const previewBar = preview && initial && (
+    <PreviewControls>
+      <div className="preview-identity">
+        <a
+          className="preview-back"
+          href={`/proposals/${token}`}
+          aria-label={
+            p?.preview_can_send ? "Back to editor" : "Back to proposal"
+          }
+        >
+          <ChevronLeft size={16} aria-hidden="true" />
+          <span className="preview-back-full">
+            {p?.preview_can_send ? "Back to editor" : "Back to proposal"}
+          </span>
+          <span className="preview-back-short" aria-hidden="true">
+            {p?.preview_can_send ? "Editor" : "Proposal"}
+          </span>
+        </a>
+        <div className="preview-caption">
+          <strong>
+            {publishedPreview
+              ? "Preview of published version"
+              : "Preview, not sent"}
+          </strong>
+          <span>
+            Previewing as {p?.recipient.name}. Choices and questions aren’t
+            recorded.
+          </span>
+        </div>
+      </div>
+      <div className="preview-toolbar">
+        <div
+          className="preview-steps segmented"
+          role="group"
+          aria-label="Preview step"
+        >
+          {previewSteps.map(([value, label]) => (
+            <Button
+              key={value}
+              aria-pressed={step === value}
+              onClick={() => go(value)}
+            >
+              {label}
+            </Button>
+          ))}
+        </div>
+        <Select
+          className="preview-step-select"
+          aria-label="Preview step"
+          value={step === "done" ? "billing" : step}
+          onChange={(event) => {
+            const selected = previewSteps.find(
+              ([value]) => value === event.target.value,
+            );
+            if (selected) go(selected[0]);
+          }}
+        >
+          {previewSteps.map(([value, label]) => (
+            <option value={value} key={value}>
+              {label}
+            </option>
+          ))}
+        </Select>
+        <div
+          className="preview-size segmented"
+          role="group"
+          aria-label="Preview width"
+        >
+          <Button
+            aria-label="Desktop width"
+            aria-pressed={!phone}
+            onClick={() => setPhone(false)}
+          >
+            Desktop
+          </Button>
+          <Button
+            aria-label="Phone width"
+            aria-pressed={phone}
+            onClick={() => setPhone(true)}
+          >
+            Phone
+          </Button>
+        </div>
+        {p?.preview_can_send && (
+          <a
+            className="btn action preview-send"
+            href={`/proposals/${token}?view=send`}
+          >
+            Send
+          </a>
+        )}
+      </div>
+    </PreviewControls>
+  );
   return (
-    <div
-      className={`client-flow ${phone ? "flow-phone-preview" : ""}`}
+    <FlowStage
+      className={`client-flow ${phone ? "flow-phone-preview" : ""} ${reading ? "flow-r25-reading" : ""}`}
+      previewBar={previewBar}
       style={
         {
           "--accent": brand.accent_colour ?? "#365C4A",
@@ -557,6 +676,13 @@ function NewClientFlow({
           "--on-accent": accentText(brand.accent_colour ?? "#365C4A"),
           "--client-font-heading": fontFamily(fonts?.heading),
           "--client-font-body": fontFamily(fonts?.body),
+          ...(palette && palette.group_fill !== harborQuoteNeutrals.group_fill
+            ? { "--client-choice-custom-fill": palette.group_fill }
+            : {}),
+          ...(palette &&
+          palette.group_border !== harborQuoteNeutrals.group_border
+            ? { "--client-choice-custom-line": palette.group_border }
+            : {}),
         } as React.CSSProperties
       }
     >
@@ -577,64 +703,6 @@ function NewClientFlow({
             documentStyleCss(p.resolved_styles, brand.accent_colour, p.content)}
         </style>
       )}
-      {preview && initial && (
-        <PreviewControls>
-          <div className="preview-identity">
-            <a href={`/proposals/${token}`}>
-              {p?.preview_can_send ? "Back to editor" : "Back to proposal"}
-            </a>
-            <strong>
-              {publishedPreview
-                ? "Preview of published version"
-                : "Preview, not sent"}
-            </strong>
-            <span>
-              Previewing as {p?.recipient.name}. Choices aren’t recorded.
-            </span>
-          </div>
-          <div className="preview-toolbar">
-            {(
-              [
-                ["read", "Reading view"],
-                ["sign", "Signing step"],
-                ["billing", "Billing step"],
-              ] as const
-            ).map(([s, label]) => (
-              <Button key={s} onClick={() => go(s)}>
-                {label}
-              </Button>
-            ))}
-            <div
-              className="preview-size segmented"
-              role="group"
-              aria-label="Preview width"
-            >
-              <Button
-                aria-label="Desktop width"
-                aria-pressed={!phone}
-                onClick={() => setPhone(false)}
-              >
-                Desktop
-              </Button>
-              <Button
-                aria-label="Phone width"
-                aria-pressed={phone}
-                onClick={() => setPhone(true)}
-              >
-                Phone
-              </Button>
-            </div>
-            {p?.preview_can_send && (
-              <a
-                className="btn action preview-send"
-                href={`/proposals/${token}?view=send`}
-              >
-                Send
-              </a>
-            )}
-          </div>
-        </PreviewControls>
-      )}
       <header className="client-header flow-header">
         <div className="flow-brand">
           <span className="flow-brand-mark" aria-hidden="true">
@@ -648,17 +716,22 @@ function NewClientFlow({
         </div>
         <div className="flow-header-end">
           {p && review && !locked && !ended && p.valid_until && (
-            <span>Valid until {readableDate(p.valid_until, p.timezone)}</span>
+            <span className="flow-valid-until">
+              Valid until {readableDate(p.valid_until, p.timezone)}
+            </span>
+          )}
+          {reading && (
+            <a className="flow-questions-link" href="#your-questions">
+              <span className="flow-questions-link-wide">
+                Your questions ({questionCount})
+              </span>
+              <span className="flow-questions-link-short">Questions</span>
+            </a>
           )}
         </div>
+        {reading && progress}
       </header>
-      {p && !locked && !ended && (
-        <FlowProgress
-          step={activeStep}
-          billing={recurring || requiresCheckout}
-          className={review ? "flow-review-progress" : "flow-top-progress"}
-        />
-      )}
+      {!reading && progress}
       <main
         className={`client-body flow-body ${review ? "flow-review" : ""}`}
         data-stale={stale || undefined}
@@ -1305,59 +1378,70 @@ function NewClientFlow({
                   onToggle={toggle}
                   onAsk={canAsk ? setQuestionSection : undefined}
                 />
-                <aside
-                  className="flow-choices"
-                  ref={bar}
-                  aria-label="Your choices"
-                >
-                  <div className="flow-desktop-choices">
-                    <FlowProgress
-                      step="read"
-                      billing={recurring || requiresCheckout}
-                    />
-                    <h2>Your choices</h2>
-                    <ChosenItems proposal={p} />
-                  </div>
-                  <FlowTotals proposal={p} />
-                  <div
-                    className={
-                      canAsk ? "flow-review-actions" : "flow-review-sign"
-                    }
+                <div className="flow-reading-rail">
+                  <aside
+                    className="flow-choices"
+                    ref={bar}
+                    aria-label="Your choices"
                   >
-                    {canAsk && (
-                      <Button onClick={() => setQuestionSection("")}>
-                        Ask a question
+                    <div className="flow-desktop-choices">
+                      <FlowProgress
+                        step="read"
+                        billing={recurring || requiresCheckout}
+                      />
+                      <h2>Your choices</h2>
+                      <ChosenItems proposal={p} />
+                    </div>
+                    <ReviewTotals proposal={p} />
+                    <div className="flow-review-actions">
+                      <Button
+                        variant="primary"
+                        disabled={busy || stale}
+                        note={busy ? "Saving your selection…" : undefined}
+                        onClick={() => go("sign")}
+                      >
+                        Review and sign
                       </Button>
-                    )}
-                    <Button
-                      variant="primary"
-                      disabled={busy || stale}
-                      note={busy ? "Saving your selection…" : undefined}
-                      onClick={() => go("sign")}
-                    >
-                      Review and sign
-                    </Button>
-                  </div>
-                  <p className="flow-desktop-choices flow-choice-contact">
-                    Questions?{" "}
-                    {contact.email ? (
-                      <a href={`mailto:${contact.email}`}>
-                        Email {contact.name || "the sender"}
-                      </a>
-                    ) : (
-                      "Ask the sender."
-                    )}
-                    {contact.phone && (
-                      <>
-                        {" "}
-                        or{" "}
-                        <a href={`tel:${contact.phone}`}>
-                          call {contact.phone}
+                      {canAsk && (
+                        <Button onClick={() => setQuestionSection("")}>
+                          Ask a question
+                        </Button>
+                      )}
+                    </div>
+                    <p className="flow-desktop-choices flow-choice-contact">
+                      Questions?{" "}
+                      {contact.email ? (
+                        <a href={`mailto:${contact.email}`}>
+                          Email {contact.name || "the sender"}
                         </a>
-                      </>
-                    )}
-                  </p>
-                </aside>
+                      ) : (
+                        "Ask the sender."
+                      )}
+                      {contact.phone && (
+                        <>
+                          {" "}
+                          or{" "}
+                          <a href={`tel:${contact.phone}`}>
+                            call {contact.phone}
+                          </a>
+                        </>
+                      )}
+                    </p>
+                  </aside>
+                  {questions}
+                  {preview && (
+                    <section
+                      className="card questions-panel"
+                      id="your-questions"
+                      aria-label="Your questions"
+                    >
+                      <h2>Your questions</h2>
+                      <p className="muted">
+                        No questions are recorded in preview.
+                      </p>
+                    </section>
+                  )}
+                </div>
                 <div className="flow-document-footer">
                   {declining ? (
                     <section className="card stack">
@@ -1418,15 +1502,7 @@ function NewClientFlow({
             )}
           </>
         )}
-        {p && !preview && !ended && !locked && step !== "sign" && (
-          <ClientQuestions
-            proposal={p}
-            token={token}
-            password={password}
-            requested={questionSection}
-            close={() => setQuestionSection(null)}
-          />
-        )}
+        {!reading && questions}
         {!ended && !locked && (
           <Contact
             name={contact.name}
@@ -1442,9 +1518,51 @@ function NewClientFlow({
           <PoweredByYeswell />
         )}
       </main>
+    </FlowStage>
+  );
+}
+function FlowStage({
+  previewBar,
+  children,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement> & { previewBar: React.ReactNode }) {
+  return (
+    <div {...props}>
+      {previewBar}
+      <div className="flow-stage">{children}</div>
     </div>
   );
 }
+function ReviewTotals({ proposal: p }: { proposal: PublicProposal }) {
+  const yearly = p.quote.some((item) =>
+    item.sublines.some((line) => line.interval === "year"),
+  );
+  const entries = [
+    { label: "One-time", amount: p.totals.one_time_total, suffix: "" },
+    { label: "Monthly", amount: p.totals.monthly_total, suffix: "/mo" },
+    ...(yearly
+      ? [{ label: "Yearly", amount: p.totals.yearly_total, suffix: "/yr" }]
+      : []),
+  ];
+  return (
+    <div
+      className="totals flow-totals review-totals"
+      role="group"
+      aria-label="Proposal totals"
+    >
+      {entries.map(({ label, amount, suffix }) => (
+        <div key={label}>
+          <span>{label}</span>
+          <strong>
+            {formatMoney(amount, p.currency, p.money_cents)}
+            {suffix}
+          </strong>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function FlowTotals({ proposal: p }: { proposal: PublicProposal }) {
   return (
     <DocumentTotals
@@ -1852,7 +1970,7 @@ function FlowingDocument({
       )}
       <p className="muted document-end">
         {p.valid_until && (
-          <>Valid until {readableDate(p.valid_until, p.timezone)} · </>
+          <>Valid until {readableDate(p.valid_until, p.timezone)} | </>
         )}
         From {p.company.name}
       </p>
@@ -1886,13 +2004,14 @@ function ClientItems({
     return i.optional ? (
       <label
         className={`flow-quote-line ${active ? "selected" : ""}`}
+        data-client-optional={!i.choice_group_id || undefined}
         key={i.id}
       >
         <span className="quote-control-slot">
           <input
             type={i.choice_group_id ? "radio" : "checkbox"}
             name={i.choice_group_id ?? i.id}
-            aria-label={`${i.name} · ${active ? "included" : "not included"}`}
+            aria-label={`${i.name} | ${active ? "included" : "not included"}`}
             aria-description={
               i.choice_group_id && !choiceRequired(i)
                 ? "Activate the selected option again to clear it."
@@ -1933,6 +2052,7 @@ function ClientItems({
         cents={p.money_cents}
         disabled={busy || frozen}
         onToggle={onToggle}
+        clientReading
       />
     );
   return (
@@ -1960,6 +2080,12 @@ function ClientItems({
     </>
   );
 }
+
+const previewSteps = [
+  ["read", "Reading"],
+  ["sign", "Signing"],
+  ["billing", "Billing"],
+] as const;
 
 /** Staff preview chrome never overlays the public reading surface. */
 function PreviewControls({ children }: { children: React.ReactNode }) {

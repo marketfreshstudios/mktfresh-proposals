@@ -280,13 +280,13 @@ test("Table rows split only at items, repeat headers, and retain accessible choi
   await host.waitFor();
   await expect(
     host.getByRole("checkbox", {
-      name: `${items[29].name} · not included`,
+      name: `${items[29].name} | not included`,
       exact: true,
     }),
   ).toBeVisible();
   await host
     .getByRole("checkbox", {
-      name: `${items[29].name} · not included`,
+      name: `${items[29].name} | not included`,
       exact: true,
     })
     .check();
@@ -301,7 +301,7 @@ test("Table rows split only at items, repeat headers, and retain accessible choi
   const { default: AxeBuilder } = await import("@axe-core/playwright");
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   const second = host.getByRole("radio", {
-    name: "Service option 2 · not included",
+    name: "Service option 2 | not included",
     exact: true,
   });
   await expect(second).toBeEnabled();
@@ -312,7 +312,7 @@ test("Table rows split only at items, repeat headers, and retain accessible choi
     .toBe(true);
   await expect(
     host.getByRole("radio", {
-      name: "Service option 1 · not included",
+      name: "Service option 1 | not included",
       exact: true,
     }),
   ).not.toBeChecked();
@@ -410,12 +410,12 @@ test("Table rows split only at items, repeat headers, and retain accessible choi
   }
   await expect(
     page.getByRole("checkbox", {
-      name: `${items[29].name} · included`,
+      name: `${items[29].name} | included`,
       exact: true,
     }),
   ).toBeChecked();
   const phoneRadio = mobile.getByRole("radio", {
-    name: "Service option 1 · not included",
+    name: "Service option 1 | not included",
     exact: true,
   });
   await expect(phoneRadio).toBeEnabled();
@@ -425,7 +425,7 @@ test("Table rows split only at items, repeat headers, and retain accessible choi
     .toBe(true);
   expect(current.quote.find((i) => i.id === items[1].id)!.selected).toBe(false);
   const phoneCheckbox = mobile.getByRole("checkbox", {
-    name: `${items[29].name} · included`,
+    name: `${items[29].name} | included`,
     exact: true,
   });
   await expect(phoneCheckbox).toBeEnabled();

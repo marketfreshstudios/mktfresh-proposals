@@ -165,6 +165,7 @@ const buttonShapeExclusions = [
   ".color-picker-trigger",
   ".client-choice-target",
   ".preview-size.segmented button",
+  ".preview-steps.segmented button",
 ].join(",");
 async function audit(page: Page) {
   const controls = await page
@@ -347,10 +348,26 @@ for (const width of [1440, 375])
     await page.goto(`/p/${f.draft.id}?preview=1`);
     await expect(page.locator(".client-flow")).toBeVisible();
     const previewWidth = page.getByRole("group", { name: "Preview width" });
-    for (const label of ["Desktop width", "Phone width"])
+    if (width === 1440) {
+      for (const label of ["Desktop width", "Phone width"])
+        await expect(
+          previewWidth.getByRole("button", { name: label, exact: true }),
+        ).toHaveCSS("border-radius", "10px");
+      const steps = page.getByRole("group", { name: "Preview step" });
       await expect(
-        previewWidth.getByRole("button", { name: label, exact: true }),
-      ).toHaveCSS("border-radius", "10px");
+        steps.getByRole("button", { name: "Reading" }),
+      ).toHaveAttribute("aria-pressed", "true");
+      await expect(steps.getByRole("button", { name: "Reading" })).toHaveCSS(
+        "border-radius",
+        "10px",
+      );
+    } else {
+      await expect(previewWidth).toBeHidden();
+      const step = page.getByRole("combobox", { name: "Preview step" });
+      await expect(step).toHaveClass(/shared-select/);
+      await expect(step).toHaveValue("read");
+      await expect(step).toHaveCSS("height", "44px");
+    }
     await audit(page);
     await page
       .getByRole("button", { name: "Review and sign", exact: true })
