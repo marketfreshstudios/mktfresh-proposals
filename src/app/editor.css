@@ -5148,7 +5148,7 @@
   }
   .quote-workspace[data-shell-mode="phone"]
     :is(
-      button:not(.drag-handle),
+      button:not(.drag-handle, .image-resize-handle),
       a,
       input,
       select,
