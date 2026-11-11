@@ -201,9 +201,9 @@ test("Quote alignment retains optional, sub-line and recurring Details controls"
     body.getByRole("combobox", { name: "Custom family", exact: true }),
   ).toHaveCount(0);
   await panel
-    .getByText("Add from catalog or a custom line", { exact: true })
+    .getByText("Add from catalog or a custom item", { exact: true })
     .click();
-  await panel.getByRole("button", { name: "Custom line", exact: true }).click();
+  await panel.getByRole("button", { name: "Custom item", exact: true }).click();
   const custom = panel.locator(".quote-row-body");
   await expect(
     custom.getByRole("combobox", { name: "Custom family", exact: true }),

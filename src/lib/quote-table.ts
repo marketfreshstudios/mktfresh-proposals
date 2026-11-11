@@ -1,4 +1,4 @@
-import { choiceRequired } from "./quote-options";
+import { printedChoiceGroupLabel } from "./quote-options";
 import type { Quote, QuoteItem } from "./model";
 import { orderedItems, selected, visibleQuote } from "./quote-model";
 import { formatMoney, intervalSuffix } from "./money";
@@ -85,7 +85,7 @@ export function quoteTableHtml(
   )
     .map(
       (g) =>
-        `<tbody role="rowgroup"${g.choice ? ` data-quote-choice-group="${escape(g.id)}"` : ""}>${g.rows.map((r, n) => `<tr role="row" class="print-pricing-card quote-table-row" data-print-unit="${escape(r.item.id)}"><th role="rowheader" scope="row">${g.choice && n === 0 ? `<span class="quote-table-choice">${choiceRequired(r.item) ? "Choose one" : "Choose up to one"}</span>` : ""}<span class="quote-table-item"><span class="quote-control-slot">${quoteTableControl(r.item)}</span><strong>${escape(r.item.name)}</strong></span>${!description ? `<div class="quote-table-details">${details(r)}</div>` : ""}</th>${description ? `<td role="cell" class="quote-table-description">${details(r)}</td>` : ""}${(["qty", "price", "total"] as const).map((k) => `<td role="cell" class="quote-table-numeric">${r.entries.map((e) => `<div class="quote-table-entry"><span class="quote-table-mobile-label" aria-hidden="true">${columns.find((c) => c.key === k)!.label} </span>${escape(e[k])}</div>`).join("")}</td>`).join("")}</tr>`).join("")}</tbody>`,
+        `<tbody role="rowgroup"${g.choice ? ` data-quote-choice-group="${escape(g.id)}"` : ""}>${g.rows.map((r, n) => `<tr role="row" class="print-pricing-card quote-table-row" data-print-unit="${escape(r.item.id)}"><th role="rowheader" scope="row">${g.choice && n === 0 ? `<span class="quote-table-choice"${r.item.choice_group_label ? ' style="overflow-wrap:anywhere"' : ""}>${escape(printedChoiceGroupLabel(r.item))}</span>` : ""}<span class="quote-table-item"><span class="quote-control-slot">${quoteTableControl(r.item)}</span><strong>${escape(r.item.name)}</strong></span>${!description ? `<div class="quote-table-details">${details(r)}</div>` : ""}</th>${description ? `<td role="cell" class="quote-table-description">${details(r)}</td>` : ""}${(["qty", "price", "total"] as const).map((k) => `<td role="cell" class="quote-table-numeric">${r.entries.map((e) => `<div class="quote-table-entry"><span class="quote-table-mobile-label" aria-hidden="true">${columns.find((c) => c.key === k)!.label} </span>${escape(e[k])}</div>`).join("")}</td>`).join("")}</tr>`).join("")}</tbody>`,
     )
     .join("")}</table>`;
 }

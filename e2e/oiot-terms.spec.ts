@@ -460,7 +460,7 @@ test("catalog kickoff stays editable after Enter and Tab without clause 4.4", as
   ).toBeVisible();
   await openEditorPanel(page, "Quote");
   await page
-    .getByText("Add from catalog or a custom line", { exact: true })
+    .getByText("Add from catalog or a custom item", { exact: true })
     .click();
   await page
     .getByRole("combobox", { name: "Add product" })

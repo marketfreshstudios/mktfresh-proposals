@@ -17,6 +17,7 @@ import {
   validateQuoteConditions,
   choiceRequired,
   choiceGroups,
+  choiceGroupLabel,
 } from "./quote-options";
 import { qboItemMapping } from "./qbo-mapping";
 import { pendingSections } from "./ai-review";
@@ -71,6 +72,10 @@ export function readiness(
     errors.push(e instanceof Error ? e.message : "Invalid quote items");
   }
   for (const group of choiceGroups(p.quote).values()) {
+    if (group.filter((item) => !item.choice_group_placeholder).length < 2) {
+      errors.push(`Add at least two options to ${choiceGroupLabel(group[0])}`);
+      continue;
+    }
     if (
       group.some((item) => item.choice_group_required === true) &&
       !group.some((item) => item.default_selected)

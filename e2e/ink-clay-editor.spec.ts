@@ -101,7 +101,7 @@ test("Ink and clay quote summary preserves the quote, toggles, keyboard focus, r
   await expect(
     rows.locator('.quote-row-toggle[aria-expanded="true"]'),
   ).toHaveCount(0);
-  await expect(rows.first().locator(".quote-row-amount")).toContainText(
+  await expect(rows.first().locator(".quote-row-amount")).not.toContainText(
     "one-time",
   );
   await expect(rows.nth(1).locator(".quote-row-amount")).toContainText(

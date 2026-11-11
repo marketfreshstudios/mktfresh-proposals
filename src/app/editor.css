@@ -9959,24 +9959,66 @@ dialog.foundation-sheet.block-style-sheet {
   }
 }
 
-/* Drop a standalone quote line on a Choose one group to add it. */
-.quote-join-target {
+.quote-drag-units,
+.quote-group-options {
   position: relative;
-  border-radius: 12px;
+  display: grid;
+  gap: 8px;
 }
-.quote-join-target[data-join-over] {
-  outline: 2px solid var(--ink-title, #13303a);
-  outline-offset: 4px;
-  background: var(--segment, #e8edef);
-}
-.quote-join-hint {
+.quote-panel .quote-drag-row[data-quote-drag-source] {
   position: absolute;
-  inset-block-start: -14px;
-  inset-inline-end: 8px;
-  padding: 2px 8px;
-  border-radius: 6px;
-  background: var(--ink-title, #13303a);
-  color: #fff;
-  font: 600 12px/18px var(--font-ui);
+  inset-inline: 0;
+  opacity: 0;
   pointer-events: none;
+}
+.quote-panel .quote-drag-row > .drag-handle {
+  touch-action: none;
+}
+.quote-drag-gap {
+  display: grid;
+  place-items: center;
+  border: 1px dashed var(--border-strong);
+  background: var(--surface-preview);
+  border-radius: var(--radius-md);
+  color: var(--ink-title);
+}
+.quote-drag-overlay {
+  position: fixed;
+  inset: 0 auto auto 0;
+  z-index: 1400;
+  pointer-events: none;
+  inline-size: max-content;
+  max-inline-size: min(260px, 90vw);
+  overflow-wrap: anywhere;
+  color: var(--ink-title);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  font: 600 14px var(--font-ui);
+}
+.quote-panel .quote-group-name {
+  width: 100%;
+  min-width: 0;
+  padding-block: 4px;
+  font: inherit;
+}
+.quote-panel .quote-empty-group {
+  margin-block: 8px;
+}
+.quote-panel .quote-choice-well .quote-add-picker {
+  margin-top: 8px;
+}
+.quote-panel .quote-add-row:has(.quote-create-group) {
+  flex-wrap: wrap;
+}
+.quote-panel .quote-add-row > .button-wrap:has(> .quote-create-group) {
+  flex-basis: 100%;
+}
+.quote-panel .quote-create-group {
+  width: 100%;
+}
+.quote-condition-note {
+  color: var(--ink-muted);
+  font: 400 12px/1.35 var(--font-ui);
 }

@@ -17,7 +17,6 @@ import {
   DndContext,
   DragOverlay,
   useDndContext,
-  useDroppable,
   KeyboardSensor,
   PointerSensor,
   useSensor,
@@ -241,22 +240,10 @@ export function Reorder({
   pages = false,
   sectionDragLabel,
   documentDrop,
-  join,
-  leave,
 }: {
   ids: string[];
   onMove: (from: string, to: string, edge?: "before" | "after") => void;
   children: ReactNode;
-  /** Dropping an item on a JoinTarget calls onJoin instead of reordering. */
-  join?: {
-    canJoin: (from: string) => boolean;
-    onJoin: (from: string, target: string) => void;
-  };
-  /** Dropping an item outside `container` calls onLeave instead of reordering. */
-  leave?: {
-    container: RefObject<HTMLElement | null>;
-    onLeave: (from: string) => void;
-  };
   pages?: boolean;
   sectionDragLabel?: (id: string) => string;
   documentDrop?: {
@@ -341,31 +328,6 @@ export function Reorder({
     }),
   );
   const collision: CollisionDetection = (args) => {
-    if (join) {
-      const targets = args.droppableContainers.filter(({ id }) =>
-        String(id).startsWith("join:"),
-      );
-      const point = args.pointerCoordinates;
-      if (point && join.canJoin(String(args.active.id))) {
-        const hit = targets.find(({ id }) => {
-          const rect = args.droppableRects.get(id);
-          return (
-            rect &&
-            point.x >= rect.left &&
-            point.x <= rect.right &&
-            point.y >= rect.top &&
-            point.y <= rect.bottom
-          );
-        });
-        if (hit) return [{ id: hit.id }];
-      }
-      args = {
-        ...args,
-        droppableContainers: args.droppableContainers.filter(
-          ({ id }) => !String(id).startsWith("join:"),
-        ),
-      };
-    }
     if (!pages) return closestCenter(args);
     if (String(args.active.id).startsWith("page:")) {
       return closestCenter({
@@ -493,27 +455,6 @@ export function Reorder({
             );
           return;
         }
-        if (join && over && String(over.id).startsWith("join:")) {
-          join.onJoin(String(active.id), String(over.id).slice(5));
-          return;
-        }
-        if (leave?.container.current) {
-          const start = activatorEvent as PointerEvent;
-          if (typeof start.clientY === "number") {
-            const x = start.clientX + delta.x,
-              y = start.clientY + delta.y,
-              box = leave.container.current.getBoundingClientRect();
-            if (
-              x < box.left - 4 ||
-              x > box.right + 4 ||
-              y < box.top - 4 ||
-              y > box.bottom + 4
-            ) {
-              leave.onLeave(String(active.id));
-              return;
-            }
-          }
-        }
         if (over && active.id !== over.id) {
           if (
             String(active.id).startsWith("column:") ||
@@ -551,35 +492,5 @@ export function Reorder({
       {sectionDragLabel && <SectionDragOverlay label={sectionDragLabel} />}
       {indicator.line}
     </DndContext>
-  );
-}
-
-/** A drop zone inside a Reorder with `join`. Shows a highlight while a
- * joinable item is held over it. */
-export function JoinTarget({
-  id,
-  label,
-  disabled = false,
-  children,
-}: {
-  id: string;
-  label: string;
-  disabled?: boolean;
-  children: ReactNode;
-}) {
-  const { isOver, setNodeRef } = useDroppable({ id: `join:${id}`, disabled });
-  return (
-    <div
-      ref={setNodeRef}
-      className="quote-join-target"
-      data-join-over={isOver || undefined}
-    >
-      {children}
-      {isOver && (
-        <span className="quote-join-hint" role="status">
-          {label}
-        </span>
-      )}
-    </div>
   );
 }

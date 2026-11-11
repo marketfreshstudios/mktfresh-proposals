@@ -923,6 +923,11 @@ label.flow-quote-line {
     padding-inline: 0;
     border-inline: 0;
   }
+  /* The group frame is painted edge to edge on phone; inset the name to
+     line up with the option content. */
+  .client-flow.client-flow.client-flow .flow-choice-group > h3 {
+    padding-inline: 14px;
+  }
   .client-flow.client-flow.client-flow .flow-quote-line .quote-item-body {
     display: contents;
   }

@@ -16,7 +16,11 @@ import {
   oiotPlan,
   revealedOiotClause,
 } from "../lib/oiot";
-import { applyQuoteVisibility } from "../lib/quote-options";
+import {
+  applyQuoteVisibility,
+  conditionalGroupNotes,
+  printedChoiceGroupLabel,
+} from "../lib/quote-options";
 import { useTermsJump } from "./use-terms-jump";
 import { QuoteItemsPanel } from "./quote-items-panel";
 import { CopyContactButton } from "./contact-value";
@@ -947,7 +951,7 @@ function QuoteEditorContent({
       jumpToTerms(term);
     }
   }
-  function addItem(item?: Item) {
+  function addItem(item?: Item, insert?: (value: QuoteItem) => QuoteItem[]) {
     const id = uid(),
       value = item
         ? catalogQuoteItem(
@@ -982,7 +986,7 @@ function QuoteEditorContent({
             schedule: null,
             plan_terms: null,
           };
-    setItems([...items, value]);
+    setItems(insert ? insert(value) : [...items, value]);
     setExpandedItem(id);
   }
   function move(operation: (content: Block[]) => Block[]) {
@@ -1070,6 +1074,14 @@ function QuoteEditorContent({
     </div>
   );
   const shown = visibleQuote(items);
+  const groupNotes = conditionalGroupNotes(items);
+  function reorderDocumentQuote(nextVisible: QuoteItem[]) {
+    const ids = new Set(nextVisible.map((item) => item.id));
+    let index = 0;
+    setItems(
+      items.map((item) => (ids.has(item.id) ? nextVisible[index++] : item)),
+    );
+  }
   const units = Array.from(
       new Set(shown.map((i) => i.choice_group_id ?? i.id)),
     ),
@@ -2153,6 +2165,26 @@ function QuoteEditorContent({
             <div className="editor-investment">
               <h2>Your investment</h2>
               <p>Optional items are your choice. Totals update as you go.</p>
+              {groupNotes
+                .filter(
+                  (note) =>
+                    quoteLayout(
+                      resolveStyles(
+                        p.workspace_settings,
+                        p.template_style_overrides,
+                        p.style_overrides,
+                      ),
+                    ) === "table" || !units.includes(note.id),
+                )
+                .map((note) => (
+                  <p
+                    key={note.id}
+                    className="quote-condition-note"
+                    data-editor-chrome
+                  >
+                    {note.label} | {note.text}
+                  </p>
+                ))}
               <div className="flow-quote document-quote">
                 {quoteLayout(
                   resolveStyles(
@@ -2184,7 +2216,7 @@ function QuoteEditorContent({
                   <Reorder
                     ids={units}
                     onMove={(from, to) =>
-                      setItems(
+                      reorderDocumentQuote(
                         arrayMove(
                           units,
                           units.indexOf(from),
@@ -2201,15 +2233,37 @@ function QuoteEditorContent({
                           unitItems(id)[0].choice_group_id ? "group" : "card"
                         }
                         printUnit={unitItems(id)[0].id}
-                        label={`document ${unitItems(id)[0].choice_group_id ? "choice group" : unitItems(id)[0].name}`}
+                        label={`document ${unitItems(id)[0].choice_group_id ? (unitItems(id)[0].choice_group_label ?? "choice group") : unitItems(id)[0].name}`}
                       >
                         {unitItems(id)[0].choice_group_id ? (
                           <div
                             className="flow-choice-group"
                             role="radiogroup"
-                            aria-label="Choose one"
+                            aria-label={printedChoiceGroupLabel(
+                              unitItems(id)[0],
+                            )}
                           >
-                            <h3>Choose one</h3>
+                            <h3
+                              style={
+                                unitItems(id)[0].choice_group_label
+                                  ? { overflowWrap: "anywhere" }
+                                  : undefined
+                              }
+                            >
+                              {printedChoiceGroupLabel(unitItems(id)[0])}
+                            </h3>
+                            {groupNotes.find((note) => note.id === id)
+                              ?.text && (
+                              <p
+                                className="quote-condition-note"
+                                data-editor-chrome
+                              >
+                                {
+                                  groupNotes.find((note) => note.id === id)!
+                                    .text
+                                }
+                              </p>
+                            )}
                             <Reorder
                               ids={unitItems(id).map((i) => i.id)}
                               onMove={(from, to) => {
@@ -2219,7 +2273,7 @@ function QuoteEditorContent({
                                     group.findIndex((i) => i.id === from),
                                     group.findIndex((i) => i.id === to),
                                   );
-                                setItems(
+                                reorderDocumentQuote(
                                   units.flatMap((u) =>
                                     u === id ? next : unitItems(u),
                                   ),
