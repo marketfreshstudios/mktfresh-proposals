@@ -3,15 +3,22 @@ import { aiTool, toolDefinitions } from "../src/lib/ai-tools";
 import { engagementReport } from "../src/lib/engagement-server";
 import { logSentEmail, saveEmailTemplate } from "../src/lib/email-templates";
 import { MockMailer } from "../src/lib/jobs";
-import { AskQuestionSchema } from "../src/lib/proposal-questions";
+import {
+  AskQuestionSchema,
+  EditClientQuestionSchema,
+} from "../src/lib/proposal-questions";
 import {
   askQuestion,
   changeQuestion,
   clientQuestions,
   deliverQuestionMail,
+  editClientQuestion,
   staffQuestions,
 } from "../src/lib/question-service";
 import type { EmailLog } from "../src/lib/email-templates";
+import { blockText } from "../src/lib/editor-document";
+import { questionExcerpt } from "../src/lib/question-targets";
+import { resolve } from "../src/lib/presentation";
 import { clientActor, setup, signature, staff } from "./helpers";
 
 const ask = (text = "Can you clarify the first milestone?") =>
@@ -243,4 +250,72 @@ it("preserves existing link closure on decline, expiry, and archive while staff 
     ),
   ).toMatchObject({ status: "resolved" });
   expect(await repo.get(p.id)).toEqual(closed);
+});
+
+it("stores published block context and edits or deletes only unanswered open-link questions", async () => {
+  const { repo, service, draft, members } = await setup();
+  const p = await service.send(draft.id, staff, false, undefined, {
+    delivery_method: "manual",
+  });
+  const version = p.versions.at(-1)!;
+  const i = version.content.findIndex(
+    (b) => b.type === "heading" && !!blockText(b),
+  );
+  const block = version.content[i];
+  const input = AskQuestionSchema.parse({
+    ...ask(),
+    block_id: block.id ?? String(i),
+    excerpt: "Invented context",
+  });
+  const options = { members: async () => members };
+  const q = await askQuestion(repo, p, input, options);
+  expect(q).toMatchObject({
+    block_id: input.block_id,
+    excerpt: questionExcerpt(
+      resolve(blockText(block), version.variables_resolved),
+    ),
+  });
+  expect(q.excerpt).not.toBe("Invented context");
+  await expect(
+    askQuestion(repo, p, { ...ask(), block_id: "unknown" }, options),
+  ).rejects.toMatchObject({ status: 409 });
+  const text = EditClientQuestionSchema.parse({
+    text: "Updated\u0000 question",
+  }).text;
+  expect(await editClientQuestion(repo, p, q.id, text)).toMatchObject({
+    question: "Updated question",
+    excerpt: q.excerpt,
+  });
+  await changeQuestion(
+    repo,
+    p,
+    q.id,
+    { action: "reply", id: crypto.randomUUID(), text: "Reply" },
+    staff,
+  );
+  await expect(editClientQuestion(repo, p, q.id, null)).rejects.toMatchObject({
+    status: 409,
+  });
+  await expect(editClientQuestion(repo, p, q.id, text)).rejects.toMatchObject({
+    status: 409,
+  });
+  const disposable = await askQuestion(repo, p, ask(), options);
+  expect(await editClientQuestion(repo, p, disposable.id, null)).toEqual({
+    deleted: true,
+  });
+  expect((await clientQuestions(repo, p)).threads.map((t) => t.id)).toEqual([
+    q.id,
+  ]);
+  expect(await repo.get(p.id)).toEqual(p);
+  expect(await engagementReport(repo, p)).toMatchObject({ questions: 2 });
+  const signed = await service.sign(
+    p.id,
+    signature(p.revision),
+    "client",
+    clientActor,
+    { token: p.token!, password: "" },
+  );
+  await expect(
+    editClientQuestion(repo, signed, q.id, text),
+  ).rejects.toMatchObject({ status: 410 });
 });

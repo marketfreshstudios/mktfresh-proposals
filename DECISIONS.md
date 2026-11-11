@@ -1338,3 +1338,24 @@ the full width.
 The question controls belong to the follow-up. They will sit outside measured
 Letter content so they cannot reflow it. Clients can edit or delete only an
 unanswered question while the proposal is still open for questions.
+
+### R25 questions by page and block
+
+Page and block question controls sit outside the measured Letter content. A
+phone can reserve space for the control and marker in its flowing document;
+neither appears in the print projection. Preview uses an empty demo history
+and opens the same composer with its submit button disabled.
+
+Block references and their plain-text excerpts come from the currently
+published document or visible quote row. The API verifies the reference and
+saves the excerpt as it appeared when the question was sent. Staff see that
+excerpt on the proposal record even if later edits move or remove the block.
+
+Clients can edit or delete only before the first reply and while the existing
+public link accepts questions. The database locks the proposal and thread
+before checking those conditions. Delete removes the question, contact and
+excerpt from the thread, leaving a minimal receipt for the hourly limit. The
+existing question engagement event and email history remain. Apply
+`20261111051052_r25_client_question_edits.sql` before deploying the question
+follow-up. The function uses the existing service role access; there are no
+new table grants or changes to proposals.

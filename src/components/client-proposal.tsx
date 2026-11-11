@@ -7,7 +7,15 @@ import {
   revealedOiotClause,
 } from "../lib/oiot";
 import { useTermsJump } from "./use-terms-jump";
-import { ClientQuestions } from "./proposal-questions";
+import { ClientQuestions, generalQuestion } from "./proposal-questions";
+import {
+  ClientQuestionButton,
+  ClientQuestionSurface,
+  isPhoneReading,
+  type QuestionRequest,
+} from "./client-question-controls";
+import { questionTargets } from "../lib/question-targets";
+import type { PublicQuestion } from "../lib/proposal-questions";
 import { useClientEngagement } from "./use-client-engagement";
 import { accessibleAccent } from "../lib/brand";
 import { ChevronLeft, CircleAlert, LockKeyhole } from "lucide-react";
@@ -49,7 +57,7 @@ import {
   selectedContent,
 } from "../lib/quote-model";
 import type { QuoteItem } from "../lib/model";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { accentText } from "../lib/branding";
 import { formatMoney, intervalSuffix } from "../lib/money";
 import { money, totals, renderBlocks, resolve } from "../lib/presentation";
@@ -231,14 +239,21 @@ function NewClientFlow({
   const jumpToTerms = useTermsJump("client");
   const headers = { "x-proposal-password": password };
   const signed = !!p && ["signed_by_client", "completed"].includes(p.status);
-  const [questionSection, setQuestionSection] = useState<string | null>(null);
-  const [questionCount, setQuestionCount] = useState(0);
+  const [questionRequest, setQuestionRequest] =
+    useState<QuestionRequest | null>(null);
+  const [questionHistoryOpen, setQuestionHistoryOpen] = useState(false);
+  const [questionThreads, setQuestionThreads] = useState<PublicQuestion[]>([]);
+  const targets = useMemo(
+    () =>
+      questionTargets(
+        p?.content ?? [],
+        (p?.quote ?? []) as QuoteItem[],
+        p?.variables ?? {},
+      ),
+    [p?.content, p?.quote, p?.variables],
+  );
   const canAsk =
-    !!p &&
-    !preview &&
-    ["sent", "viewed"].includes(p.status) &&
-    !signed &&
-    !stale;
+    !!p && ["sent", "viewed"].includes(p.status) && !signed && !stale;
   const recurring =
     !!p &&
     quoteSublines(p.quote as QuoteItem[]).some(
@@ -552,20 +567,35 @@ function NewClientFlow({
       className={review ? "flow-review-progress" : "flow-top-progress"}
     />
   );
-  const questions = p && !preview && !ended && !locked && step !== "sign" && (
+  const ask = canAsk ? setQuestionRequest : undefined;
+  const closeQuestion = () => {
+    const restore = questionRequest?.trigger;
+    const anchor = questionRequest?.anchor;
+    setQuestionRequest(null);
+    requestAnimationFrame(() =>
+      (restore?.isConnected ? restore : anchor)?.focus({ preventScroll: true }),
+    );
+  };
+  const questions = p && !ended && !locked && step !== "sign" && (
     <ClientQuestions
       proposal={p}
       token={token}
       password={password}
-      requested={questionSection}
-      close={() => setQuestionSection(null)}
+      requested={questionRequest}
+      close={closeQuestion}
       inReadingRail={reading}
-      onCountChange={setQuestionCount}
-      onAsk={canAsk ? setQuestionSection : undefined}
+      preview={preview}
+      historyOpen={questionHistoryOpen}
+      setHistoryOpen={setQuestionHistoryOpen}
+      onThreadsChange={setQuestionThreads}
+      onAsk={ask}
+      targets={targets}
     />
   );
   const go = (value: typeof step) => {
     setError("");
+    setQuestionRequest(null);
+    setQuestionHistoryOpen(false);
     setStep(value);
   };
   const previewBar = preview && initial && (
@@ -721,15 +751,30 @@ function NewClientFlow({
             </span>
           )}
           {reading && (
-            <a className="flow-questions-link" href="#your-questions">
+            <a
+              className="flow-questions-link"
+              href="#your-questions"
+              onClick={(event) => {
+                if (!isPhoneReading()) return;
+                event.preventDefault();
+                setQuestionHistoryOpen(true);
+              }}
+            >
               <span className="flow-questions-link-wide">
-                Your questions ({questionCount})
+                Your questions ({questionThreads.length})
               </span>
               <span className="flow-questions-link-short">Questions</span>
             </a>
           )}
         </div>
         {reading && progress}
+        {reading && ask && (
+          <ClientQuestionButton
+            label="Ask a question"
+            className="client-ask-header"
+            onClick={(trigger) => ask({ target: generalQuestion, trigger })}
+          />
+        )}
       </header>
       {!reading && progress}
       <main
@@ -1349,35 +1394,40 @@ function NewClientFlow({
               </section>
             ) : (
               <>
-                <FlowDocument
-                  logoIcon={
-                    p.company.logo_icon
-                      ? preview
-                        ? `/api/workspace-icon?size=128&v=${p.company.logo_icon}`
-                        : `/api/public/${token}/brand/icon?size=128&v=${p.company.logo_icon}`
-                      : undefined
-                  }
-                  forceFlowing={phone}
-                  workspaceLogo={
-                    p.company.logo
-                      ? preview
-                        ? `/api/proposals/${token}/preview-logo`
-                        : `/api/public/${token}/brand/logo`
-                      : undefined
-                  }
-                  logo={
-                    p.cover && p.company.logo
-                      ? preview
-                        ? `/api/proposals/${token}/preview-logo`
-                        : `/api/public/${token}/logo`
-                      : undefined
-                  }
-                  proposal={p}
-                  frozen={stale}
-                  busy={busy}
-                  onToggle={toggle}
-                  onAsk={canAsk ? setQuestionSection : undefined}
-                />
+                <ClientQuestionSurface
+                  targets={targets.blocks}
+                  threads={questionThreads}
+                  onAsk={ask}
+                >
+                  <FlowDocument
+                    logoIcon={
+                      p.company.logo_icon
+                        ? preview
+                          ? `/api/workspace-icon?size=128&v=${p.company.logo_icon}`
+                          : `/api/public/${token}/brand/icon?size=128&v=${p.company.logo_icon}`
+                        : undefined
+                    }
+                    forceFlowing={phone}
+                    workspaceLogo={
+                      p.company.logo
+                        ? preview
+                          ? `/api/proposals/${token}/preview-logo`
+                          : `/api/public/${token}/brand/logo`
+                        : undefined
+                    }
+                    logo={
+                      p.cover && p.company.logo
+                        ? preview
+                          ? `/api/proposals/${token}/preview-logo`
+                          : `/api/public/${token}/logo`
+                        : undefined
+                    }
+                    proposal={p}
+                    frozen={stale}
+                    busy={busy}
+                    onToggle={toggle}
+                  />
+                </ClientQuestionSurface>
                 <div className="flow-reading-rail">
                   <aside
                     className="flow-choices"
@@ -1402,8 +1452,17 @@ function NewClientFlow({
                       >
                         Review and sign
                       </Button>
-                      {canAsk && (
-                        <Button onClick={() => setQuestionSection("")}>
+                      {ask && (
+                        <Button
+                          aria-haspopup="dialog"
+                          onClick={(event) =>
+                            ask({
+                              target: generalQuestion,
+                              trigger: event.currentTarget,
+                              anchor: event.currentTarget,
+                            })
+                          }
+                        >
                           Ask a question
                         </Button>
                       )}
@@ -1429,18 +1488,6 @@ function NewClientFlow({
                     </p>
                   </aside>
                   {questions}
-                  {preview && (
-                    <section
-                      className="card questions-panel"
-                      id="your-questions"
-                      aria-label="Your questions"
-                    >
-                      <h2>Your questions</h2>
-                      <p className="muted">
-                        No questions are recorded in preview.
-                      </p>
-                    </section>
-                  )}
                 </div>
                 <div className="flow-document-footer">
                   {declining ? (
@@ -1766,7 +1813,6 @@ function FlowDocument(props: {
   frozen?: boolean;
   busy?: boolean;
   onToggle?: (id: string, selected: boolean) => void;
-  onAsk?: (section: string) => void;
 }) {
   const [desktop, setDesktop] = useState(false);
   const [layoutFailed, setLayoutFailed] = useState(false);
@@ -1823,7 +1869,6 @@ function FlowingDocument({
   frozen = false,
   busy = false,
   onToggle,
-  onAsk,
 }: {
   logo?: string;
   logoIcon?: string;
@@ -1831,7 +1876,6 @@ function FlowingDocument({
   frozen?: boolean;
   busy?: boolean;
   onToggle?: (id: string, selected: boolean) => void;
-  onAsk?: (section: string) => void;
 }) {
   const listRoot = useRef<HTMLElement>(null);
   useLayoutEffect(() => {
@@ -1928,26 +1972,6 @@ function FlowingDocument({
                 role={block.role ?? "client"}
               />
             </div>
-          ) : onAsk && block.type === "heading" && (block.level ?? 1) === 1 ? (
-            <div
-              id={`section-${index}`}
-              key={index}
-              {...blockProps(block, index)}
-              className="flow-section-question"
-            >
-              <div
-                dangerouslySetInnerHTML={{
-                  __html: renderBlocks([block], [], p.variables),
-                }}
-              />
-              <Button
-                variant="ghost"
-                aria-label={`Ask about this: ${resolve(blockText(block), p.variables) || "Section"}`}
-                onClick={() => onAsk(`section:${block.id ?? index}`)}
-              >
-                Ask about this
-              </Button>
-            </div>
           ) : (
             <div
               id={`section-${index}`}
@@ -2003,6 +2027,7 @@ function ClientItems({
     );
     return i.optional ? (
       <label
+        data-client-question-id={i.id}
         className={`flow-quote-line ${active ? "selected" : ""}`}
         data-client-optional={!i.choice_group_id || undefined}
         key={i.id}
@@ -2031,7 +2056,11 @@ function ClientItems({
         {body}
       </label>
     ) : (
-      <div className="flow-quote-line selected" key={i.id}>
+      <div
+        data-client-question-id={i.id}
+        className="flow-quote-line selected"
+        key={i.id}
+      >
         <span className="quote-control-slot">
           <span
             className="quote-required"

@@ -5,13 +5,16 @@ import {
   type Page,
 } from "@playwright/test";
 import { mkdirSync } from "node:fs";
+import AxeBuilder from "@axe-core/playwright";
 import { setup } from "../tests/helpers";
 import type { EmailLog } from "../src/lib/email-templates";
 import type { Proposal } from "../src/lib/model";
 
+test.use({ hasTouch: true });
+
 const staff = { Authorization: "Bearer e2e-staff-secret-only" };
 const client = { Origin: "http://127.0.0.1:3100" };
-const shots = "docs/screenshots/proposal-questions";
+const shots = ".data/evidence/r25-questions";
 async function capture(page: Page, name: string) {
   if (process.env.CAPTURE_QUESTIONS !== "1") return;
   mkdirSync(shots, { recursive: true });
@@ -119,6 +122,7 @@ test("client question reaches staff, receives a plain-text reply on the same lin
   page,
   request,
 }) => {
+  page.setDefaultTimeout(12000);
   await page.setViewportSize({ width: 1440, height: 1000 });
   const { p, scope } = await sent(request, "Website project");
   const clientUrl = `/p/${p.token}`,
@@ -131,25 +135,73 @@ test("client question reaches staff, receives a plain-text reply on the same lin
   await expect(
     page.getByRole("button", { name: "Ask a question", exact: true }),
   ).toBeVisible();
+  const pageAsk = page
+    .getByRole("button", { name: "Ask about this page", exact: true })
+    .first();
+  const sheet = page.getByRole("region", { name: "Page 1", exact: true });
+  await expect(pageAsk).toBeVisible();
+  const frame = (await sheet.boundingBox())!;
+  const pageButton = (await pageAsk.boundingBox())!;
+  expect(
+    Math.abs(pageButton.x + pageButton.width / 2 - (frame.x + frame.width)),
+  ).toBeLessThanOrEqual(1);
+  expect(
+    Math.abs(pageButton.y + pageButton.height / 2 - frame.y),
+  ).toBeLessThanOrEqual(1);
   await capture(page, "client-ask-1440");
-  await page
-    .getByRole("link", { name: "Ask about this: Scope", exact: true })
-    .click();
+  const block = page.locator(`[data-document-block="${scope}"]`);
+  await expect(block).toHaveAttribute("tabindex", "0");
+  const frozenPlan = await page
+    .locator("#proposal-document")
+    .getAttribute("data-page-plan");
+  await block.hover();
+  const askBlock = page.getByRole("button", { name: "Ask about this heading" });
+  await expect(askBlock).toBeVisible();
+  expect((await askBlock.boundingBox())!.x).toBeGreaterThanOrEqual(
+    (await block.boundingBox())!.x + (await block.boundingBox())!.width,
+  );
+  await capture(page, "r25-desktop-block");
+  await block.focus();
+  await block.press("Enter");
   const form = page.getByRole("dialog", { name: "Ask a question" });
-  await expect(
-    form.getByRole("combobox", { name: "Section", exact: true }),
-  ).toHaveValue(`section:${scope}`);
+  await expect(form.getByText("Scope", { exact: true }).first()).toBeVisible();
+  await expect(form.locator(".question-excerpt")).toHaveText("Scope");
+  await form.getByRole("button", { name: "Change" }).click();
+  await expect(form.getByRole("combobox", { name: "Section" })).toHaveValue(
+    `section:${scope}`,
+  );
+  await form.getByRole("button", { name: "Change" }).click();
   await expect(form.getByLabel("Your email")).toHaveCount(0);
   const text = process.env.CAPTURE_QUESTIONS
     ? "Can we review the first milestone together before moving to the next phase?"
     : "Can we review the first milestone? <img src=x onerror=alert(1)>";
   await form.getByLabel("Your question", { exact: true }).fill(text);
+  await capture(page, "r25-desktop-form");
+  expect(
+    (await new AxeBuilder({ page }).include(".client-ask-popover").analyze())
+      .violations,
+  ).toEqual([]);
   await form
     .getByRole("button", { name: "Send question", exact: true })
     .click();
   const questions = page.getByRole("region", { name: "Your questions" });
   await expect(questions.getByText(text, { exact: true })).toBeVisible();
   await expect(questions.locator("img")).toHaveCount(0);
+  await expect(
+    page.getByText("Your question | waiting for a reply"),
+  ).toBeVisible();
+  await expect(page.locator("#proposal-document")).toHaveAttribute(
+    "data-page-plan",
+    frozenPlan!,
+  );
+  const threadData = await (
+    await request.get(`/api/proposals/${p.id}/questions`, { headers: staff })
+  ).json();
+  const id = threadData.threads[0].id;
+  expect(threadData.threads[0]).toMatchObject({
+    block_id: scope,
+    excerpt: "Scope",
+  });
   await expect(
     page.getByRole("button", { name: "Review and sign", exact: true }),
   ).toBeEnabled();
@@ -184,6 +236,17 @@ test("client question reaches staff, receives a plain-text reply on the same lin
   await capture(page, "staff-questions-1440");
   await panel.getByRole("button", { name: "Send reply", exact: true }).click();
   await expect(panel.getByText("Answered", { exact: true })).toBeVisible();
+  for (const method of ["PATCH", "DELETE"]) {
+    const response = await request.fetch(
+      `/api/public/${p.token}/questions/${id}`,
+      {
+        method,
+        headers: client,
+        ...(method === "PATCH" ? { data: { text: "Too late" } } : {}),
+      },
+    );
+    expect(response.status()).toBe(409);
+  }
   await expect
     .poll(
       async () =>
@@ -202,16 +265,46 @@ test("client question reaches staff, receives a plain-text reply on the same lin
   await page.goto(reply.button_url);
   await expect(questions.getByText(/set up a call to review/)).toBeVisible();
   await capture(page, "client-reply-1440");
-  await page.setViewportSize({ width: 375, height: 850 });
-  await page
-    .getByRole("button", { name: "Ask a question", exact: true })
-    .click();
+  await page.setViewportSize({ width: 375, height: 780 });
+  await page.getByRole("link", { name: "Questions", exact: true }).click();
+  const history = page.getByRole("dialog", { name: "Your questions" });
+  await expect(history.getByText(/set up a call to review/)).toBeVisible();
+  await capture(page, "r25-phone-history");
+  await history.getByRole("button", { name: "Close", exact: true }).click();
+  const phoneBlock = page.locator(`[data-document-block="${scope}"]`);
+  await phoneBlock.tap();
+  const phoneAsk = page.getByRole("button", { name: "Ask about this heading" });
+  await expect(phoneAsk).toHaveCSS("height", "44px");
+  await capture(page, "r25-phone-block");
+  await phoneAsk.tap();
   await expect(form.getByLabel("Your question", { exact: true })).toBeVisible();
   await form
     .getByLabel("Your question", { exact: true })
     .fill("Can we make the review call in the morning?");
-  await capture(page, "client-ask-375");
-  await form.getByRole("button", { name: "Cancel", exact: true }).click();
+  await capture(page, "r25-phone-form");
+  expect(
+    (await new AxeBuilder({ page }).include(".client-question-sheet").analyze())
+      .violations,
+  ).toEqual([]);
+  await form.getByRole("button", { name: "Send question" }).click();
+  await expect(
+    page
+      .getByRole("status")
+      .getByText("Question sent. We’ll email you when there’s a reply."),
+  ).toBeVisible();
+  await capture(page, "r25-phone-marker");
+  await page.getByRole("link", { name: "Questions", exact: true }).click();
+  await history.getByRole("button", { name: "Edit", exact: true }).click();
+  const edit = page.getByRole("dialog", { name: "Edit question" });
+  await edit.getByLabel("Your question").fill("Can we meet on Tuesday?");
+  await edit.getByRole("button", { name: "Save question" }).click();
+  await expect(history.getByText("Can we meet on Tuesday?")).toBeVisible();
+  await history.getByRole("button", { name: "Delete", exact: true }).click();
+  await page
+    .getByRole("dialog", { name: "Delete question?" })
+    .getByRole("button", { name: "Delete question" })
+    .click();
+  await expect(history.getByText("Can we meet on Tuesday?")).toHaveCount(0);
   const stored: Proposal = await (
     await request.get(`/api/proposals/${p.id}`, { headers: staff })
   ).json();
@@ -261,6 +354,8 @@ test("question endpoints honor passwords, the hourly limit, proposal isolation, 
         })
       ).status(),
     ).toBe(201);
+  const deleted = await request.delete(`${url}/${body.id}`, { headers });
+  expect(deleted.status()).toBe(200);
   const limited = await request.post(url, {
     headers,
     data: { ...body, id: crypto.randomUUID() },
@@ -288,5 +383,5 @@ test("question endpoints honor passwords, the hourly limit, proposal isolation, 
     can_reply: false,
     threads: expect.any(Array),
   });
-  expect(result.threads).toHaveLength(10);
+  expect(result.threads).toHaveLength(9);
 });

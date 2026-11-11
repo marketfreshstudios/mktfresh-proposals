@@ -58,7 +58,6 @@ export function ClientPageSheets({
   busy = false,
   frozen = false,
   onToggle,
-  onAsk,
   onReady,
   onError,
 }: {
@@ -68,7 +67,6 @@ export function ClientPageSheets({
   busy?: boolean;
   frozen?: boolean;
   onToggle?: (id: string, selected: boolean) => void;
-  onAsk?: (section: string) => void;
   onReady?: () => void;
   onError?: () => void;
 }) {
@@ -99,7 +97,6 @@ export function ClientPageSheets({
     busy,
     frozen,
     onToggle,
-    onAsk,
     onReady,
     onError,
   });
@@ -111,7 +108,6 @@ export function ClientPageSheets({
     busy,
     frozen,
     onToggle,
-    onAsk,
     onReady,
     onError,
   };
@@ -416,43 +412,11 @@ export function ClientPageSheets({
           frame.append(paper);
           frames.push(frame);
         });
-        const rightMargin = pageGeometry(
-          current.p.resolved_styles,
-          current.p.header_footer,
-          1,
-        ).margins.right;
         for (const [index, block] of current.p.content.entries()) {
           const node = output.root.querySelector<HTMLElement>(
             `[data-print-block="${CSS.escape(block.id ?? String(index))}"]`,
           );
-          if (!node) continue;
-          node.id = `section-${index}`;
-          if (
-            !current.onAsk ||
-            block.type !== "heading" ||
-            (block.level ?? 1) !== 1 ||
-            rightMargin < 54
-          )
-            continue;
-          const paper = node.closest(".client-letter-sheet");
-          const heading = node.querySelector("h2");
-          if (!paper || !heading) continue;
-          // This link is a page-margin action. The frozen content never measures it.
-          const link = document.createElement("a");
-          link.href = "#ask-question";
-          link.className = "client-section-question";
-          link.textContent = "Ask about this";
-          link.setAttribute(
-            "aria-label",
-            `Ask about this: ${heading.textContent?.trim() || "Section"}`,
-          );
-          link.setAttribute("aria-haspopup", "dialog");
-          link.style.top = `${heading.getBoundingClientRect().top - paper.getBoundingClientRect().top}px`;
-          link.addEventListener("click", (event) => {
-            event.preventDefault();
-            latest.current.onAsk?.(`section:${block.id ?? index}`);
-          });
-          paper.append(link);
+          if (node) node.id = `section-${index}`;
         }
         // Prepare every new frame before exposing it, avoiding a zero-height
         // intermediate document and scrollbar-driven width oscillation.
@@ -525,7 +489,7 @@ export function ClientPageSheets({
   }, []);
   useLayoutEffect(() => {
     host.current?.dispatchEvent(new Event("client-layout-change"));
-  }, [projection.key, frozen, !!onAsk]);
+  }, [projection.key, frozen]);
   useLayoutEffect(() => {
     host.current?.dispatchEvent(new Event("client-controls-change"));
   }, [busy, frozen]);
@@ -553,8 +517,8 @@ const sheetCss = `
 .client-interactive-card[data-client-optional]::after{content:var(--client-optional-label,none);position:absolute;right:10px;bottom:1px;color:var(--paper-muted);font:600 10px/10px var(--font-ui)}
 .client-sheet-input:focus-visible + .print-selection{outline:3px solid var(--client-accent-text);outline-offset:3px}
 .client-sheet-input:disabled{cursor:wait}
-.client-section-question{position:absolute;inset-inline-end:2px;display:grid;place-items:center;text-align:center;inline-size:max-content;min-height:calc(44px / var(--client-sheet-scale,1));padding:2px 4px;white-space:nowrap;border:0;border-radius:var(--radius-button,9999px);background:transparent;color:var(--client-accent-text,#365c4a);font:600 11px/1.2 var(--font-ui,"Instrument Sans"),sans-serif;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
-.client-section-question:hover{background:var(--client-selection)}.client-section-question:focus-visible{outline:2px solid var(--client-accent-text);outline-offset:1px}
+[data-client-asking]{outline:1px solid var(--client-frame);outline-offset:3px;background-color:var(--client-selection)}
+[data-client-ask-target]:focus-visible{outline:2px solid var(--client-accent-text);outline-offset:3px}
 /* These rules apply only after pagination. Preserve every shared print box. */
 .client-pages-root.proposal-typography.proposal-typography .print-choice-group{background:var(--client-choice-fill,var(--quote-neutral-group,var(--paper)));border-color:var(--client-choice-line,var(--quote-neutral-frame,var(--client-frame)));box-shadow:inset 0 0 0 1px var(--client-choice-line,transparent)}
 .client-pages-root.proposal-typography.proposal-typography .print-choice-group>h3{color:var(--quote-neutral-label,var(--client-accent-text))}
@@ -565,5 +529,4 @@ const sheetCss = `
 .client-pages-root .quote-table-row:has(input:checked){background:var(--client-selection);box-shadow:inset 3px 0 var(--accent)}
 .client-pages-root .print-selection[data-checked=true]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .client-pages-root .print-radio[data-checked=true]{background:var(--paper);color:var(--accent)}
-@media print{.client-section-question{display:none}}
 `;

@@ -5,6 +5,7 @@ import { previewResult } from "../src/lib/preview";
 test("draft client preview has live local totals, branded steps and no client writes at desktop and phone widths", async ({
   page,
 }) => {
+  page.setDefaultTimeout(12000);
   const { repo, draft, settings, members } = await setup();
   settings.proposal_fonts = { heading: "mono", body: "sans" };
   const original = JSON.stringify(await repo.get(draft.id));
@@ -72,6 +73,34 @@ test("draft client preview has live local totals, branded steps and no client wr
           .getByRole("button", { name: "Desktop width", exact: true })
           .click();
       }
+      await page
+        .getByRole("button", { name: "Ask a question", exact: true })
+        .click();
+      const ask = page.getByRole("dialog", { name: "Ask a question" });
+      const message = ask.getByRole("textbox", {
+        name: "Your question",
+        exact: true,
+      });
+      await message.fill("Preview question");
+      await expect(
+        ask.getByText("Preview: questions aren’t sent from here."),
+      ).toBeVisible();
+      await expect(
+        ask.getByRole("button", { name: "Send question" }),
+      ).toBeDisabled();
+      await message.evaluate((input: HTMLTextAreaElement) =>
+        input.form?.requestSubmit(),
+      );
+      await expect(ask).toBeVisible();
+      if (
+        width < 700 &&
+        theme === "light" &&
+        process.env.CAPTURE_QUESTIONS === "1"
+      ) {
+        await mkdir(".data/evidence/r25-questions", { recursive: true });
+        await page.screenshot({ path: ".data/evidence/r25-questions/1f.png" });
+      }
+      await ask.getByRole("button", { name: "Cancel" }).click();
       const optional = page.getByRole("checkbox").first();
       const before = await page
         .getByLabel("Proposal totals", { exact: true })

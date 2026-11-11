@@ -314,17 +314,16 @@ for (const width of [1440, 1024, 768, 375]) {
       page.getByRole("heading", { name: "Your investment", exact: true }),
     ).toHaveCount(1);
     if (width === 1440 || width === 1024) {
-      const ask = page.getByRole(width === 1440 ? "link" : "button", {
-        name: "Ask about this: Choose your plan",
-      });
+      const block = page.locator('[data-document-block="investment"]');
+      await block.hover();
+      const ask = page.getByRole("button", { name: "Ask about this heading" });
       await expect(ask).toBeVisible();
-      expect(
-        await ask.evaluate((el) => {
-          const range = document.createRange();
-          range.selectNodeContents(el);
-          return range.getClientRects().length;
-        }),
-      ).toBe(1);
+      expect((await ask.boundingBox())!.x).toBeGreaterThanOrEqual(
+        (await block.boundingBox())!.x + (await block.boundingBox())!.width,
+      );
+      await expect(
+        page.getByRole("link", { name: /Ask about this/ }),
+      ).toHaveCount(0);
     }
     const sign = choices.getByRole("button", {
       name: "Review and sign",
