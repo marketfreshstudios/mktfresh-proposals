@@ -1,4 +1,5 @@
 "use client";
+import { listenOutsidePress } from "@/lib/outside-press";
 import {
   coverGroups,
   visibleCoverElement,
@@ -238,15 +239,14 @@ export function DocumentCover({
   }, [selection.selected]);
   useEffect(() => {
     if (!selected) return;
-    const outside = (event: PointerEvent) => {
+    const outside = (event: Event) => {
       if (
         !root.current?.contains(event.target as Node) &&
         !(event.target as Element).closest(".cover-edit-bar,.image-edit-bar")
       )
         select(null);
     };
-    document.addEventListener("pointerdown", outside, true);
-    return () => document.removeEventListener("pointerdown", outside, true);
+    return listenOutsidePress(outside);
   }, [selected]);
   useEffect(() => {
     if (!selected) return;

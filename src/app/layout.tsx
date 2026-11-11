@@ -5,6 +5,7 @@ import {
 } from "../lib/cover-graphics";
 import { coverBrandCss } from "../lib/cover-render";
 import { PointerFocus } from "../components/pointer-focus";
+import { TapDebug } from "../components/tap-debug";
 import "./globals.css";
 import "./foundation.css";
 import "./client-flow.css";
@@ -53,6 +54,7 @@ export default function RootLayout({
       </head>
       <body>
         <PointerFocus />
+        <TapDebug />
         {children}
       </body>
     </html>
