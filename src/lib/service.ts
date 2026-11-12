@@ -1625,6 +1625,10 @@ export function publicResult(
               .filter((s) => !bankPayments(l)[(s as { id?: string }).id ?? ""])
               .map((s) => ({
                 url: s.url,
+                // The session id lets the client ask for a live page later.
+                ...((s as { id?: string }).id
+                  ? { id: (s as { id?: string }).id }
+                  : {}),
                 ...(s.line_ids ? { line_ids: s.line_ids } : {}),
                 ...(s.items
                   ? {

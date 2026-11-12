@@ -537,7 +537,7 @@ test("record toolbar and next step select one primary action without widening si
       const hero = page.locator(".next-card");
       await expect(hero).toHaveAttribute("data-problem", "true");
       await expect(
-        hero.getByRole("button", { name: "Resend payment link" }),
+        hero.getByRole("button", { name: "Email payment link" }),
       ).toBeVisible();
       await expect(
         hero.getByRole("button", { name: "Invoice manually" }),

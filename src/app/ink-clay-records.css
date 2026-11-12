@@ -2348,3 +2348,15 @@
   gap: 2px;
   overflow-wrap: anywhere;
 }
+
+/* Pending client payment: status, then the permanent link's two actions. */
+.ink-clay .record-payment-link {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.ink-clay .record-payment-link .client-link-control {
+  display: contents;
+}

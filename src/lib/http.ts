@@ -159,6 +159,7 @@ import {
 } from "./staff-account";
 import { oauthServer } from "./oauth-runtime";
 import { StripeProvider } from "./providers/stripe";
+import { freshCheckoutUrl } from "./checkout-refresh";
 import { QboProvider } from "./providers/qbo";
 import { QBO_CALLBACK, QBO_STATE_COOKIE } from "./providers/qbo-connection";
 import {
@@ -632,6 +633,23 @@ async function handleRoute(
             }
           }
         }
+      }
+      if (action === "checkout" && !path[3] && method === "POST") {
+        check(sameOrigin(req), "Same-origin request required", 403);
+        const { session_id } = z
+          .object({ session_id: z.string().regex(/^cs_[A-Za-z0-9_]+$/) })
+          .strict()
+          .parse(await body(req));
+        const stripe = rt.worker.providers.stripe;
+        check(stripe instanceof StripeProvider, "Stripe is not connected", 409);
+        return json({
+          url: await freshCheckoutUrl(
+            rt.repo,
+            stripe,
+            await rt.service.byToken(token, password),
+            session_id,
+          ),
+        });
       }
       if (
         action === "questions" &&

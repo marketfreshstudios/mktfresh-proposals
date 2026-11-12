@@ -574,7 +574,7 @@ test("R24 record states use saved proposal, publication, and signing data at all
           page
             .locator(".record-billing-row")
             .first()
-            .getByRole("button", { name: "Resend billing link" }),
+            .getByRole("button", { name: "Email payment link" }),
         ).toBeVisible();
         await expect(
           page
@@ -869,7 +869,7 @@ test("R24 record states use saved proposal, publication, and signing data at all
           ).toBeVisible();
         }
         if (fixture.frame === "5f") {
-          await expect(primary).toHaveText("Resend link");
+          await expect(primary).toHaveText("Email link");
           await expect(
             dock.getByRole("button", { name: "Invoice manually" }),
           ).toBeVisible();

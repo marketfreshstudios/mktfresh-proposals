@@ -108,6 +108,7 @@ export function eventLabel(
     billing_payment_failed: "Bank payment failed",
     billing_payment_paid: "Bank payment confirmed",
     billing_setup_completed: "Client completed billing setup",
+    billing_checkout_renewed: "Payment page renewed for the client",
     billing_invoice_updated: "Billing invoice updated",
     client_created: "Client created",
     client_saved: "Client details saved",
