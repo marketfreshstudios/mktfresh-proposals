@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { Icon } from "./ui";
-import { ChevronLeft } from "lucide-react";
+import { Building2, ChevronDown, ChevronLeft } from "lucide-react";
 import { chromeIcons } from "./staff-icons";
 import { useHistoryStatus } from "./editor-history";
 import { PhoneEditorHeader } from "./editor/phone-header";
@@ -79,6 +79,7 @@ export function EditorHeader({
   onPrimary,
   onReassign,
   onChangeClient,
+  client,
   onReplaceBlock,
   titleEditor,
   externalHeading = false,
@@ -129,6 +130,8 @@ export function EditorHeader({
   onPrimary?: () => void;
   onReassign?: () => void;
   onChangeClient?: () => void;
+  /** The proposal's client, shown beside the title. */
+  client?: string;
   onReplaceBlock?: () => void;
 }) {
   const [moreOpen, setMoreOpen] = useState(false);
@@ -328,6 +331,28 @@ export function EditorHeader({
             <span>{tablet ? shortText : text}</span>
           )}
         </div>
+        {client &&
+          (onChangeClient ? (
+            <button
+              type="button"
+              className="editor-header-for-client"
+              onClick={onChangeClient}
+              aria-label={`Client: ${client}. Change client`}
+              title="Change client"
+            >
+              <Building2 size={14} aria-hidden="true" />
+              <span>{client}</span>
+              <ChevronDown size={14} aria-hidden="true" />
+            </button>
+          ) : (
+            <span
+              className="editor-header-for-client"
+              title={`Client: ${client}`}
+            >
+              <Building2 size={14} aria-hidden="true" />
+              <span>{client}</span>
+            </span>
+          ))}
         <span className="editor-header-spacer" />
         {!tablet && (
           <div className="editor-header-history">

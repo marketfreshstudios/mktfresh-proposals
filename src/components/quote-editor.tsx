@@ -1321,6 +1321,17 @@ function QuoteEditorContent({
               >
                 Edit client
               </button>
+              {!locked && canChangeClient(p) && (
+                <button
+                  type="button"
+                  className="text-link"
+                  onClick={async () => {
+                    if (await save()) setClientOpen(true);
+                  }}
+                >
+                  Change client
+                </button>
+              )}
             </header>
             <p>
               {p.client.company} |{" "}
@@ -1377,6 +1388,16 @@ function QuoteEditorContent({
                 readOnly
               />
             </Field>
+            {!locked && canChangeClient(p) && (
+              <Button
+                className="send-change-client"
+                onClick={async () => {
+                  if (await save()) setClientOpen(true);
+                }}
+              >
+                Change client
+              </Button>
+            )}
           </>
         )}
         {delivery === "email" && (
@@ -2817,6 +2838,7 @@ function QuoteEditorContent({
               }
             : undefined
         }
+        client={p.client.company}
         onChangeClient={
           !locked && canChangeClient(p)
             ? async () => {
