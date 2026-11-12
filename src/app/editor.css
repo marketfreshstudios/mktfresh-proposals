@@ -10206,3 +10206,25 @@ dialog.foundation-sheet.block-style-sheet {
 .staff-foundation.ink-clay .editor-v2-header input.editor-title-input:focus {
   outline: none;
 }
+
+/* Page margins: four compact number fields in a 2 × 2 grid. A slider per
+   side doesn't fit the panel and squeezed down to a bare thumb. */
+.proposal-styles .style-margin-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 12px;
+}
+.proposal-styles .style-margin-grid .spacing-slider-row > input[type="range"] {
+  display: none;
+}
+.proposal-styles .style-margin-grid .spacing-slider-row .spacing-number {
+  flex: 1;
+  width: auto;
+}
+.proposal-styles
+  .style-margin-grid
+  .spacing-slider-row
+  .spacing-number
+  > input {
+  flex: 1;
+  width: auto;
+}

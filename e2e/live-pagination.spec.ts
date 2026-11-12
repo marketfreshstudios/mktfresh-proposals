@@ -540,3 +540,35 @@ test("overflow page 3 is a real section drop target, preserving original blocks 
     .not.toBe(before);
   expect(f.calls).toHaveLength(0);
 });
+
+test("a page continuing after the pricing is labeled after the pricing, not the section before it", async ({
+  page,
+}) => {
+  const id = () => crypto.randomUUID(),
+    content: import("../src/lib/model").Block[] = [
+      { id: id(), type: "heading", text: "Why us", level: 1 },
+      {
+        id: id(),
+        type: "paragraph",
+        text: "We know your market and how to reach it. ".repeat(95),
+      },
+      { id: id(), type: "pricing_table", text: "Investment" },
+      {
+        id: id(),
+        type: "paragraph",
+        text: "Choose how you pay for the work. ".repeat(260),
+      },
+    ];
+  const f = await editorFixture(page, false, { content });
+  await page.setViewportSize({ width: 1920, height: 1000 });
+  await page.goto(`/proposals/${f.draft.id}`);
+  const nav = page.getByRole("navigation", { name: "Sections", exact: true });
+  await expect(
+    nav
+      .getByRole("button", { name: "Investment (continued)", exact: true })
+      .first(),
+  ).toBeVisible();
+  await expect(
+    nav.getByRole("button", { name: "Why us (continued)", exact: true }),
+  ).toHaveCount(0);
+});
