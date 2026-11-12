@@ -134,11 +134,13 @@ export function ProposalEngagement({
               </time>
             </p>
           )}
-          <h3 className="record-most-read">Most read</h3>
-          {bars("section")}
           <details className="engagement-more">
-            <Disclosure>Time by page</Disclosure>
-            {bars("page")}
+            <Disclosure>Most read</Disclosure>
+            {bars(
+              report.targets.some((t) => t.kind === "section")
+                ? "section"
+                : "page",
+            )}
           </details>
           <details className="engagement-more">
             <Disclosure>{`Sessions | ${report.sessions.length}`}</Disclosure>
@@ -175,17 +177,7 @@ export function ProposalEngagement({
     );
   return (
     <section className="record-section" aria-labelledby="engagement-heading">
-      <StaffSectionHeading
-        id="engagement-heading"
-        action={
-          report?.views ? (
-            <span className="record-engagement-summary">
-              {withCount(report.views, "visit")} |{" "}
-              {engagementDuration(report.total_ms)} reading
-            </span>
-          ) : undefined
-        }
-      >
+      <StaffSectionHeading id="engagement-heading">
         Engagement
       </StaffSectionHeading>
       {panel}
