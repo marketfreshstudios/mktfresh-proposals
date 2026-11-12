@@ -195,6 +195,13 @@ test("the conditional quote switches care groups on desktop and phone and freeze
       await expect(
         page.locator(".flow-acceptance").getByText(/Own It Over Time — Pro/),
       ).toBeVisible();
+      // The agreement line is a full sentence named after the proposal's
+      // own contract block, with its own Read button.
+      const terms = page.locator(".flow-acceptance-terms");
+      await expect(terms).toContainText(/^You’re also agreeing to the Terms/);
+      await expect(
+        terms.getByRole("button", { name: "Read the Terms" }),
+      ).toBeVisible();
       // The browser's back button and the Review step both return to the
       // proposal from signing.
       await page.goBack();

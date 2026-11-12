@@ -400,6 +400,13 @@ label.flow-quote-line {
 .flow-acceptance h2 {
   margin-top: 8px;
 }
+.flow-acceptance-terms {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 20px 0 0;
+}
 .flow-signature fieldset {
   padding: 0;
   border: 0;
