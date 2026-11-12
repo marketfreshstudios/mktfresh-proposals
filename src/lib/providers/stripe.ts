@@ -85,10 +85,8 @@ export class StripeProvider implements BillingProvider {
       );
       if (found.livemode !== false)
         throw new NeedsReview("Test-mode customer required");
-      if (found.email?.toLowerCase() !== c.email.toLowerCase())
-        throw new NeedsReview(
-          "Linked Stripe customer email does not match this client",
-        );
+      // Linked by ID. The customer's Stripe email may differ (a separate
+      // billing address) and is never changed from here.
       if (found.deleted)
         throw new NeedsReview("Stored Stripe customer was deleted");
       return [customer(found)];

@@ -285,11 +285,10 @@ for (const width of [1440, 375])
       expect(JSON.stringify(routes.batches)).not.toMatch(
         /password|user_agent|browser_id|\"ip\"/,
       );
-      await expect(
-        client.getByText(
-          "The sender can see when and how this proposal was viewed.",
-        ),
-      ).toBeAttached();
+      const privacy = client.getByText(
+        "The sender can see when and how this proposal was viewed.",
+      );
+      await expect(privacy).toBeAttached();
     } finally {
       await context.close();
     }

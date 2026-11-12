@@ -111,6 +111,10 @@ it("staff client edits update every unsigned native proposal, publish live chang
     expect(current.pagination).toEqual(original.pagination);
   }
   const live = (await f.repo.get(sent.id))!;
+  // The link stays the same; the Timeline records the new recipient address.
+  expect(
+    live.events.find((e) => e.type === "recipient_email_changed")?.metadata,
+  ).toEqual({ previous_email: sent.client.email, email: "jamie@example.test" });
   expect(live.versions).toHaveLength(sent.versions.length + 1);
   expect(live.versions[0]).toEqual(sent.versions[0]);
   expect(live.versions.at(-1)!.pagination).toEqual(plan);

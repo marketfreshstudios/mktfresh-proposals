@@ -2248,6 +2248,7 @@ export function RecordV4({
   );
   const [share, setShare] = useState(false),
     [reminderBusy, setReminderBusy] = useState(false),
+    [editContact, setEditContact] = useState(false),
     [clientDialog, setClientDialog] = useState<"duplicate" | "change" | null>(
       null,
     );
@@ -2431,6 +2432,13 @@ export function RecordV4({
       setRecordBusy(false);
     }
   }
+  // After sending, the recipient's contact can still be corrected until the
+  // client signs. Saving updates the client record and every open proposal.
+  const contactEditable =
+    p.source === "native" &&
+    !["signed_by_client", "completed"].includes(p.status) &&
+    !p.signers.length &&
+    !p.versions.some((v) => v.frozen);
   const clientFullName =
     [p.client.first_name, p.client.last_name].filter(Boolean).join(" ") ||
     p.client.company;
@@ -2965,13 +2973,22 @@ export function RecordV4({
             {p.client.email && (
               <a href={`mailto:${p.client.email}`}>{p.client.email}</a>
             )}
-            {canChangeClient(p) && (
+            {canChangeClient(p) ? (
               <Button
                 className="record-change-client"
                 onClick={() => setClientDialog("change")}
               >
                 Change client
               </Button>
+            ) : (
+              contactEditable && (
+                <Button
+                  className="record-change-client"
+                  onClick={() => setEditContact(true)}
+                >
+                  Edit contact
+                </Button>
+              )
             )}
           </dd>
         </div>
@@ -3196,6 +3213,16 @@ export function RecordV4({
       data-client-signed={actualSigned || undefined}
       data-awaiting-countersign={signature || undefined}
     >
+      {editContact && (
+        <EditClientModal
+          client={p.client}
+          onClose={() => setEditContact(false)}
+          onSaved={async () => {
+            setEditContact(false);
+            onChanged(await api<Proposal>(`/api/proposals/${p.id}`));
+          }}
+        />
+      )}
       {clientDialog && (
         <ProposalClientDialog
           proposal={p}
@@ -4204,10 +4231,16 @@ export function ClientsV4({
         <>
           <p>
             {billing.subscriber
-              ? "New monthly items on a signed proposal are added to this customer’s existing subscription when a working card is available. Otherwise billing needs review."
+              ? "New monthly items on a signed proposal are added to this customer’s subscription after the client approves the new charge."
               : billing.notice ||
                 "A new monthly plan starts through Checkout after signature."}
           </p>
+          {billing.stripe_email && (
+            <p className="muted">
+              Stripe sends receipts to {billing.stripe_email}. Yeswell doesn’t
+              change emails in Stripe.
+            </p>
+          )}
           <div className="linked-billing-summary" hidden={!billing.linked_id}>
             <div className="current-subscription">
               {billing.items.map((i) => (

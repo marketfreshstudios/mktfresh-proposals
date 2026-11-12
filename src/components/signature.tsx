@@ -76,14 +76,10 @@ export function SignatureForm({
           : mode === "drawn"
             ? !drawn
               ? "Draw your signature or choose Type."
-              : !consent
-                ? "Tick the agreement before signing."
-                : ""
+              : ""
             : !typed.trim()
               ? "Type your signature before signing."
-              : !consent
-                ? "Tick the agreement before signing."
-                : "");
+              : "");
   function clear() {
     setDrawn(false);
     setDrawnImage(undefined);
@@ -310,7 +306,7 @@ export function SignatureForm({
       <button
         className="btn primary"
         type="submit"
-        disabled={busy || !!reason}
+        disabled={busy || !!reason || !consent}
         aria-describedby="signature-reason"
       >
         {busy ? "Sealing your signed copy…" : error ? "Try again" : label}

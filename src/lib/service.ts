@@ -482,6 +482,12 @@ export class ProposalService {
           client_id: client.id,
           client_contact_updated: true,
         });
+        // The link stays the same; signing now expects the new address.
+        if (current.client.email.toLowerCase() !== client.email.toLowerCase())
+          event(candidate, "recipient_email_changed", actor, {
+            previous_email: current.client.email,
+            email: client.email,
+          });
         await this.prepareEditorial(candidate, actor);
         candidate.revision = current.revision + 1;
         candidate.updated_at = this.clock().toISOString();

@@ -32,6 +32,8 @@ export type ClientBilling = {
   stripe_url: string | null;
   qbo_url: string | null;
   notice?: string;
+  /** Set when Stripe sends receipts to a different address than Yeswell uses. */
+  stripe_email?: string;
 };
 type BillingSummary = ClientBilling & {
   customer?: { id: string; name: string; created?: number };
@@ -84,11 +86,13 @@ async function billingSummary(
     customer.livemode === false && !customer.deleted,
     "Test-mode customer required",
   );
-  check(
-    customer.email?.toLowerCase() === client.email.toLowerCase(),
-    "Linked Stripe customer email does not match this client; verify the customer ID",
-    409,
-  );
+  // A client may keep a separate billing address in Stripe. Yeswell never
+  // changes it; the link is the customer ID.
+  if (
+    customer.email &&
+    customer.email.toLowerCase() !== client.email.toLowerCase()
+  )
+    result.stripe_email = customer.email;
   result.customer = {
     id,
     name: customer.name || client.company,
