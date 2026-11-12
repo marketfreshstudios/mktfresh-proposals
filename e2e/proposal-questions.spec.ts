@@ -311,8 +311,12 @@ test("client question reaches staff, receives a plain-text reply on the same lin
   expect(reply.button_label).toBe("View reply");
   expect(reply.text).not.toMatch(/2750|\$|milestone/);
   expect(new URL(reply.button_url).pathname).toBe(clientUrl);
+  expect(new URL(reply.button_url).hash).toMatch(/^#question-/);
   await page.goto(reply.button_url);
   await expect(questions.getByText(/set up a call to review/)).toBeVisible();
+  // The emailed link opens the question once, then leaves the address so
+  // coming back from the sign step doesn't reopen it over the document.
+  await expect.poll(() => new URL(page.url()).hash).toBe("");
   await capture(page, "client-reply-1440");
   // The client answers back in the same conversation; it reopens for staff.
   await questions.getByRole("button", { name: "Reply", exact: true }).click();

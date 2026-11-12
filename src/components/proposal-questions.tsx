@@ -240,6 +240,13 @@ export function ClientQuestions({
     const hash = location.hash.slice(1);
     const linked = threads.find((thread) => hash === `question-${thread.id}`);
     if (!linked) return;
+    // Use an emailed question link once. Left in the address, it would reopen
+    // the question every time the reader comes back from the sign step.
+    history.replaceState(
+      history.state,
+      "",
+      location.pathname + location.search,
+    );
 
     if (inReadingRail && isPhoneReading()) setHistoryOpen(true);
     const frame = requestAnimationFrame(() =>
