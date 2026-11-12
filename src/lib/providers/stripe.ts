@@ -144,9 +144,7 @@ export class StripeProvider implements BillingProvider {
       }>("custom_families")
     ).find((f) => f.id === line.custom_family_id && f.active);
     if (!family)
-      throw new NeedsReview(
-        `${line.name}: choose an active billing category`,
-      );
+      throw new NeedsReview(`${line.name}: choose an active billing category`);
     const product = await this.api.get<{
       name?: string;
       active: boolean;
