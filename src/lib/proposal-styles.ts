@@ -392,7 +392,7 @@ export function documentStyleCss(
       ? documentQuoteCss + `.proposal-typography{--quote-accent:${accent}}`
       : "") +
     (documentLayout(styles).density === "standard"
-      ? `${scope} .print-atom,${scope} .draft-block,${scope} .studio-block-card{padding-top:0}${scope} .flow-quote-line{padding-block:12px}${scope} .print-pricing-unit{margin:0!important}`
+      ? `${scope} .print-atom,${scope} .draft-block,${scope} .studio-block-card{padding-top:0}${scope} .flow-quote-line{padding-block:12px}${styles.layout?.quote_neutrals ? `${scope} :is(.print-pricing-unit,.print-choice-group,.print-quote-totals){margin:12px 0 0!important}` : `${scope} .print-pricing-unit{margin:0!important}`}`
       : styles.layout
         ? `${scope} .flow-quote-line{padding-block:20px}`
         : "") +
