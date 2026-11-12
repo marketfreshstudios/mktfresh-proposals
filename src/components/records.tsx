@@ -2592,7 +2592,7 @@ export function RecordV4({
       busy={recordBusy}
       onClick={() => void runAction("resend_billing_link")}
     >
-      {phone ? "Resend link" : "Resend payment link"}
+      {phone ? "Email link" : "Email payment link"}
     </Button>
   );
   const manualInvoice = (
@@ -3389,15 +3389,28 @@ export function RecordV4({
                           : "Monthly"
                       }
                       end={
-                        resend ? (
-                          <Button
-                            busy={recordBusy}
-                            onClick={() =>
-                              void runAction("resend_billing_link")
-                            }
-                          >
-                            Resend billing link
-                          </Button>
+                        resend && p.token ? (
+                          <div className="record-payment-link">
+                            <span className={`pill ${stripeChip.tone}`}>
+                              {stripeChip.text}
+                            </span>
+                            {/* The proposal link is the permanent payment link:
+                                it always opens a live Stripe checkout page. */}
+                            <CopyClientLink
+                              token={p.token}
+                              appUrl={data.app_url}
+                              label="Copy payment link"
+                              buttonOnly
+                            />
+                            <Button
+                              busy={recordBusy}
+                              onClick={() =>
+                                void runAction("resend_billing_link")
+                              }
+                            >
+                              Email payment link
+                            </Button>
+                          </div>
                         ) : (
                           <span className={`pill ${stripeChip.tone}`}>
                             {stripeChip.text}

@@ -1,6 +1,7 @@
 import { quoteSublines } from "./quote-model";
 import type { Quote, BillingLine } from "./model";
 export type BillingGroup = {
+  id?: string;
   url?: string;
   line_ids?: string[];
   items?: { line_id: string; name: string }[];

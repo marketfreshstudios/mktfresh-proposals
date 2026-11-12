@@ -216,6 +216,8 @@ function NewClientFlow({
   const [step, setStep] = useState<"read" | "sign" | "billing" | "done">(
     "read",
   );
+  const [opening, setOpening] = useState("");
+  const [checkoutError, setCheckoutError] = useState("");
   const [checkoutReturned, setCheckoutReturned] = useState(false),
     [returnSession, setReturnSession] = useState(""),
     [returnTimedOut, setReturnTimedOut] = useState(false),
@@ -998,6 +1000,14 @@ function NewClientFlow({
                       {checkout.length > 1 && (
                         <p>Each group has its own secure checkout.</p>
                       )}
+                      {checkoutError && (
+                        <Banner
+                          tone="danger"
+                          title="Secure checkout didn’t open"
+                        >
+                          {`${checkoutError} You can also contact ${contact.name || "the sender"} for help.`}
+                        </Banner>
+                      )}
                       <BillingRecurringTotal
                         lines={checkout
                           .filter((s) => s.mode !== "setup")
@@ -1079,7 +1089,41 @@ function NewClientFlow({
                                   )}
                                 </Button>
                               ) : (
-                                <a className="btn primary" href={session.url}>
+                                <a
+                                  className="btn primary"
+                                  href={session.url}
+                                  aria-busy={opening === session.id}
+                                  onClick={(event) => {
+                                    // Ask for a live checkout page: the one
+                                    // made at signing may have expired.
+                                    if (!session.id) return;
+                                    event.preventDefault();
+                                    if (opening) return;
+                                    setOpening(session.id);
+                                    setCheckoutError("");
+                                    api<{ url: string }>(
+                                      `/api/public/${token}/checkout`,
+                                      {
+                                        method: "POST",
+                                        headers,
+                                        body: JSON.stringify({
+                                          session_id: session.id,
+                                        }),
+                                      },
+                                    )
+                                      .then(({ url }) =>
+                                        window.location.assign(url),
+                                      )
+                                      .catch((failure) => {
+                                        setOpening("");
+                                        setCheckoutError(
+                                          failure instanceof Error
+                                            ? failure.message
+                                            : "Secure checkout couldn’t open. Try again.",
+                                        );
+                                      });
+                                  }}
+                                >
                                   {checkoutActionLabel(
                                     session,
                                     p.currency,

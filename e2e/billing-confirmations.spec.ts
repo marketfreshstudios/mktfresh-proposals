@@ -128,11 +128,34 @@ test("verified billing: mode-specific Checkout, immediate receipt, bounded retur
           ).toBeVisible();
         }
         await shot(`checkout-${mode}`, width, theme);
+        if (width === 1440 && theme === "light") {
+          // The button asks Yeswell for a live Stripe page first.
+          let asked = "";
+          await page.route("**/api/public/*/checkout", async (route) => {
+            asked = route.request().postDataJSON().session_id;
+            await route.fulfill({
+              json: { url: "https://checkout.stripe.com/c/pay/renewed" },
+            });
+          });
+          await page.route("https://checkout.stripe.com/**", (route) =>
+            route.fulfill({ contentType: "text/html", body: "<p>Stripe</p>" }),
+          );
+          await page
+            .getByRole("link", { name: /Continue to secure/ })
+            .first()
+            .click();
+          await expect(page).toHaveURL(
+            "https://checkout.stripe.com/c/pay/renewed",
+          );
+          expect(asked).toBe(f.id);
+          await page.unroute("**/api/public/*/checkout");
+          await page.unroute("https://checkout.stripe.com/**");
+        }
         await record(`record-waiting-${mode}`, width, theme);
         await expect(
           page
             .locator(".record-billing-row")
-            .getByRole("button", { name: "Resend billing link", exact: true }),
+            .getByRole("button", { name: "Email payment link", exact: true }),
         ).toBeVisible();
         await page.goto(`/p/${f.p.token}?billing=returned&session_id=${f.id}`);
         await expect(
