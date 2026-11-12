@@ -309,7 +309,7 @@ test("editor history, layered chrome and searchable anchored insertion", async (
     .toBe(true);
   const title = active.title;
   await page
-    .getByRole("textbox", { name: "Proposal title", exact: true })
+    .getByRole("textbox", { name: "Rename proposal", exact: true })
     .fill("A revised title");
   await expect.poll(() => active.title).toBe("A revised title");
   await undo.click();

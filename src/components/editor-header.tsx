@@ -4,6 +4,7 @@ import { ToolbarPopover } from "./toolbar-popover";
 import { isStaffSignedOut, openStaffSignIn } from "./staff-sign-in";
 import {
   useCallback,
+  useEffect,
   useRef,
   useState,
   type MouseEvent,
@@ -82,12 +83,15 @@ export function EditorHeader({
   client,
   onReplaceBlock,
   titleEditor,
+  onTitle,
   externalHeading = false,
   savedLabel,
   dirtyLabel,
   meta,
 }: {
   titleEditor?: ReactNode;
+  /** Makes the proposal title editable in place. */
+  onTitle?: (title: string) => void;
   externalHeading?: boolean;
   savedLabel?: string;
   dirtyLabel?: string;
@@ -309,13 +313,20 @@ export function EditorHeader({
           {backLabel}
         </a>
         <span className="editor-header-divider" aria-hidden="true" />
-        <h1
-          className="editor-header-title editor-page-heading"
-          title={title}
-          aria-label={title}
-        >
-          {title}
-        </h1>
+        {onTitle ? (
+          <>
+            <h1 className="sr-only">{title}</h1>
+            <HeaderTitleField title={title} onTitle={onTitle} />
+          </>
+        ) : (
+          <h1
+            className="editor-header-title editor-page-heading"
+            title={title}
+            aria-label={title}
+          >
+            {title}
+          </h1>
+        )}
         <div
           className="editor-save-status"
           data-state={state}
@@ -565,5 +576,53 @@ export function EditorHeader({
       {meta}
       <div className="editor-header-actions">{children}</div>
     </header>
+  );
+}
+
+/** The proposal title, edited in place. An empty title is never saved. */
+function HeaderTitleField({
+  title,
+  onTitle,
+}: {
+  title: string;
+  onTitle: (title: string) => void;
+}) {
+  const [value, setValue] = useState(title),
+    [focused, setFocused] = useState(false),
+    start = useRef(title);
+  useEffect(() => {
+    if (!focused) setValue(title);
+  }, [title, focused]);
+  return (
+    <input
+      className="editor-header-title editor-title-input"
+      aria-label="Rename proposal"
+      title={title}
+      value={value}
+      maxLength={300}
+      spellCheck
+      onFocus={() => {
+        start.current = title;
+        setFocused(true);
+      }}
+      onBlur={() => {
+        setFocused(false);
+        if (!value.trim()) setValue(title);
+      }}
+      onChange={(e) => {
+        const next = e.target.value.replace(/[\r\n]+/g, " ");
+        setValue(next);
+        if (next.trim()) onTitle(next);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === "Escape") {
+          if (e.key === "Escape" && value !== start.current) {
+            setValue(start.current);
+            onTitle(start.current);
+          }
+          e.currentTarget.blur();
+        }
+      }}
+    />
   );
 }

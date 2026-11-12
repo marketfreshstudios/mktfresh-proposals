@@ -266,10 +266,10 @@ test("editor UX evidence and interactions", async ({ page, context }) => {
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.goto(`/proposals/${active.id}`);
     await page
-      .getByRole("textbox", { name: "Proposal title", exact: true })
+      .getByRole("textbox", { name: "Rename proposal", exact: true })
       .fill("A clear next chapter");
     await expect.poll(() => active.title).toBe("A clear next chapter");
-    await expect(page.locator(".editor-header-title")).toHaveText(
+    await expect(page.locator(".editor-header-title")).toHaveValue(
       "A clear next chapter",
     );
     await expect(page.locator(".editor-header-title button")).toHaveCount(0);

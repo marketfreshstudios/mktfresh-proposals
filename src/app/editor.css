@@ -10164,3 +10164,42 @@ dialog.foundation-sheet.block-style-sheet {
   outline: var(--focus-outline);
   outline-offset: 2px;
 }
+
+/* The proposal title edits in place: it reads as the title until hovered or focused. */
+.staff-foundation.ink-clay .editor-v2-header input.editor-title-input {
+  order: 2;
+  flex: 0 1 auto;
+  field-sizing: content;
+  min-width: 120px;
+  max-width: min(42vw, 520px);
+  height: 32px;
+  min-height: 32px;
+  margin: 0;
+  padding: 0 8px;
+  --border-control: transparent;
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: inherit;
+  font: 600 15px/20px var(--font-ui);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  box-shadow: none;
+}
+@media (hover: hover) {
+  .staff-foundation.ink-clay .editor-v2-header input.editor-title-input:hover {
+    --border-control: var(--chrome-line);
+    border-color: var(--border-control);
+  }
+}
+.staff-foundation.ink-clay .editor-v2-header input.editor-title-input:focus {
+  --border-control: var(--chrome-muted);
+  border-color: var(--border-control);
+  background: var(--chrome-raised);
+  text-overflow: clip;
+}
+/* Editing shows as the raised field itself; no extra ring on a click. */
+.staff-foundation.ink-clay .editor-v2-header input.editor-title-input:focus {
+  outline: none;
+}

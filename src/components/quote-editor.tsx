@@ -2960,6 +2960,13 @@ function QuoteEditorContent({
         onReviewSend={() => openTools("Send")}
         sendPanelOpen={tab === "Send" && toolsOpen}
         title={p.title}
+        onTitle={
+          locked
+            ? undefined
+            : // Renaming changes only the proposal name; the cover keeps
+              // its own title once it has been edited.
+              (typed) => change({ title: resolveLabel(typed, map) })
+        }
         backLabel="Proposal"
         backHref={`/proposals/${p.id}?view=record`}
         save={save}
@@ -3250,9 +3257,6 @@ function QuoteEditorContent({
                       sender={map["sender.name"]}
                       validUntil={p.valid_until}
                       timezone={p.workspace_settings?.timezone}
-                      onTitle={
-                        locked ? undefined : (title) => change({ title })
-                      }
                     />
                   )}
                   {firstBlock}

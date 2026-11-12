@@ -310,7 +310,20 @@ test("cover fields insert at the cursor and hiding its title preserves proposal 
   await titleInput.press("End");
   await titleInput.pressSequentially("x");
   await expect(titleInput).toHaveText("x".repeat(300));
-  await expect.poll(() => f.active().title).toBe("x".repeat(300));
+  // The cover title has its own 300-character limit; it doesn't rename the proposal.
+  await expect
+    .poll(() =>
+      JSON.stringify(
+        f.active().cover?.elements?.find((e) => e.kind === "title")?.content,
+      ),
+    )
+    .toContain("x".repeat(300));
+  expect(
+    JSON.stringify(
+      f.active().cover?.elements?.find((e) => e.kind === "title")?.content,
+    ),
+  ).not.toContain("x".repeat(301));
+  expect(f.active().title).toBe(title);
 });
 test("375px cover formatting follows the visual viewport with reachable controls", async ({
   page,
