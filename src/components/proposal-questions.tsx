@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { X } from "lucide-react";
+import { MessageCircleReply, X } from "lucide-react";
 import type { z } from "zod";
 import type { AskQuestionSchema } from "../lib/proposal-questions";
 import {
@@ -296,13 +296,18 @@ export function ClientQuestions({
             )}
             <p className="question-text">{thread.question}</p>
             <div className="client-question-actions">
-              <span>
-                {hasReply
-                  ? `Answered by ${thread.replies[0].name}`
-                  : thread.status === "resolved"
+              {hasReply ? (
+                <span className="client-question-answered">
+                  <MessageCircleReply size={14} aria-hidden="true" />
+                  Answered by {thread.replies[0].name}
+                </span>
+              ) : (
+                <span>
+                  {thread.status === "resolved"
                     ? "Resolved"
                     : "Waiting for a reply"}
-              </span>
+                </span>
+              )}
               <div>
                 {hasReply ? (
                   <button
@@ -424,6 +429,7 @@ export function ClientQuestions({
           <ToolbarPopover
             className="client-ask-popover"
             placementAnchor={requested.anchor}
+            dock={document.querySelector<HTMLElement>(".flow-reading-rail")}
             trigger={requested.trigger}
             close={close}
           >

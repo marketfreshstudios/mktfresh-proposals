@@ -14,7 +14,10 @@ export function ToolbarPopover({
   placementAnchor,
   preferredSide = "below",
   align,
+  dock,
 }: {
+  /** Pin the popover over this element (fixed, top-aligned) instead of the anchor. */
+  dock?: HTMLElement | null;
   placementAnchor?: HTMLElement;
   align?: "start" | "end";
   preferredSide?: "below" | "right";
@@ -39,6 +42,19 @@ export function ToolbarPopover({
         bottom =
           (viewport?.offsetTop ?? 0) + (viewport?.height ?? innerHeight) - 8;
       if (visualViewport) el.style.maxHeight = `${bottom - top}px`;
+      // Only a rail that sits beside the page (sticky) can hold the popover.
+      const docked =
+        dock?.isConnected && getComputedStyle(dock).position === "sticky"
+          ? dock.getBoundingClientRect()
+          : null;
+      if (docked && docked.width > 0) {
+        const y = Math.max(top, docked.top);
+        el.style.width = `${docked.width}px`;
+        el.style.maxHeight = `${bottom - y}px`;
+        el.style.left = `${docked.left}px`;
+        el.style.top = `${y}px`;
+        return;
+      }
       const anchor =
         placementAnchor ??
         trigger ??
