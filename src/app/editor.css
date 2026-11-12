@@ -10137,3 +10137,30 @@ dialog.foundation-sheet.block-style-sheet {
     display: none;
   }
 }
+/* Change client sits under To as a quiet text link with room on both sides. */
+.editor-v2-panel .send-change-client.text-link,
+.send-change-client.text-link {
+  display: block;
+  width: fit-content;
+  min-height: 0;
+  height: auto;
+  margin: 8px 0 16px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--ink-title);
+  font: 600 13px/18px var(--font-ui);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .send-change-client.text-link:hover {
+    color: var(--action);
+  }
+}
+.send-change-client.text-link:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: 2px;
+}

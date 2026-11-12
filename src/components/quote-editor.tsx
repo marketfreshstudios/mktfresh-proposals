@@ -1389,14 +1389,15 @@ function QuoteEditorContent({
               />
             </Field>
             {!locked && canChangeClient(p) && (
-              <Button
-                className="send-change-client"
+              <button
+                type="button"
+                className="text-link send-change-client"
                 onClick={async () => {
                   if (await save()) setClientOpen(true);
                 }}
               >
                 Change client
-              </Button>
+              </button>
             )}
           </>
         )}
