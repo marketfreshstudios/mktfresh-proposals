@@ -8,6 +8,7 @@ import {
   paginatePrintDocument,
 } from "../lib/document-print";
 import { applyPagePlan, plannedPrintCss } from "../lib/planned-print";
+import type { PagePlan } from "../lib/page-plan";
 import { documentStyleCss } from "../lib/proposal-styles";
 import { fontFamily } from "../lib/proposal-fonts";
 import { signatureHtml } from "../lib/signature-presentation";
@@ -88,7 +89,38 @@ export function paginateClientDocument(
   stage: HTMLElement,
   p: PublicProposal,
   logo?: string,
-  plan = p.pagination,
+  frozen: PagePlan | null | undefined = p.pagination,
+  logoIcon?: string,
+  signatureSeparator?: " | ",
+): ReturnType<typeof paginateClientDocumentOnce> {
+  // The plan frozen at send fits the choices it was made with. If the
+  // client's choices make a planned page overflow (a taller option replaced
+  // a shorter one), break the pages afresh, as the signed PDF does.
+  const output = paginateClientDocumentOnce(
+    stage,
+    p,
+    logo,
+    frozen ?? undefined,
+    logoIcon,
+    signatureSeparator,
+  );
+  return frozen && output.overflow
+    ? paginateClientDocumentOnce(
+        stage,
+        p,
+        logo,
+        undefined,
+        logoIcon,
+        signatureSeparator,
+      )
+    : output;
+}
+
+function paginateClientDocumentOnce(
+  stage: HTMLElement,
+  p: PublicProposal,
+  logo: string | undefined,
+  plan: PagePlan | undefined,
   logoIcon?: string,
   signatureSeparator?: " | ",
 ) {
@@ -123,8 +155,10 @@ export function paginateClientDocument(
   resolveCoverGraphics(root);
   fitStoredImages(root);
   sizeListMarkers(root);
-  if (plan) applyPagePlan(root, plan);
-  else
+  const overflow = plan
+    ? applyPagePlan(root, plan).overflow_pages.length > 0
+    : false;
+  if (!plan)
     paginatePrintDocument(root, Boolean(p.preview_can_send && p.header_footer));
   // The unplanned PDF paginator emits atoms rather than source wrappers.
   for (const atom of root.querySelectorAll<HTMLElement>("[data-source-block]"))
@@ -176,5 +210,5 @@ export function paginateClientDocument(
   });
   resolveCoverGraphics(root);
   fitStoredImages(root);
-  return { root, sheets, plan };
+  return { root, sheets, plan, overflow };
 }
