@@ -853,6 +853,11 @@
   background: var(--neutral-soft);
   border-radius: 8px;
 }
+/* A client's follow-up in the staff panel. */
+.question-reply.from-client {
+  border-inline-start-color: var(--accent, var(--border-strong));
+  background: transparent;
+}
 .question-reply .question-text {
   margin-top: 6px;
 }

@@ -37,6 +37,11 @@ export const AskQuestionSchema = z
   })
   .strict();
 export const EditClientQuestionSchema = z.object({ text: message }).strict();
+/** A client's follow-up in the same conversation. */
+export const ClientReplySchema = z
+  .object({ id: z.string().uuid(), text: message })
+  .strict();
+export const clientReplyLimit = 40;
 export const StaffQuestionSchema = z.discriminatedUnion("action", [
   z
     .object({
@@ -59,7 +64,14 @@ export type QuestionThread = {
   excerpt?: string;
   contact: { name: string; email: string };
   question: string;
-  replies: { id: string; name: string; text: string; created_at: string }[];
+  replies: {
+    id: string;
+    name: string;
+    text: string;
+    created_at: string;
+    /** Absent on staff replies (all replies before client follow-ups). */
+    from?: "client";
+  }[];
   notify_users: string[];
 };
 export type QuestionTombstone = Pick<

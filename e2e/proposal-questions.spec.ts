@@ -314,6 +314,39 @@ test("client question reaches staff, receives a plain-text reply on the same lin
   await page.goto(reply.button_url);
   await expect(questions.getByText(/set up a call to review/)).toBeVisible();
   await capture(page, "client-reply-1440");
+  // The client answers back in the same conversation; it reopens for staff.
+  await questions.getByRole("button", { name: "Reply", exact: true }).click();
+  await questions
+    .getByLabel("Your reply")
+    .fill("Thanks. Tuesday morning works for the call.");
+  await questions
+    .getByRole("button", { name: "Send reply", exact: true })
+    .click();
+  await expect(
+    questions.getByText("Thanks. Tuesday morning works for the call."),
+  ).toBeVisible();
+  await expect(
+    questions.locator(".question-reply.from-client").getByText("You"),
+  ).toBeVisible();
+  await expect(questions.getByText("Waiting for a reply")).toBeVisible();
+  const reopened = (
+    await (
+      await request.get(`/api/proposals/${p.id}/questions`, { headers: staff })
+    ).json()
+  ).threads[0];
+  expect(reopened.status).toBe("open");
+  expect(reopened.replies.map((r: { from?: string }) => r.from)).toEqual([
+    undefined,
+    "client",
+  ]);
+  await expect
+    .poll(
+      async () =>
+        (await log()).filter(
+          (e) => e.snapshot.template_key === "staff_question",
+        ).length,
+    )
+    .toBe(2);
   await page.setViewportSize({ width: 375, height: 780 });
   await page.evaluate(() => window.scrollTo(0, 0));
   const header = page.locator(".flow-header");

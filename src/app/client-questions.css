@@ -107,6 +107,34 @@
   margin: 8px 0 0;
   border: 0;
 }
+/* The client's own follow-ups read as theirs: neutral, not the sender's tint. */
+.client-flow .client-question-thread .question-reply.from-client {
+  background: var(
+    --neutral-soft,
+    color-mix(in srgb, var(--ink) 5%, var(--surface))
+  );
+}
+.client-flow .client-question-reply-action {
+  margin-top: 8px;
+}
+.client-flow .client-question-reply-form {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+.client-flow .client-question-reply-form label {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.client-flow .client-question-reply-form textarea {
+  width: 100%;
+  min-height: 72px;
+  resize: vertical;
+  font: inherit;
+  font-weight: 400;
+}
 .client-flow .client-question-thread .question-reply time {
   display: inline-block;
   margin-inline-start: 8px;

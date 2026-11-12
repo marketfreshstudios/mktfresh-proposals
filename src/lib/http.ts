@@ -19,6 +19,7 @@ import {
 import {
   AskQuestionSchema,
   EditClientQuestionSchema,
+  ClientReplySchema,
   StaffQuestionSchema,
 } from "./proposal-questions";
 import {
@@ -27,6 +28,7 @@ import {
   clientQuestions,
   deliverQuestionMail,
   editClientQuestion,
+  clientReply,
   QuestionProposalChanged,
   staffQuestions,
 } from "./question-service";
@@ -630,6 +632,30 @@ async function handleRoute(
             }
           }
         }
+      }
+      if (
+        action === "questions" &&
+        path[3] &&
+        path[4] === "replies" &&
+        !path[5] &&
+        method === "POST"
+      ) {
+        check(sameOrigin(req), "Same-origin request required", 403);
+        check(
+          /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(path[3]),
+          "Question not found",
+          404,
+        );
+        const input = ClientReplySchema.parse(await body(req));
+        return json(
+          await clientReply(
+            rt.repo,
+            await rt.service.byToken(token, password),
+            path[3],
+            input,
+          ),
+          201,
+        );
       }
       if (
         action === "questions" &&
