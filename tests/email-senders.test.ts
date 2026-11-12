@@ -179,3 +179,34 @@ it("passes Reply-To to the email provider", async () => {
     request.mockRestore();
   }
 });
+
+it("team notifications come from Yeswell once its domain is set; client email never does", async () => {
+  const { prepareEmail } = await import("../src/lib/email-templates");
+  const { yeswellFrom } = await import("../src/lib/email-identity");
+  const { repo, service, draft } = await setup();
+  const p = await service.send(draft.id, staff);
+  const job = (key: string) =>
+    ({
+      id: crypto.randomUUID(),
+      kind: "email",
+      status: "pending",
+      attempts: 0,
+      available_at: new Date().toISOString(),
+      payload: { to: "staff@example.test", email_template_key: key },
+    }) as any;
+  // Unset: everything keeps the workspace sender.
+  expect(yeswellFrom()).toBeNull();
+  const before = await prepareEmail(repo, p, job("staff_viewed"));
+  expect(before.from).not.toContain("yeswell.co");
+  vi.stubEnv("YESWELL_NOTIFICATIONS_EMAIL", "notifications@yeswell.co");
+  expect(yeswellFrom()).toBe('"Yeswell" <notifications@yeswell.co>');
+  expect(yeswellFrom("Alex via Yeswell")).toBe(
+    '"Alex via Yeswell" <notifications@yeswell.co>',
+  );
+  const team = await prepareEmail(repo, p, job("staff_viewed"));
+  expect(team.from).toBe('"Yeswell" <notifications@yeswell.co>');
+  const client = await prepareEmail(repo, p, job("proposal_sent"));
+  expect(client.from).toBe(emailIdentity(p).from);
+  vi.stubEnv("YESWELL_NOTIFICATIONS_EMAIL", "not an address\r\nBcc: x");
+  expect(yeswellFrom()).toBeNull();
+});

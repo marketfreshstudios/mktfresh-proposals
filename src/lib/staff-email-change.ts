@@ -3,7 +3,7 @@ import { z } from "zod";
 import { check } from "./model";
 import { ResendMailer } from "./jobs";
 import { supabase, SupabaseRepository } from "./repository";
-import { workspaceSecuritySender } from "./email-identity";
+import { workspaceSecuritySender, yeswellFrom } from "./email-identity";
 import { emailLayout } from "./email-layout";
 import { escape } from "./presentation";
 import { appOrigin } from "./links";
@@ -111,7 +111,7 @@ export async function staffEmailAction(
   )[0];
   const from = settings && workspaceSecuritySender(settings);
   check(
-    from && process.env.RESEND_API_KEY,
+    (from || yeswellFrom()) && process.env.RESEND_API_KEY,
     "Ask your super admin to configure workspace email before changing your address.",
     409,
   );
@@ -155,11 +155,12 @@ export async function staffEmailAction(
       {
         to,
         subject: title,
-        from: `Yeswell <${from}>`,
+        from: yeswellFrom() ?? `Yeswell <${from}>`,
         reply_to: settings.email,
         ...emailLayout({
           title,
           staff: true,
+          origin: appOrigin(),
           bodyHtml: `<p>${escape(message)}</p>`,
           bodyText: message,
           button,

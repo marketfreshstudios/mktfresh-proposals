@@ -76,9 +76,9 @@ test("Workspace reminder rules autosave; staff email is read-only and tests only
       exact: true,
     }),
   ).toBeVisible();
-  await expect(
-    page.locator(".workspace-section [role=status]"),
-  ).toHaveText("Saved");
+  await expect(page.locator(".workspace-section [role=status]")).toHaveText(
+    "Saved",
+  );
   await page
     .getByRole("heading", { name: "Email sending", exact: true })
     .click();
@@ -117,7 +117,7 @@ test("Workspace reminder rules autosave; staff email is read-only and tests only
   await shot(page, "staff-emails-1440");
   await page.getByRole("link", { name: /Countersign reminder/ }).click();
   await expect(
-    page.getByText("Staff notification · read-only", { exact: true }),
+    page.getByText("Staff notification | read-only", { exact: true }),
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Save", exact: true }),
@@ -163,7 +163,9 @@ test("Workspace reminder rules autosave; staff email is read-only and tests only
   );
   await page.goto(`/proposals/${p.id}?view=record`);
   await expect(
-    page.getByText("Automatic reminder emailed | not opened yet", { exact: true }),
+    page.getByText("Automatic reminder emailed | not opened yet", {
+      exact: true,
+    }),
   ).toHaveCount(2);
   await page.locator(".timeline").scrollIntoViewIfNeeded();
   await shot(page, "automatic-reminders-timeline-1440", false);

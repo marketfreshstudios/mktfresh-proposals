@@ -24,7 +24,7 @@ import {
 export * from "./email-template-content";
 import { emailLayout } from "./email-layout";
 import { proposalLink, appOrigin } from "./links";
-import { emailIdentity } from "./email-identity";
+import { emailIdentity, yeswellFrom } from "./email-identity";
 import { sha256, canonical } from "./content";
 export async function emailTemplates(repo: Repository) {
   const saved = await repo.entities<EmailTemplate>("email_templates");
@@ -271,7 +271,7 @@ export function renderTemplate(
       !t.staff && p.sender?.photo_path && p.token
         ? proposalLink(p).replace("/p/", "/api/public/") + "/brand/sender-photo"
         : undefined,
-    contact: [s?.email, s?.phone, s?.address].filter(Boolean).join(" · "),
+    contact: [s?.email, s?.phone, s?.address].filter(Boolean).join(" | "),
     accent: s?.accent_colour ?? "#365c4a",
     fonts: s?.proposal_fonts,
     logo:
@@ -289,6 +289,7 @@ export function renderTemplate(
     },
     test: options.test,
     staff: t.staff,
+    origin: t.staff ? appOrigin() : undefined,
     poweredBy:
       !t.staff && (options.showPoweredBy ?? s?.show_powered_by !== false)
         ? { origin: appOrigin() }
@@ -356,6 +357,8 @@ export async function prepareEmail(
     typeof j.payload.reply_to === "string"
       ? { from: j.payload.from, reply_to: j.payload.reply_to }
       : emailIdentity(p)),
+    // Notifications to the agency's own team come from Yeswell.
+    ...(t.staff && yeswellFrom() ? { from: yeswellFrom()! } : {}),
     prepared_at: new Date().toISOString(),
   };
 }

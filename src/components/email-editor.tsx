@@ -280,7 +280,7 @@ function InlineEmailEditor({
     status = !editable
       ? template.key.startsWith("team_")
         ? "Super admin only · read-only"
-        : "Staff notification · read-only"
+        : "Staff notification | read-only"
       : emailIsDefault({ ...template, ...baseline })
         ? "Workspace default"
         : `Edited ${template.updated_at ? studioDate(template.updated_at) : ""} by ${editedBy}`;
