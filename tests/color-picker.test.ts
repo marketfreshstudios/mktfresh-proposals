@@ -45,10 +45,10 @@ it("keeps the exact brand fill and derives AA small text consistently", () => {
     ),
   ).toContain(`color:${text}`);
 });
-it("browser CI has six consistent shards and thirty minutes of headroom", async () => {
+it("browser CI has ten consistent shards and thirty minutes of headroom", async () => {
   const yaml = await readFile(".github/workflows/ci.yml", "utf8");
   const browser = yaml.slice(yaml.indexOf("  e2e:"));
   expect(browser).toContain("timeout-minutes: 30");
-  expect(browser).toContain("shard: [1, 2, 3, 4, 5, 6]");
-  expect(browser.match(/matrix.shard }}\/6/g)).toHaveLength(2);
+  expect(browser).toContain("shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]");
+  expect(browser.match(/matrix.shard }}\/10/g)).toHaveLength(2);
 });

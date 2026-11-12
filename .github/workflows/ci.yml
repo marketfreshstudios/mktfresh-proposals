@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Run everything on demand, e.g. after a merge that skipped main browser tests.
+  workflow_dispatch:
 permissions:
   contents: read
 # A newer push to the same PR cancels the older, now-irrelevant run.
@@ -23,7 +25,16 @@ jobs:
           cache: npm
       - run: npm ci
       # verify:fonts renders PDFs with Playwright's Chromium.
-      - run: npx playwright install --with-deps chromium
+      # Reuse the downloaded Chromium between runs; system libraries still install.
+      - uses: actions/cache@v4
+        id: pw-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+      - if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
       - run: sudo apt-get update && sudo apt-get install -y poppler-utils
       - run: npm run check:neutral
       - run: npm run check:english
@@ -34,13 +45,18 @@ jobs:
       # Match Vercel's packaged Linux Chromium, including both sealing stages.
       - run: VERCEL=1 npm run verify:pdf-jobs
   e2e:
-    name: Browser tests (${{ matrix.shard }}/6)
+    name: Browser tests (${{ matrix.shard }}/10)
+    # Every PR runs them. After a merge, main runs them too, unless the merge
+    # commit says [skip main browser tests] (for merges already proven safe).
+    if: >-
+      github.event_name != 'push' ||
+      !contains(github.event.head_commit.message, '[skip main browser tests]')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -48,10 +64,19 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      # Reuse the downloaded Chromium between runs; system libraries still install.
+      - uses: actions/cache@v4
+        id: pw-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+      - if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
       - run: sudo apt-get update && sudo apt-get install -y poppler-utils
       # Each shard starts its own app and its own temporary database.
-      - run: npx playwright test --shard=${{ matrix.shard }}/6
+      - run: npx playwright test --shard=${{ matrix.shard }}/10
       - uses: actions/upload-artifact@v4
         if: always()
         with:
