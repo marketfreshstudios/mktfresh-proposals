@@ -1,4 +1,5 @@
 "use client";
+import { BillingCategoryForm } from "./billing-category-form";
 import { PanelCard } from "./editor/tools-panel";
 import { PanelHeading } from "./editor/panel-heading";
 import { StaffSectionHeading } from "./staff-section-heading";
@@ -237,13 +238,13 @@ export function CatalogStudio({
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
   }, [selected, data?.catalog]);
-  const choices = ["All", "Stripe", "Custom families", "Archived"];
+  const choices = ["All", "Stripe", "Billing categories", "Archived"];
   const visible = (i: Item) =>
     filter === "Archived"
       ? !i.active || i.legacy
       : i.active &&
         !i.legacy &&
-        filter !== "Custom families" &&
+        filter !== "Billing categories" &&
         (filter !== "Stripe" || !!i.stripe_lookup_key);
   const catalog = data?.catalog ?? [];
   const customFamilies = data?.families ?? [];
@@ -259,7 +260,7 @@ export function CatalogStudio({
   const families = customFamilies.filter(
     (f) =>
       (filter === "All" ||
-        filter === "Custom families" ||
+        filter === "Billing categories" ||
         (filter === "Archived" && !f.active)) &&
       (filter === "Archived" ? !f.active : f.active) &&
       f.name.toLowerCase().includes(query.toLowerCase()),
@@ -279,7 +280,7 @@ export function CatalogStudio({
       <div className="studio-list-intro">
         <p>
           Services you can add to a quote. Stripe products keep their Stripe
-          price; custom families are priced on each proposal.
+          price; billing categories hold custom prices set on each proposal.
         </p>
         {!beforeStripe && (
           <Button
@@ -287,7 +288,7 @@ export function CatalogStudio({
             disabled={!data}
             onClick={() => setFamily(true)}
           >
-            New custom family
+            New billing category
           </Button>
         )}
       </div>
@@ -334,7 +335,7 @@ export function CatalogStudio({
               {c} ·{" "}
               {!data
                 ? "–"
-                : c === "Custom families"
+                : c === "Billing categories"
                   ? customFamilies.filter((f) => f.active).length
                   : c === "Archived"
                     ? catalog.filter((i) => !i.active || i.legacy).length
@@ -468,7 +469,7 @@ export function CatalogStudio({
                 <StaffTableEmpty>
                   {query
                     ? "No matching products."
-                    : "Your products start here. Sync your Stripe products or create a custom family."}
+                    : "Your products start here. Sync your Stripe products or create a billing category."}
                 </StaffTableEmpty>
               )}
             </StaffTable>
@@ -535,13 +536,14 @@ export function CatalogStudio({
                 </>
               ) : (
                 <>
-                  <span className="studio-tag">Custom family</span>
-                  <Field label="Family name">
+                  <span className="studio-tag">Billing category</span>
+                  <Field label="Category name">
                     <input readOnly value={custom!.name} />
                   </Field>
                   <p>
-                    Entered per proposal. Use this family for a custom scope and
-                    the agreed price; the app never sets prices.
+                    Custom monthly or yearly prices are billed under this
+                    category in Stripe. Each proposal sets its own amount; the
+                    app never sets prices.
                   </p>
                 </>
               )}
@@ -560,50 +562,14 @@ export function CatalogStudio({
         </Sheet>
       )}
       {family && (
-        <Sheet title="New custom family" onClose={() => setFamily(false)}>
-          <FamilyForm run={run} close={() => setFamily(false)} />
+        <Sheet title="New billing category" onClose={() => setFamily(false)}>
+          <BillingCategoryForm
+            onCreated={() => run(async () => {}, "Billing category created")}
+            close={() => setFamily(false)}
+          />
         </Sheet>
       )}
     </div>
-  );
-}
-function FamilyForm({ run, close }: { run: Runner; close: () => void }) {
-  const save = useSave(run);
-  return (
-    <form
-      className="stack"
-      onSubmit={async (e) => {
-        e.preventDefault();
-        const name = new FormData(e.currentTarget).get("name");
-        if (
-          await save.save(
-            () =>
-              post("/api/custom-families", {
-                name,
-                request_id: crypto.randomUUID(),
-              }),
-            "Custom family created",
-          )
-        )
-          close();
-      }}
-    >
-      <p>
-        Use a service name. Existing Stripe products are checked for duplicates.
-      </p>
-      <Field label="Service family name">
-        <input name="name" minLength={3} required />
-      </Field>
-      <SaveError error={save.error} />
-      <DialogActions>
-        <Button onClick={close} disabled={save.busy}>
-          Cancel
-        </Button>
-        <Button type="submit" busy={save.busy}>
-          Create in Stripe test mode
-        </Button>
-      </DialogActions>
-    </form>
   );
 }
 function CatalogItem({

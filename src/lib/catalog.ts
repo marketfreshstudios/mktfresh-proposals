@@ -121,14 +121,14 @@ export async function createCustomFamily(
 ) {
   check(
     name.trim().length > 2 && name.length <= 100,
-    "Service family name required",
+    "Billing category name required",
   );
   const clients = await repo.entities<{ id: string; company: string }>(
     "clients",
   );
   check(
     !clients.some((c) => name.toLowerCase().includes(c.company.toLowerCase())),
-    "Family names describe services, not clients",
+    "Name billing categories for a service, not a client",
   );
   let cursor = "";
   let recovered: StripeProduct | undefined;

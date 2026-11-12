@@ -658,7 +658,7 @@ test("Studio v3 responsive list pages and ten Workspace sections", async ({
   };
   await f.repo.put("custom_families", family);
   await page.goto(`/studio/products?item=${family.id}`);
-  await expect(page.getByLabel("Family name")).toHaveValue(family.name);
+  await expect(page.getByLabel("Category name")).toHaveValue(family.name);
   await capture(page, "03-product-custom-1440");
   await page.goto("/studio/emails");
   await page.getByRole("tab", { name: "Staff notifications 11" }).click();

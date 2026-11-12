@@ -145,7 +145,7 @@ export class StripeProvider implements BillingProvider {
     ).find((f) => f.id === line.custom_family_id && f.active);
     if (!family)
       throw new NeedsReview(
-        `${line.name}: active custom product family required`,
+        `${line.name}: choose an active billing category`,
       );
     const product = await this.api.get<{
       name?: string;
@@ -153,7 +153,7 @@ export class StripeProvider implements BillingProvider {
       metadata: Record<string, string>;
     }>(`/v1/products/${family.stripe_product_id}`, {});
     if (!product.active || product.metadata.custom_family !== "true")
-      throw new NeedsReview("Custom family is not active in Stripe");
+      throw new NeedsReview("Billing category is not active in Stripe");
     names?.set(line.id, product.name || family.name || line.name);
     return {
       price_data: {
