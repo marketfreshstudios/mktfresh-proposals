@@ -320,7 +320,9 @@ test("full headless flow through the client interface, both PDFs, billing, downl
   ).body();
   const frozen = structuredClone(p.versions.at(-1));
   await page.goto(`/p/${p.token}`);
-  await expect(page.getByText("Completed copy", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Your completed agreement" }),
+  ).toBeVisible();
   const afterReading = await (
     await request.get(`/api/proposals/${p.id}`, { headers })
   ).json();

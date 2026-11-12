@@ -198,7 +198,7 @@ test("manual publish exposes one copyable link, no email, record/list access and
     .getByRole("button", { name: "Sign proposal", exact: true })
     .click();
   await expect(
-    page.getByText(/Your proposal is signed\. Your copy will be sent to/),
+    page.getByText(/^Signed\. Thank you|^You’re all set/).first(),
   ).toBeVisible();
   await expect
     .poll(
