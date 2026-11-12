@@ -51,9 +51,11 @@ export function verifyStripeWebhook(
   );
   const payload = JSON.parse(raw);
   check(payload.livemode === false, "Live webhook refused", 400);
+  // Any snapshot API version is accepted: only IDs are read from the event,
+  // and every object is fetched again from Stripe on the pinned API version.
   check(
-    payload.api_version === "2024-06-20",
-    "Webhook must use pinned snapshot API version",
+    typeof payload.data?.object === "object" && payload.data.object !== null,
+    "Snapshot webhook payload required",
     400,
   );
   check(
@@ -68,6 +70,16 @@ export function verifyStripeWebhook(
     created?: number;
     data: { object: Record<string, any> };
   };
+}
+/** The invoice's subscription ID on any API version (moved under `parent` in 2025). */
+export function invoiceSubscription(invoice: Record<string, any>) {
+  const id =
+    invoice.subscription ?? invoice.parent?.subscription_details?.subscription;
+  return typeof id === "string"
+    ? id
+    : typeof id?.id === "string"
+      ? id.id
+      : null;
 }
 export async function receiveStripeWebhook(
   repo: Repository,
@@ -96,14 +108,12 @@ export async function receiveStripeWebhook(
   let object = payload.data.object;
   let adopted: Proposal | null = null;
   if (payload.type.startsWith("invoice.")) {
-    if (
-      typeof object.subscription !== "string" ||
-      !subscriptionId.test(object.subscription)
-    )
+    const subscription = invoiceSubscription(object);
+    if (!subscription || !subscriptionId.test(subscription))
       return { received: true, ignored: true };
-    adopted = await repo.byAdoptedStripeSubscription(object.subscription);
+    adopted = await repo.byAdoptedStripeSubscription(subscription);
     object = await provider.api.get<Record<string, any>>(
-      `/v1/subscriptions/${object.subscription}`,
+      `/v1/subscriptions/${subscription}`,
       {},
     );
   }
@@ -481,7 +491,7 @@ export async function executeStripeWebhook(
       ? { "expand[]": "items.data.price.product" }
       : {};
     const sub = await provider.api.get<any>(
-      `/v1/subscriptions/${object.subscription}`,
+      `/v1/subscriptions/${invoiceSubscription(object)}`,
       expansion,
     );
     if (adopted) {

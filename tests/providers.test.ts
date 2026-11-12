@@ -346,7 +346,13 @@ it("rejects forged/stale/live webhook payloads and queues each verified receipt 
     livemode: false,
     api_version: "2024-06-20",
     type: "checkout.session.completed",
-    data: { object: { metadata: { proposal_id: "" }, customer: "cus_test" } },
+    data: {
+      object: {
+        id: "cs_test",
+        metadata: { proposal_id: "" },
+        customer: "cus_test",
+      },
+    },
   };
   const { repo, service, draft } = await setup();
   let p = await service.send(draft.id, staff);
@@ -573,4 +579,34 @@ it("opting into ACH leaves existing-subscriber requests and one-time routing unc
     ),
   ).toBe(true);
   expect(result.metadata!.send_invoice).toBe(false);
+});
+
+it("accepts snapshot webhooks on newer API versions, reading only IDs", async () => {
+  const { invoiceSubscription } = await import("../src/lib/providers/webhook");
+  const secret = "whsec_test",
+    t = Math.floor(Date.now() / 1000);
+  const raw = JSON.stringify({
+    id: "evt_new",
+    livemode: false,
+    api_version: "2026-10-28.clover",
+    type: "checkout.session.completed",
+    data: { object: { id: "cs_new" } },
+  });
+  const header = `t=${t},v1=${createHmac("sha256", secret)
+    .update(t + "." + raw)
+    .digest("hex")}`;
+  expect(verifyStripeWebhook(raw, header, secret).data.object.id).toBe(
+    "cs_new",
+  );
+  // Invoices moved the subscription under parent in 2025 API versions.
+  expect(invoiceSubscription({ subscription: "sub_old" })).toBe("sub_old");
+  expect(
+    invoiceSubscription({
+      parent: { subscription_details: { subscription: "sub_new" } },
+    }),
+  ).toBe("sub_new");
+  expect(invoiceSubscription({ subscription: { id: "sub_obj" } })).toBe(
+    "sub_obj",
+  );
+  expect(invoiceSubscription({})).toBeNull();
 });
