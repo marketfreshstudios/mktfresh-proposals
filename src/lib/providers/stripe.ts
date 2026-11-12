@@ -247,7 +247,14 @@ export class StripeProvider implements BillingProvider {
               `${names.get(l.id) || l.name} · ${formatMoney(l.amount * l.qty, currency)}/${l.interval === "year" ? "year" : "month"}`,
           )
           .join("; ") +
-        ". No payment is taken in this card setup step. Your subscription is arranged after you save your card.";
+        // Say plainly when saving the card starts the charge (scheduled plans
+        // with automatic collection are charged as soon as the card is saved).
+        (settings.collection_method === "send_invoice"
+          ? ". Saving your card charges nothing today. Your subscription starts after you save it, and your first invoice is emailed."
+          : `. Saving your card starts your subscription, and the first payment of ${formatMoney(
+              group.reduce((sum, l) => sum + l.amount * l.qty, 0),
+              currency,
+            )} is charged right away.`);
       if (message.length > 1200)
         throw new NeedsReview(
           "Itemized card setup exceeds Stripe's text limit; staff must review billing",

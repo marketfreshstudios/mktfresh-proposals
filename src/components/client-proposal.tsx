@@ -975,7 +975,12 @@ function NewClientFlow({
                     <>
                       <h1>
                         {checkout.length &&
-                        checkout.every((s) => s.mode === "setup")
+                        checkout.every(
+                          (s) =>
+                            s.mode === "setup" &&
+                            (s.collection_method ??
+                              p.billing_collection_method) === "send_invoice",
+                        )
                           ? "Save a card for your subscription"
                           : checkout.length &&
                               checkout.every((s) =>
@@ -1049,7 +1054,14 @@ function NewClientFlow({
                                   p.billing_collection_method) ===
                                 "send_invoice"
                                   ? `Save a card for your ${session.lines.every((l) => l.interval === "year") ? "yearly" : "monthly"} subscription — no charge today; your first invoice will be emailed.`
-                                  : "No charge is taken in this card-saving step. Your subscription starts after your card is saved, and the first charge follows."}
+                                  : `Saving your card starts your subscription. Your first payment of ${formatMoney(
+                                      session.lines.reduce(
+                                        (sum, l) => sum + l.amount * l.qty,
+                                        0,
+                                      ),
+                                      p.currency,
+                                      p.money_cents,
+                                    )} is charged right away, then on the same date each ${session.lines.every((l) => l.interval === "year") ? "year" : "month"}.`}
                               </p>
                             )}
                             {session.mode !== "setup" && (
