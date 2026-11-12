@@ -573,6 +573,17 @@ function NewClientFlow({
       (b.type === "heading" &&
         /contract|statement of work/i.test(b.text ?? "")),
   );
+  // Name the agreement the way the proposal titles it.
+  const contractTitle =
+    p?.content
+      .find(
+        (b) =>
+          (b.type === "contract" ||
+            (b.type === "heading" &&
+              /contract|statement of work/i.test(b.text ?? ""))) &&
+          b.text?.trim(),
+      )
+      ?.text?.trim() || "terms";
   // Hidden groups and "Choose up to one" groups never block signing.
   const missingGroups = p ? missingChoiceGroups(p.quote as QuoteItem[]) : [];
   const missingChoice = missingGroups.length > 0;
@@ -1504,9 +1515,11 @@ function NewClientFlow({
                   <ChosenItems proposal={p} terms />
                   <FlowTotals proposal={p} />
                   {hasContract && (
-                    <p>
-                      and the Statement of Work &amp; Contract dated{" "}
-                      {date(p.sent_at)}.{" "}
+                    <p className="flow-acceptance-terms">
+                      <span>
+                        You’re also agreeing to the {contractTitle}
+                        {p.sent_at ? `, dated ${date(p.sent_at)}` : ""}.
+                      </span>
                       <Button
                         variant="ghost"
                         onClick={() => {
@@ -1523,7 +1536,7 @@ function NewClientFlow({
                           go("read");
                         }}
                       >
-                        Read
+                        Read the {contractTitle}
                       </Button>
                     </p>
                   )}
