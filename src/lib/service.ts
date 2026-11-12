@@ -1,3 +1,4 @@
+import { proposalTitle } from "./presentation";
 import { businessState, businessStateError } from "./business-state";
 import { quoteChangesPageContent } from "./oiot";
 import {
@@ -421,6 +422,7 @@ export class ProposalService {
           email: member.email,
         };
     }
+    p.title = proposalTitle(p);
     await this.repo.save(p, -1);
     return withDraftSettings(p, settings);
   }
@@ -694,7 +696,7 @@ export class ProposalService {
           input.title.trim() && input.title.length <= 300,
           "Title required (maximum 300 characters)",
         );
-        p.title = input.title;
+        p.title = proposalTitle(p, input.title);
       }
       if (input.brief !== undefined) p.brief = input.brief;
       if (actor.actor.startsWith("ai:")) p.ai_connector = actor.actor.slice(3);
