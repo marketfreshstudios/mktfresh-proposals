@@ -1504,7 +1504,7 @@
   min-block-size: 40px;
   align-items: center;
 }
-.ink-clay .record-section > .engagement-panel {
+.ink-clay .record-section > :is(.engagement-panel, .questions-panel) {
   margin-block: 0;
 }
 .record-section .staff-section-heading .pill {
@@ -1534,12 +1534,6 @@
   flex-basis: 175px;
 }
 .record-details-values dt,
-.record-most-read {
-  color: var(--ink-muted);
-  font: 600 12px/16px var(--font-ui);
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-}
 .record-details-values dd {
   display: flex;
   flex-direction: column;
@@ -1551,19 +1545,23 @@
 }
 .record-details-values dd small,
 .record-quote-line small,
-.record-engagement-summary {
-  color: var(--ink-muted);
-  font-size: 13px;
-}
 .ink-clay .record-reminders dd {
   flex-direction: row;
   align-items: center;
   gap: 8px;
 }
 /* The switch sits on the text line, like the other detail values. */
+.ink-clay .record-details-values > .record-reminders {
+  display: block;
+}
+.ink-clay .record-reminders dd {
+  min-block-size: 22px;
+}
+/* Keep the 44px tap target without pushing the row below its neighbors. */
 .ink-clay .record-reminders dd > input[role="switch"] {
   flex: none;
-  margin: 0;
+  margin-block: -11px;
+  margin-inline: 0;
 }
 .record-client-link {
   display: grid;
@@ -1629,13 +1627,6 @@
   padding: 12px 22px 18px;
 }
 .ink-clay .record-v4 .record-quote-totals h3,
-.ink-clay .record-v4 .record-most-read {
-  margin: 0 0 8px;
-  color: var(--ink-muted);
-  font: 600 12px/16px var(--font-ui);
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-}
 .record-quote-totals dl,
 .record-signature-card {
   display: grid;
@@ -1765,9 +1756,6 @@
     grid-row: 1;
     grid-column: 2;
   }
-}
-.record-engagement-summary {
-  text-align: end;
 }
 .record-engagement-details {
   margin-block-start: 14px;

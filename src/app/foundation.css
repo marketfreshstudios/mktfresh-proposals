@@ -923,9 +923,3 @@
 .question-form textarea {
   resize: vertical;
 }
-.engagement-panel h3.record-most-read {
-  color: var(--ink-muted, var(--muted));
-  font: 600 11px/14px var(--font-ui);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}

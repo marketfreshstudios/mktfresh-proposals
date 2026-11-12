@@ -484,6 +484,25 @@ test("R24 record states use saved proposal, publication, and signing data at all
           .getByRole("region", { name: "Timeline events" })
           .boundingBox())!.height,
       ).toBeLessThanOrEqual(260);
+      // Reminders text sits on the same line as the other detail values.
+      if (await page.locator(".record-reminders").count()) {
+        const centers = await details.evaluate((el) =>
+          [...el.querySelectorAll(":scope > div > dd")].map((dd) => {
+            const text =
+              [...dd.children].find((c) => c.tagName === "SPAN") ?? dd;
+            const r = (
+              text.firstChild && text !== dd ? text : dd
+            ).getBoundingClientRect();
+            return [dd.parentElement!.className, Math.round(r.top + 11)];
+          }),
+        );
+        const reminder = centers.find(([c]) => c === "record-reminders")!;
+        const expires = centers.find(([c]) => c === "record-details-expires");
+        if (expires && (page.viewportSize()?.width ?? 0) >= 1200)
+          expect(
+            Math.abs(Number(reminder[1]) - Number(expires[1])),
+          ).toBeLessThanOrEqual(2);
+      }
       if (fixture.question) {
         await expect(
           page.getByRole("heading", { name: "Client questions", exact: true }),
@@ -494,6 +513,11 @@ test("R24 record states use saved proposal, publication, and signing data at all
         await expect(page.locator(".record-question-meta")).toContainText(
           "Jane Doe | Investment | ",
         );
+        // Same heading-to-card gap as every other record section, so the
+        // questions card lines up with the card beside it.
+        await expect(
+          page.locator(".record-section > .questions-panel"),
+        ).toHaveCSS("margin-top", "0px");
         await expect(
           page.getByRole("button", { name: "Refresh questions" }),
         ).toHaveCount(0);

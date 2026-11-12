@@ -363,6 +363,14 @@ test("record/list summaries match the retained sessions, with empty and responsi
       .locator("dd"),
   ).toHaveText("6m 0s");
   await expect(panel.locator(".engagement-sessions>li")).toHaveCount(3);
+  // Most read starts collapsed; there is no separate Time by page list or
+  // summary beside the heading.
+  await expect(panel.getByText("First section", { exact: true })).toBeHidden();
+  await expect(panel.getByText("Time by page")).toHaveCount(0);
+  await expect(
+    page.locator("#engagement-heading").locator("xpath=../.."),
+  ).not.toContainText("reading");
+  await panel.getByText("Most read", { exact: true }).click();
   await expect(panel.getByText("First section", { exact: true })).toBeVisible();
   expect(
     (await new AxeBuilder({ page }).include(".engagement-panel").analyze())
