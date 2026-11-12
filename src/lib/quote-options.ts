@@ -64,6 +64,20 @@ export function validateQuoteConditions(quote: Quote, requireTargets = false) {
   }
 }
 
+/** Required groups the client can see with nothing chosen: the same rule the
+ * server applies before signing (hidden groups and "up to one" never count). */
+export function missingChoiceGroups(quote: Quote) {
+  const shown = new Set(visibleQuote(quote).map((item) => item.id));
+  return [...choiceGroups(quote).values()].flatMap((group) => {
+    const options = group.filter(
+      (item) => shown.has(item.id) && !item.choice_group_placeholder,
+    );
+    return choiceRequired(group[0]) && options.length && !options.some(selected)
+      ? [options]
+      : [];
+  });
+}
+
 export function quoteVisibility(quote: Quote) {
   const visible = new Map<string, boolean>();
   const visiting = new Set<string>();
