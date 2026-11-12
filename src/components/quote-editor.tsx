@@ -158,6 +158,7 @@ import {
   resolveLabel,
 } from "../lib/presentation";
 import { readiness } from "../lib/quote";
+import { coverText } from "../lib/cover";
 import { withDraftSettings } from "../lib/proposal-settings";
 import { sellableCatalogue, itemDisplayName } from "../lib/catalogue-display";
 import { FieldEditor } from "./field-editor";
@@ -2960,6 +2961,31 @@ function QuoteEditorContent({
         onReviewSend={() => openTools("Send")}
         sendPanelOpen={tab === "Send" && toolsOpen}
         title={p.title}
+        onTitle={
+          locked
+            ? undefined
+            : (typed) => {
+                const title = resolveLabel(typed, map);
+                change({
+                  title,
+                  // Keep a hand-edited cover title in step with the proposal title.
+                  ...(p.cover?.elements?.some(
+                    (e) => e.kind === "title" && e.content,
+                  )
+                    ? {
+                        cover: {
+                          ...p.cover,
+                          elements: p.cover.elements.map((e) =>
+                            e.kind === "title"
+                              ? { ...e, content: coverText(title) }
+                              : e,
+                          ),
+                        },
+                      }
+                    : {}),
+                });
+              }
+        }
         backLabel="Proposal"
         backHref={`/proposals/${p.id}?view=record`}
         save={save}
@@ -3251,7 +3277,12 @@ function QuoteEditorContent({
                       validUntil={p.valid_until}
                       timezone={p.workspace_settings?.timezone}
                       onTitle={
-                        locked ? undefined : (title) => change({ title })
+                        locked
+                          ? undefined
+                          : // The cover keeps its live fields; the proposal
+                            // title (lists, emails, top bar) gets their values.
+                            (title) =>
+                              change({ title: resolveLabel(title, map) })
                       }
                     />
                   )}

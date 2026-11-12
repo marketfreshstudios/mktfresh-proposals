@@ -81,7 +81,8 @@ for (const width of [1440, 1180, 1024, 960, 959, 924, 768, 700])
     expect(bounds.send.right).toBeLessThanOrEqual(width);
     expect(bounds.ellipsis).toBe("ellipsis");
     expect(bounds.title).toHaveLength(200);
-    expect(bounds.label).toBe(bounds.title);
+    // The title is an in-place field labeled for what it edits.
+    expect(bounds.label).toBe("Rename proposal");
     expect(bounds.sibling).toBe("editor-save-status");
     const header = page.locator(".editor-v2-header");
     await expect(
