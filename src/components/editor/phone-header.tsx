@@ -21,6 +21,7 @@ export function PhoneEditorHeader({
   primaryLabel,
   onPrimary,
   onReassign,
+  onChangeClient,
   onReplaceBlock,
 }: {
   title: string;
@@ -39,6 +40,7 @@ export function PhoneEditorHeader({
   primaryLabel?: string;
   onPrimary?(): void;
   onReassign?(): void;
+  onChangeClient?(): void;
   onReplaceBlock?(): void;
 }) {
   const [open, setOpen] = useState(false),
@@ -118,6 +120,11 @@ export function PhoneEditorHeader({
             {onReplaceBlock && (
               <button role="menuitem" onClick={onReplaceBlock}>
                 Replace with latest block
+              </button>
+            )}
+            {onChangeClient && (
+              <button type="button" role="menuitem" onClick={onChangeClient}>
+                Change client…
               </button>
             )}
             {onReassign && (

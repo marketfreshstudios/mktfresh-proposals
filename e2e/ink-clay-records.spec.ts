@@ -228,7 +228,8 @@ async function scenario(page: Page) {
           })),
         };
       } else if (sub === "actions") {
-        const { revision, action, note } = request.postDataJSON();
+        const { revision, action, note, client_id, title } =
+          request.postDataJSON();
         actions.push(action);
         json = await proposalAction(
           repo,
@@ -239,6 +240,7 @@ async function scenario(page: Page) {
           note,
           new Date(),
           service,
+          { client_id, title },
         );
       } else json = await repo.get(id);
     } else if (area === "clients") {
@@ -282,6 +284,7 @@ async function scenario(page: Page) {
     manual,
     imported,
     actions,
+    repo,
     billingReads: () => billingReads,
   };
 }
@@ -391,7 +394,7 @@ test("Home, list views and action slots use the existing proposal states", async
     .getByRole("button", { name: /More actions/ })
     .press("Enter");
   const menu = page.getByRole("dialog");
-  for (const label of ["Open record", "Preview as client", "Download PDF"])
+  for (const label of ["View details", "Preview as client", "Download PDF"])
     await expect(menu.getByRole("link", { name: label })).toBeVisible();
   for (const label of [
     /^Mark as sent again/,
@@ -999,4 +1002,65 @@ test("Viewed is a counted primary tab that stays reachable at desktop, tablet an
       tabs.getByRole("tab", { name: "Needs countersign 1" }),
     ).toBeFocused();
   }
+});
+
+test("Duplicate asks who the proposal is for, and a never-sent draft can change client", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  const f = await scenario(page);
+  const other = f.waiting.client;
+  await page.goto("/proposals");
+  await row(page, f.viewed).getByRole("button", { name: "Duplicate" }).click();
+  const dialog = page.getByRole("dialog", { name: "Duplicate proposal" });
+  await expect(dialog).toContainText("Who is the new proposal for?");
+  const title = dialog.getByRole("textbox", { name: "Title" });
+  await expect(title).toHaveValue(`${f.viewed.title} (copy)`);
+  await dialog
+    .getByRole("combobox", { name: "Client" })
+    .selectOption({ label: `${other.company} | ${other.email}` });
+  await expect(dialog).toContainText(
+    `switch to ${other.company} automatically`,
+  );
+  await capture(page, "duplicate-choose-client");
+  await title.fill("A website for the second client");
+  await dialog.getByRole("button", { name: "Create draft" }).click();
+  await expect(page).not.toHaveURL(new RegExp(f.viewed.id));
+  await expect
+    .poll(async () =>
+      (await f.repo.list()).some(
+        (p) => p.title === "A website for the second client",
+      ),
+    )
+    .toBe(true);
+  const copy = (await f.repo.list()).find(
+    (p) => p.title === "A website for the second client",
+  )!;
+  expect(copy.client.id).toBe(other.id);
+  expect(copy.status).toBe("draft");
+  await expect(page).toHaveURL(new RegExp(`/proposals/${copy.id}`));
+
+  await page.goto(record(f.ai));
+  await page
+    .locator(".record-details")
+    .getByRole("button", { name: "Change client" })
+    .click();
+  const change = page.getByRole("dialog", { name: "Change client" });
+  const submit = change.getByRole("button", { name: "Change client" });
+  await expect(submit).toBeDisabled();
+  await change
+    .getByRole("combobox", { name: "Client" })
+    .selectOption({ label: `${other.company} | ${other.email}` });
+  await submit.click();
+  await expect(change).toHaveCount(0);
+  await expect(page.locator(".record-details-client")).toContainText(
+    other.email,
+  );
+  expect((await f.repo.get(f.ai.id))!.client.id).toBe(other.id);
+  await page.goto(record(f.viewed));
+  await expect(
+    page.locator(".record-details").getByRole("button", {
+      name: "Change client",
+    }),
+  ).toHaveCount(0);
 });

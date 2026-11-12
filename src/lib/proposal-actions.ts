@@ -26,6 +26,7 @@ import { versionHash, sha256, canonical } from "./content";
 import { proposalLink } from "./links";
 export const proposalActions = [
   "duplicate",
+  "change_client",
   "mark_won",
   "mark_lost",
   "remind",
@@ -46,6 +47,7 @@ export async function proposalAction(
   note = "",
   now = new Date(),
   service = new ProposalService(repo),
+  options: { client_id?: string; title?: string } = {},
 ) {
   check(actor.actor.startsWith("staff:"), "Staff authorization required", 403);
   const original = await repo.get(id);
@@ -119,19 +121,30 @@ export async function proposalAction(
       await repo.entities<WorkspaceSettings>("workspace_settings")
     )[0];
     check(settings, "Workspace settings required");
+    const clientId = options.client_id ?? original.client.id;
     const client = (await repo.entities<Client>("clients")).find(
-      (record) => record.id === original.client.id,
+      (record) => record.id === clientId,
+    );
+    check(
+      client || !options.client_id,
+      "Choose a client for the new proposal",
+      400,
     );
     check(
       !client?.archived_at,
       "Restore this client before creating a proposal",
       409,
     );
+    const title = options.title?.trim();
+    check(!title || title.length <= 300, "Title is too long", 400);
     const p: Proposal = {
       ...structuredClone(original),
       ...structuredClone(original.unpublished_work ?? {}),
+      ...(options.client_id ? { client: structuredClone(client!) } : {}),
       id: randomUUID(),
-      title: (original.unpublished_work?.title ?? original.title) + " (copy)",
+      title:
+        title ||
+        (original.unpublished_work?.title ?? original.title) + " (copy)",
       revision: 0,
       status: "draft",
       token: null,
@@ -169,6 +182,52 @@ export async function proposalAction(
     event(p, "created", actor, { duplicated_from: id }, now.toISOString());
     await repo.save(p, -1);
     return p;
+  }
+  if (action === "change_client") {
+    const client = (await repo.entities<Client>("clients")).find(
+      (record) => record.id === options.client_id,
+    );
+    check(client, "Choose a client", 400);
+    check(
+      !client.archived_at,
+      "Restore this client before using it on a proposal",
+      409,
+    );
+    const title = options.title?.trim();
+    check(!title || title.length <= 300, "Title is too long", 400);
+    return mutate(repo, id, (p) => {
+      check(
+        p.revision === revision,
+        "Proposal changed; reload and try again",
+        409,
+      );
+      check(
+        p.source === "native" &&
+          p.status === "draft" &&
+          !p.sent_at &&
+          !p.token &&
+          !p.versions.length &&
+          !p.archived_at &&
+          editableProposal(p),
+        "The client can only change before the proposal is first sent",
+        409,
+      );
+      const previous = p.client;
+      p.client = structuredClone(client);
+      if (title) p.title = title;
+      event(
+        p,
+        "client_changed",
+        actor,
+        {
+          previous_client_id: previous.id,
+          previous_company: previous.company,
+          client_id: client.id,
+          company: client.company,
+        },
+        now.toISOString(),
+      );
+    });
   }
   const settings =
     action === "preview_pdf"

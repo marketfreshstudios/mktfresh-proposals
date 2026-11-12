@@ -78,6 +78,7 @@ export function EditorHeader({
   primaryLabel,
   onPrimary,
   onReassign,
+  onChangeClient,
   onReplaceBlock,
   titleEditor,
   externalHeading = false,
@@ -127,6 +128,7 @@ export function EditorHeader({
   primaryLabel?: string;
   onPrimary?: () => void;
   onReassign?: () => void;
+  onChangeClient?: () => void;
   onReplaceBlock?: () => void;
 }) {
   const [moreOpen, setMoreOpen] = useState(false);
@@ -232,6 +234,7 @@ export function EditorHeader({
         }
         onPrimary={onPrimary}
         onReassign={onReassign}
+        onChangeClient={onChangeClient}
         onReplaceBlock={onReplaceBlock}
       />
     );
@@ -392,7 +395,7 @@ export function EditorHeader({
           {primaryLabel ??
             (locked ? "Duplicate as new draft" : "Review & send")}
         </EditorButton>
-        {(onReassign || onReplaceBlock) && (
+        {(onReassign || onReplaceBlock || onChangeClient) && (
           <>
             <button
               ref={moreTrigger}
@@ -421,6 +424,18 @@ export function EditorHeader({
                       }}
                     >
                       Replace with latest block
+                    </button>
+                  )}
+                  {onChangeClient && (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setMoreOpen(false);
+                        onChangeClient();
+                      }}
+                    >
+                      Change client…
                     </button>
                   )}
                   {onReassign && (

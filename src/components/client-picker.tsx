@@ -49,7 +49,7 @@ export function ClientPicker({
             .toSorted((a, b) => a.company.localeCompare(b.company))
             .map((c) => (
               <option key={c.id} value={c.id}>
-                {c.company} · {c.email}
+                {c.company} | {c.email}
               </option>
             ))}
         </Select>
