@@ -158,6 +158,16 @@ test("the conditional quote switches care groups on desktop and phone and freeze
     ).toBeVisible();
     await expect(terms().locator("xpath=ancestor::details")).toHaveCount(0);
     await shot("pro-terms", width);
+    if (width === 1440) {
+      // A care plan that depends on the build choice must not crash signing.
+      await page.getByRole("button", { name: "Review and sign" }).click();
+      await expect(
+        page.getByRole("heading", { name: "Sign the proposal" }),
+      ).toBeVisible();
+      await expect(
+        page.locator(".flow-acceptance").getByText(/Own It Over Time — Pro/),
+      ).toBeVisible();
+    }
   }
   const chosen = await f.service.byToken(token);
   const signed = await f.service.sign(

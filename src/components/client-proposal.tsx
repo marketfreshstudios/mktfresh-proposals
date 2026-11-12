@@ -1721,6 +1721,13 @@ function Terms({ line: l, currency }: { line: BillingLine; currency: string }) {
     </>
   );
 }
+/** The item is already visible here: read its own lines, not its visibility
+ * alone (a care plan that depends on another choice is hidden on its own). */
+function ItemTerms({ item, currency }: { item: QuoteItem; currency: string }) {
+  const lines = quoteSublines([item], false, true);
+  const line = lines.find((l) => l.interval !== "one_time") ?? lines[0];
+  return line ? <Terms line={line} currency={currency} /> : null;
+}
 function ChosenItems({
   proposal: p,
   terms = false,
@@ -1738,15 +1745,7 @@ function ChosenItems({
           <li key={i.id}>
             <span>
               {i.name}
-              {terms && (
-                <Terms
-                  line={
-                    quoteSublines([i]).find((l) => l.interval !== "one_time") ??
-                    quoteSublines([i])[0]
-                  }
-                  currency={p.currency}
-                />
-              )}
+              {terms && <ItemTerms item={i} currency={p.currency} />}
             </span>
             {inlineAmounts ? (
               <span className="flow-choice-amounts">
