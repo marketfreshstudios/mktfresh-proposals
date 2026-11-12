@@ -147,7 +147,7 @@ describe("proposal lifecycle", () => {
       items[1].sublines[0].stripe_lookup_key = null;
       p.quote = items;
     });
-    await expect(service.send(draft.id, staff)).rejects.toThrow("lookup key");
+    await expect(service.send(draft.id, staff)).rejects.toThrow("billing category");
     await mutate(repo, draft.id, (p) => {
       const items = cloneQuote(p.quote);
       items[1].sublines[0].stripe_lookup_key = "test-monthly";
