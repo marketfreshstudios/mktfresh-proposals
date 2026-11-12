@@ -49,7 +49,7 @@ export function useImageToolbar(
   image: RefObject<HTMLElement | null>,
   toolbar: RefObject<HTMLSpanElement | null>,
   selected: boolean,
-  options: { below?: boolean; gap?: number } = {},
+  options: { below?: boolean; gap?: number; hideWhenClipped?: boolean } = {},
 ) {
   useLayoutEffect(() => {
     const root = image.current,
