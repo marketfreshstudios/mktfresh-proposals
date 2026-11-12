@@ -570,3 +570,79 @@ test("ready client sheets retain their native controls and stay stable through a
     f.plan,
   );
 });
+
+test("a choice that makes a frozen page overflow breaks the pages afresh on the client and in the PDF", async ({
+  page,
+}) => {
+  test.setTimeout(240000);
+  let workshop = "";
+  const f = await fixture(page, (base) => {
+    const optional = base.find((item) => item.optional)!;
+    workshop = optional.id;
+    const longScope = {
+      ...structuredClone(base.find((item) => !item.optional)!),
+      id: crypto.randomUUID(),
+      order: base.length,
+      name: "Workshop programme",
+      description: "A detailed session plan for each workshop day. ".repeat(60),
+      show_when: { kind: "quote_item" as const, id: optional.id },
+      sublines: [
+        {
+          id: crypto.randomUUID(),
+          qty: 1,
+          amount: 0,
+          interval: "one_time" as const,
+          list_amount: null,
+          stripe_lookup_key: null,
+          qbo_item_ref: null,
+        },
+      ],
+    };
+    return [
+      ...base.map((item) =>
+        item.optional
+          ? {
+              ...item,
+              name: "Optional workshop",
+              selected: false,
+              default_selected: false,
+            }
+          : item,
+      ),
+      longScope,
+    ];
+  });
+  await page.setViewportSize({ width: 1440, height: 1100 });
+  await page.goto(`/p/${f.sent.token}`);
+  const host = page.locator(
+    '.client-document-sheets[data-layout-ready="true"]',
+  );
+  await host.waitFor();
+  await expect(host.locator(".client-page-frame")).toHaveCount(f.plan.pages);
+  const overflowing = () =>
+    host
+      .locator(".client-sheet-content")
+      .evaluateAll(
+        (sheets) =>
+          sheets.filter((s) => s.scrollHeight > s.clientHeight + 1).length,
+      );
+  expect(await overflowing()).toBe(0);
+  await host.getByRole("checkbox", { name: /Optional workshop/ }).check();
+  await expect(host.getByText("Workshop programme").first()).toBeVisible();
+  await expect
+    .poll(() => host.locator(".client-page-frame").count())
+    .toBeGreaterThan(f.plan.pages);
+  expect(await overflowing()).toBe(0);
+  const chosen = await f.service.byToken(f.sent.token!);
+  expect(chosen.quote.find((i) => i.id === workshop)?.selected).toBe(true);
+  const v = f.sent.versions.at(-1)!;
+  const rendered = await sealedPdf(
+    { ...v, quote: chosen.quote },
+    [],
+    [],
+    f.sent.currency,
+    { settings: f.settings },
+  );
+  expect(rendered.layout.overflow_pages ?? []).toEqual([]);
+  expect(rendered.layout.pages).toBeGreaterThan(f.plan.pages);
+});

@@ -36,7 +36,30 @@ import { escape, htmlDocument, sha256 } from "./content";
 import type { Audit, Signer, Version } from "./model";
 
 /** Render without network or document scripts; append a single-page completion certificate. */
+/** A frozen page plan no longer fits the client's choices. */
+class PlanOverflow extends Error {}
+const isPlanOverflow = (error: unknown): boolean =>
+  error instanceof PlanOverflow ||
+  (error instanceof Error && isPlanOverflow(error.cause));
+
+/**
+ * Prints with the page plan frozen at send. If the client's choices make a
+ * planned page overflow (a taller option replaced a shorter one), the plan no
+ * longer fits: print with fresh page breaks instead, as the client page does.
+ */
 export async function sealedPdf(
+  ...args: Parameters<typeof sealedPdfOnce>
+): ReturnType<typeof sealedPdfOnce> {
+  const [version, ...rest] = args;
+  try {
+    return await sealedPdfOnce(version, ...rest);
+  } catch (error) {
+    if (!version.pagination || !isPlanOverflow(error)) throw error;
+    return sealedPdfOnce({ ...version, pagination: undefined }, ...rest);
+  }
+}
+
+async function sealedPdfOnce(
   version: Version,
   signers: Signer[],
   events: Audit[],
@@ -326,6 +349,14 @@ export async function sealedPdf(
     }
     if (layout.overflow_columns?.length)
       throw new ColumnsOverflowError(layout.overflow_columns);
+    // Staff previews keep the overflow visible and reported (readiness warns);
+    // sealed PDFs follow the client's choices onto fresh pages.
+    if (
+      !options?.preview &&
+      version.pagination &&
+      layout.overflow_pages?.length
+    )
+      throw new PlanOverflow("Planned pages overflow with these choices");
     const pricingIds = new Set(
       version.content
         .filter((b) => b.type === "pricing_table")
