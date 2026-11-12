@@ -405,7 +405,7 @@ export class QboProvider implements BillingProvider {
           : {}),
         Line: lines.map((l) => ({
           Amount: (l.amount * l.qty) / 100,
-          Description: l.description || l.name,
+          Description: invoiceLineDescription(l, metadata.proposal_title),
           DetailType: "SalesItemLineDetail",
           SalesItemLineDetail: {
             ItemRef: { value: this.reference(l.qbo_item_ref, realm) },
@@ -556,4 +556,21 @@ export class QboProvider implements BillingProvider {
     );
     return this.invoiceDetails(Invoice, auth.realm);
   }
+}
+
+/** What an invoice line is and which project it belongs to, e.g.
+ * "Website Build | Kickoff | A new website for Easley's Floor Covering". */
+export function invoiceLineDescription(
+  l: Pick<BillingLine, "name" | "description">,
+  title?: unknown,
+) {
+  const detail = (l.description ?? "").replaceAll(" · ", " | ").trim();
+  return [
+    l.name.trim(),
+    detail && detail !== l.name.trim() ? detail : "",
+    typeof title === "string" ? title.trim() : "",
+  ]
+    .filter(Boolean)
+    .join(" | ")
+    .slice(0, 4000);
 }
