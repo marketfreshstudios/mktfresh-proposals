@@ -277,8 +277,11 @@ export function ClientQuestionSurface({
       const target = targetFromEvent(event);
       const question =
         target && handlers.current.targets.get(key(target) ?? "");
-      if (target && question && canAskAboutBlock(question, true))
-        select(target, true);
+      if (!target || !question || !canAskAboutBlock(question, true)) return;
+      // A second tap on the highlighted block clears it.
+      const current = handlers.current.active;
+      if (current?.phone && current.node === target) setActive(null);
+      else select(target, true);
     };
     const focus = (event: FocusEvent) => {
       const target = targetFromEvent(event);

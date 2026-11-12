@@ -395,6 +395,12 @@ test("client question reaches staff, receives a plain-text reply on the same lin
   });
   await expect(phoneAsk).toHaveCSS("height", "44px");
   await capture(page, "r25-phone-block");
+  // A second tap on the same block clears the highlight; a third brings it back.
+  await phoneBlock.tap();
+  await expect(phoneAsk).toHaveCount(0);
+  await expect(phoneBlock).not.toHaveAttribute("data-client-asking", /.+/);
+  await phoneBlock.tap();
+  await expect(phoneAsk).toHaveCSS("height", "44px");
   await phoneAsk.tap();
   await expect(form.getByLabel("Your question", { exact: true })).toBeVisible();
   await form
