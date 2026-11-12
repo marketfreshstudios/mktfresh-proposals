@@ -17,7 +17,14 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { chromeIcons, SigningIcon } from "./staff-icons";
-import { Archive, ArchiveRestore, Copy, SquarePen } from "lucide-react";
+import {
+  Archive,
+  ArchiveRestore,
+  Copy,
+  Eye,
+  Mail,
+  SquarePen,
+} from "lucide-react";
 import {
   finalOiotClause,
   oiotPlan,
@@ -72,7 +79,9 @@ import {
 } from "../lib/stripe-subscription-link";
 import { QuickBooksBilling } from "./quickbooks-billing";
 import { quickBooksCustomerReview } from "../lib/qbo-mapping";
-import { ProposalEmailLog } from "./email-studio";
+import { EmailTimelineBody } from "./email-studio";
+import type { EmailLog } from "../lib/email-templates";
+import { engagementDuration } from "../lib/engagement";
 import { HomeSetup } from "./home-setup";
 import { HomePipeline } from "./home-pipeline";
 import { ContactValue } from "./contact-value";
@@ -2290,7 +2299,25 @@ export function RecordV4({
   const [engagement, setEngagement] = useState<{
     views: number;
     last_viewed_at: string | null;
+    sessions?: {
+      id: string;
+      started_at: string;
+      active_ms: number;
+      device: string;
+    }[];
   } | null>(null);
+  const [emails, setEmails] = useState<EmailLog[]>([]);
+  useEffect(() => {
+    let active = true;
+    api<EmailLog[]>(`/api/proposals/${p.id}/emails`)
+      .then((v) => {
+        if (active) setEmails(Array.isArray(v) ? v : []);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [p.id, p.revision]);
   const firstOpenQuestion = questions.data?.threads.find(
     (thread) => thread.status === "open",
   );
@@ -3073,6 +3100,29 @@ export function RecordV4({
     : primary
       ? [primary]
       : [];
+  // One Timeline: record events, every email sent, and each reading session.
+  // Choice toggles are left out (too granular); a reading session replaces
+  // the raw "opened" events once engagement is known.
+  const sessions = engagement?.sessions ?? [];
+  type TimelineItem =
+    | { kind: "event"; at: string; e: (typeof p.events)[number] }
+    | { kind: "email"; at: string; log: EmailLog }
+    | { kind: "view"; at: string; s: (typeof sessions)[number] };
+  const timelineItems: TimelineItem[] = [
+    ...timelineEvents(p.events)
+      .filter(
+        (e) =>
+          e.type !== "quote_changed" &&
+          !(e.type === "viewed" && sessions.length),
+      )
+      .map((e) => ({ kind: "event" as const, at: e.created_at, e })),
+    ...emails.map((log) => ({
+      kind: "email" as const,
+      at: log.sent_at,
+      log,
+    })),
+    ...sessions.map((s) => ({ kind: "view" as const, at: s.started_at, s })),
+  ].sort((a, b) => b.at.localeCompare(a.at));
   const timeline = (
     <div
       className="card record-timeline-list"
@@ -3080,28 +3130,64 @@ export function RecordV4({
       aria-label="Timeline events"
       tabIndex={0}
     >
-      {timelineEvents(p.events)
-        .toReversed()
-        .map((e) => {
-          const blockedEdit = unpublishedEdit?.id === e.id;
+      {timelineItems.map((item) => {
+        if (item.kind === "email")
+          return (
+            <details
+              key={`email:${item.log.id}`}
+              className="timeline-entry timeline-email"
+            >
+              <summary>
+                <Mail className="timeline-icon" size={14} aria-label="Email" />
+                <span>
+                  <strong>{item.log.snapshot.subject}</strong>
+                  <small className="timeline-entry-meta">
+                    {timestamp(item.at, data)} | To {item.log.snapshot.to}
+                  </small>
+                </span>
+              </summary>
+              <EmailTimelineBody log={item.log} />
+            </details>
+          );
+        if (item.kind === "view")
           return (
             <article
-              key={e.id}
-              className="timeline-entry"
-              data-unpublished={blockedEdit || undefined}
+              key={`view:${item.s.id}`}
+              className="timeline-entry timeline-view"
             >
-              <span className="timeline-dot" aria-hidden="true" />
+              <Eye className="timeline-icon" size={14} aria-hidden="true" />
               <div>
                 <strong>
-                  {blockedEdit ? "Edited, not live yet" : eventTitle(e, data)}
+                  Client viewed the proposal |{" "}
+                  {engagementDuration(item.s.active_ms)}
                 </strong>
                 <small className="timeline-entry-meta">
-                  {timestamp(e.created_at, data)} | {person(e.actor, data)}
+                  {timestamp(item.at, data)} |{" "}
+                  {item.s.device === "phone" ? "Phone" : "Desktop"}
                 </small>
               </div>
             </article>
           );
-        })}
+        const e = item.e;
+        const blockedEdit = unpublishedEdit?.id === e.id;
+        return (
+          <article
+            key={e.id}
+            className="timeline-entry"
+            data-unpublished={blockedEdit || undefined}
+          >
+            <span className="timeline-dot" aria-hidden="true" />
+            <div>
+              <strong>
+                {blockedEdit ? "Edited, not live yet" : eventTitle(e, data)}
+              </strong>
+              <small className="timeline-entry-meta">
+                {timestamp(e.created_at, data)} | {person(e.actor, data)}
+              </small>
+            </div>
+          </article>
+        );
+      })}
     </div>
   );
   return (
@@ -3585,7 +3671,6 @@ export function RecordV4({
             </section>
           )}
           {phone && !complete && details}
-          <ProposalEmailLog id={p.id} revision={p.revision} />
         </div>
         <div className="record-support">
           {native && (

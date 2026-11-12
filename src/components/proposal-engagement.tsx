@@ -16,8 +16,6 @@ type Report = Awaited<ReturnType<typeof engagementReport>>;
 export function ProposalEngagement({
   id,
   timezone,
-  notify = true,
-  knownRecipient = false,
   onLoaded,
   phone = false,
 }: {
@@ -77,148 +75,96 @@ export function ProposalEngagement({
     : report
       ? "No visits"
       : undefined;
+  const stat = (label: string, value: string | number, title?: string) => (
+    <div>
+      <dt title={title}>{label}</dt>
+      <dd>{value}</dd>
+    </div>
+  );
+  const refresh = (
+    <Button className="engagement-refresh" onClick={load}>
+      Refresh
+    </Button>
+  );
   const panel = (
     <div className={phone ? "engagement-panel" : "card engagement-panel"}>
       {error && <p role="alert">{error}</p>}
       {!report ? (
         error ? (
-          <Button onClick={load}>Refresh</Button>
+          refresh
         ) : (
           <p role="status">Loading engagement…</p>
         )
-      ) : !report.views && !report.downloads && !report.questions ? (
+      ) : !report.views ? (
         <div className="engagement-empty">
           <h3>
             {report.first_viewed_at
-              ? "No tracked sessions yet"
+              ? "No tracked visits yet"
               : "Not opened yet"}
           </h3>
           <p>
-            Engagement appears after your client interacts with the sent
-            proposal. Previews don’t count.
+            Visits count when your client reads the sent link. Previews and
+            visits while you’re signed in to Yeswell don’t count.
           </p>
-          {report.first_viewed_at && (
-            <p>
-              Earlier viewed activity remains in Timeline. Detailed engagement
-              starts with a new client visit.
-            </p>
+          {(report.downloads > 0 || report.questions > 0) && (
+            <dl className="engagement-stats">
+              {report.questions > 0 && stat("Questions", report.questions)}
+              {report.downloads > 0 && stat("PDF downloads", report.downloads)}
+            </dl>
           )}
-          <Button onClick={load}>Refresh</Button>
+          {refresh}
         </div>
       ) : (
         <>
+          <dl className="engagement-stats">
+            {stat("Views", report.views)}
+            {stat(
+              "Devices",
+              report.unique_viewers,
+              "Separate browsers that opened this link — not verified people",
+            )}
+            {stat("Total time", engagementDuration(report.total_ms))}
+            {stat("PDF downloads", report.downloads)}
+            {report.questions > 0 && stat("Questions", report.questions)}
+          </dl>
+          {report.last_viewed_at && (
+            <p className="engagement-last">
+              Last viewed{" "}
+              <time
+                dateTime={report.last_viewed_at}
+                title={exact(report.last_viewed_at)}
+              >
+                {engagementAgo(report.last_viewed_at)}
+              </time>
+            </p>
+          )}
           <h3 className="record-most-read">Most read</h3>
           {bars("section")}
-          <details className="record-engagement-details">
-            <Disclosure>Engagement details</Disclosure>
-            <Button onClick={load}>Refresh</Button>
-            {notify && report.views > 0 && (
-              <p className="engagement-first-note">
-                Client viewed this proposal.
-              </p>
-            )}
-            <dl className="engagement-stats">
-              <div>
-                <dt>Total views</dt>
-                <dd>{report.views}</dd>
-              </div>
-              <div>
-                <dt title="Separate browsers that opened this link — not verified people">
-                  Devices
-                </dt>
-                <dd>{report.unique_viewers}</dd>
-              </div>
-              <div>
-                <dt title="Distinct known recipient links opened">
-                  Recipients
-                </dt>
-                <dd>{report.views > 0 && knownRecipient ? 1 : 0}</dd>
-              </div>
-              <div>
-                <dt>Total time</dt>
-                <dd>{engagementDuration(report.total_ms)}</dd>
-              </div>
-              <div>
-                <dt>PDF downloads</dt>
-                <dd>{report.downloads}</dd>
-              </div>
-              {!!report.questions && (
-                <div>
-                  <dt>Questions asked</dt>
-                  <dd>{report.questions}</dd>
-                </div>
-              )}
-            </dl>
-            {report.last_viewed_at && (
-              <p className="engagement-last">
-                Last viewed{" "}
-                <time
-                  dateTime={report.last_viewed_at}
-                  title={exact(report.last_viewed_at)}
-                >
-                  {engagementAgo(report.last_viewed_at)}
-                </time>
-                <small>{exact(report.last_viewed_at)}</small>
-              </p>
-            )}
-            <details>
-              <Disclosure>Time by page</Disclosure>
-              <p className="engagement-help muted">
-                Page timing comes from desktop sheets. Phone and tablet visits
-                are timed by section.
-              </p>
-              {bars("page")}
-            </details>
-            <h3>View sessions</h3>
-            <p className="muted engagement-help">
-              Recipient names identify the link used; a forwarded link doesn’t
-              verify who read it. Time counts only while visible and focused,
-              with a 60-second idle limit.
-            </p>
+          <details className="engagement-more">
+            <Disclosure>Time by page</Disclosure>
+            {bars("page")}
+          </details>
+          <details className="engagement-more">
+            <Disclosure>{`Sessions | ${report.sessions.length}`}</Disclosure>
             <ol className="engagement-sessions">
               {report.sessions.map((s) => (
                 <li key={s.id}>
-                  <div>
-                    <strong>
-                      {s.recipient
-                        ? `${s.recipient} | recipient link`
-                        : "Unknown viewer"}
-                    </strong>
-                    <span>
-                      {s.device === "phone" ? "Phone" : "Desktop"} |{" "}
-                      {engagementDuration(s.active_ms)}
-                    </span>
-                  </div>
-                  <time dateTime={s.started_at}>{exact(s.started_at)}</time>
-                  <small>
-                    {s.ended_at
-                      ? `Ended ${exact(s.ended_at)}`
-                      : `Last activity ${exact(s.last_at)}`}
-                  </small>
-                  {s.actions.length > 0 && (
-                    <details>
-                      <Disclosure>
-                        Choices and downloads | {s.actions.length}
-                      </Disclosure>
-                      <ul>
-                        {s.actions.map((a) => (
-                          <li key={a.id}>
-                            {a.kind === "download"
-                              ? "Downloaded the PDF"
-                              : `${a.name}: ${a.selected ? "selected" : "not selected"}`}
-                          </li>
-                        ))}
-                      </ul>
-                    </details>
-                  )}
+                  <strong>
+                    {s.recipient ?? "Unknown viewer"} |{" "}
+                    {s.device === "phone" ? "Phone" : "Desktop"}
+                  </strong>
+                  <span>{engagementDuration(s.active_ms)}</span>
+                  <time dateTime={s.started_at} title={exact(s.started_at)}>
+                    {date(s.started_at, {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })}
+                  </time>
                 </li>
               ))}
             </ol>
-            <small>
-              Detailed sessions are kept for 12 months. Lifetime totals stay
-              with this record.
-            </small>
           </details>
+          {refresh}
         </>
       )}
     </div>
@@ -274,7 +220,7 @@ export function EngagementListLine({
 }) {
   return summary?.views && summary.last_viewed_at ? (
     <small className="proposal-engagement-line">
-      Viewed {summary.views}× · last {engagementAgo(summary.last_viewed_at)}
+      Viewed {summary.views}× | last {engagementAgo(summary.last_viewed_at)}
     </small>
   ) : null;
 }

@@ -153,7 +153,7 @@ export function EmailsStudio({ data, id }: { data: Data | null; id?: string }) {
                       {!editableEmail(t)
                         ? "Read-only"
                         : t.updated_at
-                          ? `Edited ${personal ? staffDate(t.updated_at) : studioDate(t.updated_at)} · ${data?.staff.find((m) => t.updated_by === `staff:${m.user_id}` || t.updated_by === m.user_id)?.display_name ?? "Staff"}`
+                          ? `Edited ${personal ? staffDate(t.updated_at) : studioDate(t.updated_at)} | ${data?.staff.find((m) => t.updated_by === `staff:${m.user_id}` || t.updated_by === m.user_id)?.display_name ?? "Staff"}`
                           : "Default"}
                     </span>
                     <StaffTableOpen
@@ -171,6 +171,31 @@ export function EmailsStudio({ data, id }: { data: Data | null; id?: string }) {
         Each proposal keeps an exact copy of every email it sent, on its record
         under Activity. Later edits here don’t change those copies.
       </p>
+    </div>
+  );
+}
+/** A sent email in the proposal Timeline: subject and recipient, with the
+ * exact copy that was sent one click away. */
+export function EmailTimelineBody({ log }: { log: EmailLog }) {
+  const { date: staffDate } = useStaffDates();
+  return (
+    <div className="timeline-email-body">
+      <dl>
+        <dt>To</dt>
+        <dd>{log.snapshot.to}</dd>
+        <dt>From</dt>
+        <dd>{log.snapshot.from}</dd>
+        <dt>Sent</dt>
+        <dd>
+          {staffDate(log.sent_at, { dateStyle: "medium", timeStyle: "medium" })}
+        </dd>
+      </dl>
+      <iframe
+        className="email-log-preview"
+        title={`Sent email: ${log.snapshot.subject}`}
+        sandbox=""
+        srcDoc={previewHtml(log.snapshot.html)}
+      />
     </div>
   );
 }

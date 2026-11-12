@@ -1125,6 +1125,10 @@
   padding: 18px 22px;
 }
 .record-question-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
   color: var(--ink-muted);
   font-size: 13px;
 }
@@ -1553,7 +1557,13 @@
 }
 .ink-clay .record-reminders dd {
   flex-direction: row;
+  align-items: center;
   gap: 8px;
+}
+/* The switch sits on the text line, like the other detail values. */
+.ink-clay .record-reminders dd > input[role="switch"] {
+  flex: none;
+  margin: 0;
 }
 .record-client-link {
   display: grid;
@@ -1789,6 +1799,56 @@
   margin-block-start: 5px;
   border-radius: 50%;
   background: var(--border-strong);
+}
+/* Emails and reading sessions carry an icon in the dot's column. */
+.record-timeline-list .timeline-icon {
+  margin-block-start: 3px;
+  color: var(--ink-muted);
+}
+.ink-clay .record-timeline-list .timeline-email {
+  display: block;
+}
+.record-timeline-list .timeline-email > summary {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr);
+  gap: 12px;
+  cursor: pointer;
+  list-style: none;
+}
+.record-timeline-list .timeline-email > summary::-webkit-details-marker {
+  display: none;
+}
+.record-timeline-list .timeline-email > summary strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.record-timeline-list .timeline-email-body {
+  margin: 8px 0 4px 22px;
+  display: grid;
+  gap: 8px;
+  font-size: 12px;
+}
+.record-timeline-list .timeline-email-body dl {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 2px 10px;
+  margin: 0;
+}
+.record-timeline-list .timeline-email-body dt {
+  color: var(--ink-muted);
+}
+.record-timeline-list .timeline-email-body dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.record-timeline-list .timeline-email-body .email-log-preview {
+  inline-size: 100%;
+  block-size: 320px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
 }
 .record-timeline-list [data-unpublished] .timeline-dot {
   background: #c2412f;

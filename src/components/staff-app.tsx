@@ -60,7 +60,13 @@ import { DetailsLoading, EditorLoading } from "./proposal-loading";
 import { staffRoute, studioRoutes, type StaffQuery } from "../lib/staff-routes";
 import { withDraftSettings } from "../lib/proposal-settings";
 import type { ReferenceDocument } from "../lib/documents";
-import { isValidElement, useEffect, useState, type ReactNode } from "react";
+import {
+  isValidElement,
+  useEffect,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react";
 import {
   api,
   post,
@@ -122,6 +128,23 @@ export type Data = {
   }[];
 };
 type StaffAppProps = { path: string[]; query?: StaffQuery; local?: boolean };
+const noSubscribe = () => () => {};
+const proposalViewKey = (id: string) => `yeswell:proposal-view:${id}`;
+function lastProposalView(id: string) {
+  try {
+    return sessionStorage.getItem(proposalViewKey(id));
+  } catch {
+    return null;
+  }
+}
+function rememberProposalView(id: string, view: "record" | "editor") {
+  try {
+    sessionStorage.setItem(proposalViewKey(id), view);
+  } catch {
+    // Storage can be unavailable (private mode); the placeholder just guesses.
+  }
+}
+
 export function StaffApp(props: StaffAppProps) {
   return (
     <ReloadSafetyProvider>
@@ -139,6 +162,12 @@ function StaffAppContent({
   local?: boolean;
 }) {
   const { section, id, action } = staffRoute(path, query);
+  // Read after hydration (the server has no session storage).
+  const cachedView = useSyncExternalStore(
+    noSubscribe,
+    () => (id ? lastProposalView(id) : null),
+    () => null,
+  );
   const requestedConnection =
     section === "integrations"
       ? (id ?? (query.view === "email" ? "email" : ""))
@@ -461,7 +490,8 @@ function StaffAppContent({
     } else if (section === "proposals" && id && id !== "new") {
       content =
         query.view === "record" ||
-        (action && !["edit", "send"].includes(action)) ? (
+        (action && !["edit", "send"].includes(action)) ||
+        (!action && cachedView === "record") ? (
           <DetailsLoading />
         ) : (
           <EditorLoading />
@@ -503,6 +533,12 @@ function StaffAppContent({
         (p.sender ? ` · Sent by ${p.sender.display_name}` : "") +
         (p.valid_until ? " · " + date(p.valid_until) : "");
       headerAction = null;
+      // Remember which view this proposal opens in, so a reload shows the
+      // matching placeholder (details for sent proposals, editor for drafts).
+      rememberProposalView(
+        p.id,
+        !p.archived_at && p.status === "draft" ? "editor" : "record",
+      );
       content = p.archived_at ? (
         <RecordV4 p={p} data={data} onChanged={setP} onRefresh={load} />
       ) : (p.status === "draft" &&

@@ -62,10 +62,12 @@ function QuestionCard({
     >
       {record ? (
         <header className="record-question-meta">
-          <span>{"contact" in thread ? thread.contact.name : thread.name}</span>
-          {thread.section && <span> | {thread.section.label}</span>}
-          {" | "}
-          <time dateTime={thread.created_at}>{time(thread.created_at)}</time>
+          <span>
+            {"contact" in thread ? thread.contact.name : thread.name}
+            {thread.section && ` | ${thread.section.label}`}
+            {" | "}
+            <time dateTime={thread.created_at}>{time(thread.created_at)}</time>
+          </span>
           {thread.status !== "open" ? (
             <span className={`question-badge ${thread.status}`}>
               {questionStatus[thread.status]}
