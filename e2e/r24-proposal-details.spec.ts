@@ -720,8 +720,8 @@ test("R24 record states use saved proposal, publication, and signing data at all
           : [
               "record-quote",
               "record-signatures",
-              "record-billing",
               "record-details",
+              "record-billing",
             ],
       );
       await expect(details.getByText("Expires", { exact: true })).toHaveCount(

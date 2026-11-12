@@ -75,6 +75,7 @@ test("draft client preview has live local totals, branded steps and no client wr
       }
       await page
         .getByRole("button", { name: "Ask a question", exact: true })
+        .first()
         .click();
       const ask = page.getByRole("dialog", { name: "Ask a question" });
       const message = ask.getByRole("textbox", {

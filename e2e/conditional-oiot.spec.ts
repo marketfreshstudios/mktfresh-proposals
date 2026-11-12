@@ -195,6 +195,25 @@ test("the conditional quote switches care groups on desktop and phone and freeze
       await expect(
         page.locator(".flow-acceptance").getByText(/Own It Over Time — Pro/),
       ).toBeVisible();
+      // The browser's back button and the Review step both return to the
+      // proposal from signing.
+      await page.goBack();
+      await expect(
+        page.getByRole("heading", { name: "Sign the proposal" }),
+      ).toHaveCount(0);
+      await page.getByRole("button", { name: "Review and sign" }).click();
+      await page
+        .getByRole("navigation", { name: "Proposal progress" })
+        .first()
+        .getByRole("button", { name: "Review", exact: true })
+        .click();
+      await expect(
+        page.getByRole("heading", { name: "Sign the proposal" }),
+      ).toHaveCount(0);
+      await page.getByRole("button", { name: "Review and sign" }).click();
+      await expect(
+        page.getByRole("heading", { name: "Sign the proposal" }),
+      ).toBeVisible();
       // The hidden Own It Now care group never counts as an unmade choice.
       await expect(
         page.getByText(/choose one item in each choice group/),

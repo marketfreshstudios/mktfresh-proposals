@@ -3450,6 +3450,9 @@ export function RecordV4({
               </div>
             </section>
           )}
+          {phone && !complete && details}
+        </div>
+        <div className="record-support">
           {showBilling && (
             <section className="record-billing record-section">
               <StaffSectionHeading
@@ -3480,9 +3483,11 @@ export function RecordV4({
                       end={
                         resend && p.token ? (
                           <div className="record-payment-link">
-                            <span className={`pill ${stripeChip.tone}`}>
-                              {stripeChip.text}
-                            </span>
+                            {!needsLink && (
+                              <span className={`pill ${stripeChip.tone}`}>
+                                {stripeChip.text}
+                              </span>
+                            )}
                             {/* The proposal link is the permanent payment link:
                                 it always opens a live Stripe checkout page. */}
                             <CopyClientLink
@@ -3670,9 +3675,6 @@ export function RecordV4({
               )}
             </section>
           )}
-          {phone && !complete && details}
-        </div>
-        <div className="record-support">
           {native && (
             <ProposalEngagement
               knownRecipient={!!p.token && !!p.client.email}

@@ -270,6 +270,7 @@ export function SignatureForm({
                 __html: signatureHtml({
                   role: "client",
                   name: fullName || "Client",
+                  separator: " | ",
                   title,
                   company: clientCompany,
                   typedName: mode === "typed" ? typed : undefined,
@@ -279,7 +280,10 @@ export function SignatureForm({
             />
             <div
               dangerouslySetInnerHTML={{
-                __html: signatureHtml(companySignatory),
+                __html: signatureHtml({
+                  ...companySignatory,
+                  separator: " | ",
+                }),
               }}
             />
           </div>

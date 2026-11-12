@@ -2420,3 +2420,27 @@
 .ink-clay .record-payment-link .client-link-control {
   display: contents;
 }
+
+/* Billing sits in the narrow right column: label and status on one line,
+   the description underneath at full width (the phone arrangement). */
+.record-support .record-billing-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 8px;
+  padding-inline: 18px;
+}
+.record-support .record-billing-description {
+  grid-row: 2;
+  grid-column: 1 / -1;
+}
+.record-support .record-billing-end {
+  grid-row: 1;
+  grid-column: 2;
+}
+.record-support .record-payment-link {
+  justify-content: flex-start;
+}
+.record-support .record-billing-end:has(.record-payment-link) {
+  grid-row: 3;
+  grid-column: 1 / -1;
+  justify-self: start;
+}
