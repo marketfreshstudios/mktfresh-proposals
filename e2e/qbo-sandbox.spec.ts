@@ -441,6 +441,10 @@ test("QuickBooks connection states, invoice defaults, product mapping and record
   await expect(
     row.getByRole("link", { name: "Open in QuickBooks" }),
   ).toBeVisible();
+  // Sandbox invoices open in the sandbox company, never live QuickBooks.
+  await expect(
+    row.getByRole("link", { name: "Open in QuickBooks" }),
+  ).toHaveAttribute("href", /^https:\/\/app\.sandbox\.qbo\.intuit\.com\//);
   await invoice.click();
   await invoice.scrollIntoViewIfNeeded();
   await capture(page, "record-draft-invoice-1440");

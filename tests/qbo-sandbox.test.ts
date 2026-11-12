@@ -315,7 +315,10 @@ for (const delivery of ["draft", "email"] as const) {
         Line: [
           {
             Amount: 700,
-            Description: "Project build · Kickoff",
+            // Item, detail and the project, with no "·" separators.
+            Description: expect.stringMatching(
+              /^.+ \| Project build \| Kickoff \| .+$/,
+            ),
             SalesItemLineDetail: {
               Qty: 2,
               UnitPrice: 350,
@@ -707,4 +710,20 @@ it("grants credential compare-and-swap only to service_role and rejects a stale 
   } finally {
     await db.close();
   }
+});
+
+it("QuickBooks line descriptions name the item, the detail and the project", async () => {
+  const { invoiceLineDescription } = await import("../src/lib/providers/qbo");
+  expect(
+    invoiceLineDescription(
+      { name: "Website Build", description: "Kickoff" },
+      "A new website for Acme",
+    ),
+  ).toBe("Website Build | Kickoff | A new website for Acme");
+  expect(
+    invoiceLineDescription({ name: "Logo design", description: "" }, "Site"),
+  ).toBe("Logo design | Site");
+  expect(
+    invoiceLineDescription({ name: "Care", description: "Care" }, undefined),
+  ).toBe("Care");
 });

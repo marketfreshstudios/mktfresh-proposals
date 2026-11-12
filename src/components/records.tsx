@@ -2019,15 +2019,8 @@ export function CountersignSheet({
                       ),
                     }}
                   />
-                  <p>Version {version.version_no}</p>
-                  <code className="hash">{version.content_hash}</code>
                 </details>
-              ) : (
-                <>
-                  <p>Version {version?.version_no}</p>
-                  <code className="hash">{version?.content_hash}</code>
-                </>
-              )}
+              ) : null}
             </section>
             {!s?.image || !s.user_id ? (
               <>
@@ -2246,6 +2239,25 @@ export function RecordV4({
     () => setReminders(automaticRemindersEnabled(p)),
     [p.id, p.automatic_reminders, p.delivery_method],
   );
+  // Billing, PDFs and emails run as background jobs after signing. While any
+  // are waiting, keep the page current so statuses change without a reload.
+  const working = p.jobs.some((j) => ["pending", "running"].includes(j.status));
+  const latest = useRef(p);
+  latest.current = p;
+  useEffect(() => {
+    if (!working) return;
+    let polls = 0;
+    const timer = setInterval(() => {
+      if (window.document.visibilityState !== "visible") return;
+      if (++polls > 40) return clearInterval(timer);
+      void api<Proposal>(`/api/proposals/${p.id}`)
+        .then((next) => {
+          if (next.revision !== latest.current.revision) onChanged(next);
+        })
+        .catch(() => {});
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [p.id, working]);
   const [share, setShare] = useState(false),
     [reminderBusy, setReminderBusy] = useState(false),
     [editContact, setEditContact] = useState(false),
