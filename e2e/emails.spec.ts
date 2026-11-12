@@ -366,7 +366,7 @@ test("Emails: workspace templates, responsive editor, fixed actions, fields, sel
   await page.waitForURL(
     (url) => url.pathname === `/proposals/${current.id}` && !url.search,
   );
-  await expect(page.locator(".record-email-log > summary")).toBeVisible();
+  await expect(page.locator(".record-timeline-list")).toBeVisible();
   expect((await emailTemplates(repo))[0].subject).toContain(
     "{{client.company}}",
   );
@@ -383,9 +383,11 @@ test("Emails: workspace templates, responsive editor, fixed actions, fields, sel
     sentLog.snapshot,
   );
   await page.goto(`/proposals/${current.id}`);
-  await expect(page.locator(".record-email-log > summary")).toBeVisible();
-  await page.locator(".record-email-log > summary").click();
-  await page.getByText(/Just for this send \|/).click();
+  // Sent emails live in the Timeline, each opening its exact copy.
+  await page
+    .locator(".timeline-email > summary")
+    .filter({ hasText: "Just for this send" })
+    .click();
   await expect(
     page.locator('iframe[title="Sent email: Just for this send"]'),
   ).toBeVisible();

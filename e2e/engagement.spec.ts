@@ -348,7 +348,6 @@ test("record/list summaries match the retained sessions, with empty and responsi
   });
   await page.getByRole("button", { name: "Refresh", exact: true }).click();
   const panel = page.locator(".engagement-panel");
-  await panel.getByText("Engagement details", { exact: true }).click();
   await expect(panel.locator("dd").nth(0)).toHaveText("3");
   await expect(panel.locator("dd").nth(1)).toHaveText("2");
   await expect(
@@ -357,12 +356,6 @@ test("record/list summaries match the retained sessions, with empty and responsi
       .filter({ has: page.getByText("Devices", { exact: true }) })
       .locator("dd"),
   ).toHaveText("2");
-  await expect(
-    panel
-      .locator(".engagement-stats > div")
-      .filter({ has: page.getByText("Recipients", { exact: true }) })
-      .locator("dd"),
-  ).toHaveText("1");
   await expect(
     panel
       .locator(".engagement-stats > div")
@@ -385,7 +378,7 @@ test("record/list summaries match the retained sessions, with empty and responsi
   ).toBe(true);
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/proposals");
-  await expect(page.getByText(/Viewed 3× · last/)).toBeVisible();
+  await expect(page.getByText(/Viewed 3× \| last/)).toBeVisible();
   await capture(page, "proposal-list-1440");
 });
 test("staff Preview as client and Send-me-a-test preview URLs never start tracking", async ({

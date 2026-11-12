@@ -203,9 +203,8 @@ test.describe("Staff content surfaces", () => {
       ".record-timeline-list",
     ])
       await surface(page.locator(selector));
-    await expect(
-      page.locator(".proposal-email-table .empty-copy"),
-    ).toContainText("No saved email copies yet.");
+    // Sent emails are Timeline entries now; none exist for this draft.
+    await expect(page.locator(".timeline-email")).toHaveCount(0);
     await screenshot(page, "proposal-record-1440");
     await page.goto(`/proposals/${f.draft.id}?view=evidence`);
     await surface(page.locator(".table-wrap.staff-table"));
