@@ -3847,8 +3847,8 @@ export function ConnectionsStudio({
                 <ul className="connection-activity" role="list">
                   {missing.map((p) => (
                     <li key={p.id}>
-                      <a href={`/proposals/${p.id}`}>
-                        {p.client.company} · {p.title}
+                      <a href={`/proposals/${p.id}?view=record`}>
+                        {p.client.company} | {p.title}
                       </a>
                     </li>
                   ))}

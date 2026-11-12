@@ -1453,7 +1453,7 @@ export function HomeV4({
                   <li key={p.id}>
                     <a
                       className="home-expiring-proposal"
-                      href={`/proposals/${p.id}`}
+                      href={`/proposals/${p.id}?view=record`}
                     >
                       <strong>{p.client.company}</strong>
                       <small>{p.title}</small>
@@ -1538,7 +1538,7 @@ export function HomeV4({
                   <span className="attention-chip">{label}</span>
                   <div>
                     <h3 className="home-attention-title">
-                      <a href={`/proposals/${p.id}`}>
+                      <a href={`/proposals/${p.id}?view=record`}>
                         {p.client.company} — {p.title}
                       </a>
                     </h3>
@@ -1557,7 +1557,10 @@ export function HomeV4({
                       Remind
                     </Button>
                   ) : (
-                    <a className="btn" href={`/proposals/${p.id}`}>
+                    <a
+                      className="btn"
+                      href={`/proposals/${p.id}${kind === "review" ? "" : "?view=record"}`}
+                    >
                       {kind === "review" ? "Review" : "Open"}
                     </a>
                   )}

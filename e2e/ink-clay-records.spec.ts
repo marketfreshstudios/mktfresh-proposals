@@ -321,7 +321,10 @@ test("Home, list views and action slots use the existing proposal states", async
   await expect(page.locator(".home-expiring li")).toHaveCount(2);
   await expect(
     page.locator(".home-expiring").getByRole("link", { name: /Cedar Law/ }),
-  ).toHaveAttribute("href", `/proposals/${f.waiting.id}`);
+  ).toHaveAttribute("href", `/proposals/${f.waiting.id}?view=record`);
+  // Proposal titles on Home open the details page, not the editor.
+  for (const link of await page.locator(".home-attention-title a").all())
+    await expect(link).toHaveAttribute("href", /\?view=record$/);
   await capture(page, "home-1440");
   await page.goto("/proposals");
   const tabs = page.getByRole("tablist", { name: "Proposal views" });
