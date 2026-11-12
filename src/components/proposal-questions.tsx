@@ -100,7 +100,10 @@ function QuestionCard({
       )}
       <p className="question-text">{thread.question}</p>
       {thread.replies.map((reply) => (
-        <div className="question-reply" key={reply.id}>
+        <div
+          className={`question-reply${reply.from === "client" ? " from-client" : ""}`}
+          key={reply.id}
+        >
           <strong>{reply.name}</strong>
           <time dateTime={reply.created_at}>{time(reply.created_at)}</time>
           <p className="question-text">{reply.text}</p>
@@ -157,6 +160,7 @@ export function ClientQuestions({
   const [loadError, setLoadError] = useState("");
   const [toast, setToast] = useState("");
   const [answered, setAnswered] = useState<string | null>(null);
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [edit, setEdit] = useState<PublicQuestion | null>(null);
   const [remove, setRemove] = useState<PublicQuestion | null>(null);
   const [removeBusy, setRemoveBusy] = useState(false);
@@ -194,13 +198,15 @@ export function ClientQuestions({
       api<ClientQuestionsResult>(url, { headers })
         .then((data) => {
           if (!active || !Array.isArray(data.threads)) return;
+          const staffReplies = (thread: PublicQuestion) =>
+            thread.replies.filter((reply) => reply.from !== "client").length;
           const before = new Map(
-            known.current.map((thread) => [thread.id, thread.replies.length]),
+            known.current.map((thread) => [thread.id, staffReplies(thread)]),
           );
           const fresh = data.threads.find(
             (thread) =>
               before.has(thread.id) &&
-              thread.replies.length > (before.get(thread.id) ?? 0),
+              staffReplies(thread) > (before.get(thread.id) ?? 0),
           );
           setResult(data);
           if (fresh) setAnswered(fresh.id);
@@ -309,6 +315,7 @@ export function ClientQuestions({
       )}
       {threads.map((thread) => {
         const hasReply = thread.replies.length > 0;
+        const lastReply = thread.replies.at(-1);
         const canLocate = !!thread.block_id || !!thread.section?.key;
         return (
           <article
@@ -342,10 +349,10 @@ export function ClientQuestions({
             <p className="question-text">{thread.question}</p>
             <div className="client-question-actions">
               <span>
-                {hasReply
-                  ? `Answered by ${thread.replies[0].name}`
-                  : thread.status === "resolved"
-                    ? "Resolved"
+                {thread.status === "resolved"
+                  ? "Resolved"
+                  : lastReply && lastReply.from !== "client"
+                    ? `Answered by ${lastReply.name}`
                     : "Waiting for a reply"}
               </span>
               <div>
@@ -395,13 +402,41 @@ export function ClientQuestions({
             {/* Replies are always open: nothing the client waits for is hidden. */}
             {hasReply &&
               thread.replies.map((answer) => (
-                <div className="question-reply" key={answer.id}>
-                  <strong>{answer.name}</strong>
+                <div
+                  className={`question-reply${answer.from === "client" ? " from-client" : ""}`}
+                  key={answer.id}
+                >
+                  <strong>
+                    {answer.from === "client" ? "You" : answer.name}
+                  </strong>
                   <time dateTime={answer.created_at}>
                     {time(answer.created_at, true)}
                   </time>
                   <p className="question-text">{answer.text}</p>
                 </div>
+              ))}
+            {/* The client can answer back, so a question stays one conversation. */}
+            {hasReply &&
+              writable &&
+              thread.status !== "resolved" &&
+              (replyingTo === thread.id ? (
+                <ClientReplyForm
+                  url={`${url}/${thread.id}/replies`}
+                  headers={headers}
+                  onCancel={() => setReplyingTo(null)}
+                  onSent={(next) => {
+                    replace(next);
+                    setReplyingTo(null);
+                    mark("Reply sent. We’ll email you when there’s an answer.");
+                  }}
+                />
+              ) : (
+                <button
+                  className="question-text-action client-question-reply-action"
+                  onClick={() => setReplyingTo(thread.id)}
+                >
+                  Reply
+                </button>
               ))}
           </article>
         );
@@ -605,6 +640,70 @@ export function ClientQuestions({
 }
 
 const emptyClientThreads: PublicQuestion[] = [];
+
+function ClientReplyForm({
+  url,
+  headers,
+  onCancel,
+  onSent,
+}: {
+  url: string;
+  headers: Record<string, string>;
+  onCancel: () => void;
+  onSent: (thread: PublicQuestion) => void;
+}) {
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [id] = useState(() => crypto.randomUUID());
+  return (
+    <form
+      className="client-question-reply-form"
+      onSubmit={async (event) => {
+        event.preventDefault();
+        setBusy(true);
+        setError("");
+        try {
+          onSent(
+            await api<PublicQuestion>(url, {
+              method: "POST",
+              headers,
+              body: JSON.stringify({ id, text }),
+            }),
+          );
+        } catch (failure) {
+          setError(
+            failure instanceof Error
+              ? failure.message
+              : "Your reply wasn’t sent. Try again.",
+          );
+        } finally {
+          setBusy(false);
+        }
+      }}
+    >
+      <label>
+        Your reply
+        <textarea
+          value={text}
+          maxLength={2000}
+          rows={3}
+          autoFocus
+          onChange={(event) => setText(event.target.value)}
+        />
+      </label>
+      {error && <p role="alert">{error}</p>}
+      <DialogActions>
+        <Button onClick={onCancel} disabled={busy}>
+          Cancel
+        </Button>
+        <Button type="submit" busy={busy} disabled={!text.trim()}>
+          Send reply
+        </Button>
+      </DialogActions>
+    </form>
+  );
+}
 export const generalQuestion: QuestionTarget = { label: "General question" };
 
 function AskForm({

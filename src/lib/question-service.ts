@@ -13,7 +13,9 @@ import {
   questionContact,
   questionsReadable,
   questionsWritable,
+  clientReplyLimit,
   type AskQuestionSchema,
+  type ClientReplySchema,
   type StaffQuestionSchema,
   type QuestionThread,
   type QuestionMail,
@@ -169,6 +171,86 @@ export async function askQuestion(
   }
   check(result === "saved", "Questions are read-only for this proposal.", 410);
   return publicQuestion(thread);
+}
+
+/** A client follow-up keeps the question one conversation and reopens it. */
+export async function clientReply(
+  repo: Repository,
+  p: Proposal,
+  id: string,
+  input: z.infer<typeof ClientReplySchema>,
+  options: { members?: typeof workspaceStaff } = {},
+) {
+  const threads = await repo.questionThreads(p.id);
+  const thread = threads.find((t) => t.id === id);
+  check(thread, "Question not found", 404);
+  if (thread.replies.some((reply) => reply.id === input.id))
+    return publicQuestion(thread);
+  check(
+    questionsWritable(p),
+    "Questions are read-only for this proposal.",
+    410,
+  );
+  check(
+    thread.replies.length > 0,
+    "Edit your question until there is a reply.",
+    409,
+  );
+  check(
+    thread.replies.length < clientReplyLimit,
+    "This conversation is full. Ask a new question instead.",
+    409,
+  );
+  const hour = Date.now() - 3600_000;
+  const recent = threads.flatMap((t) =>
+    t.replies.filter(
+      (r) => r.from === "client" && Date.parse(r.created_at) > hour,
+    ),
+  );
+  if (recent.length >= 10)
+    throw new AppError(
+      429,
+      "You’ve reached the hourly reply limit. Try again later.",
+    );
+  const active = (
+    await (options.members ?? workspaceStaff)(repo.workspaceId)
+  ).filter((m) => !("status" in m) || m.status === "active");
+  const recipients = active.filter((m) =>
+    thread.notify_users.includes(m.user_id),
+  );
+  const next: QuestionThread = {
+    ...thread,
+    revision: thread.revision + 1,
+    status: "open",
+    replies: [
+      ...thread.replies,
+      {
+        id: input.id,
+        name: thread.contact.name,
+        text: input.text,
+        created_at: new Date().toISOString(),
+        from: "client",
+      },
+    ],
+  };
+  const mail = await Promise.all(
+    [...new Set(recipients.map((m) => m.email.toLowerCase()))].map((to) =>
+      questionMail(repo, p, "staff_question", to, thread.id),
+    ),
+  );
+  const result = await repo.writeQuestion({
+    previous: thread.revision,
+    proposalRevision: p.revision,
+    thread: next,
+    mail,
+  });
+  check(result !== "closed", "Questions are read-only for this proposal.", 410);
+  check(
+    result === "saved",
+    "The conversation changed. Reload and try again.",
+    409,
+  );
+  return publicQuestion(next);
 }
 
 export async function editClientQuestion(
