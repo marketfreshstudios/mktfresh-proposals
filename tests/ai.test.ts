@@ -213,3 +213,28 @@ it("AI draft tools cannot set or change a proposal sender", async () => {
   );
   expect((await repo.get(draft.id))!.sender).toBeUndefined();
 });
+it("the connector lists active billing categories for custom recurring items", async () => {
+  const { repo } = await setup();
+  const ai = { actor: "ai:test", workspace_id: repo.workspaceId };
+  await repo.put("custom_families", {
+    id: "00000000-0000-4000-8000-000000000091",
+    name: "Custom care",
+    stripe_product_id: "prod_care",
+    active: true,
+  });
+  await repo.put("custom_families", {
+    id: "00000000-0000-4000-8000-000000000092",
+    name: "Retired",
+    stripe_product_id: "prod_old",
+    active: false,
+  });
+  expect(
+    await aiTool(repo, ai as never, "list_billing_categories", {}, scopes),
+  ).toEqual([
+    { id: "00000000-0000-4000-8000-000000000091", name: "Custom care" },
+  ]);
+  const { toolDefinitions } = await import("../src/lib/ai-tools");
+  const quote = toolDefinitions.find((t) => t.name === "set_quote_lines")!;
+  expect(quote.description).toContain("custom_family_id");
+  expect(quote.description).toContain("list_billing_categories");
+});

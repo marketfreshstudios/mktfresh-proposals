@@ -263,7 +263,7 @@ export function readiness(
     if (l.interval !== "one_time") {
       if (!l.stripe_lookup_key && !l.custom_family_id)
         errors.push(
-          `${l.name}: recurring line needs a lookup key or custom family`,
+          `${l.name}: recurring line needs a catalog product or a billing category`,
         );
       if (
         l.stripe_lookup_key &&
