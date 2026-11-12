@@ -311,7 +311,11 @@ export function SignatureForm({
       >
         {busy ? "Sealing your signed copy…" : error ? "Try again" : label}
       </button>
-      <p id="signature-reason" className="muted" role="status">
+      <p
+        id="signature-reason"
+        className="muted flow-signature-reason"
+        role="status"
+      >
         {busy
           ? "Please keep this page open. Your signature is being saved; do not submit it again."
           : reason ||

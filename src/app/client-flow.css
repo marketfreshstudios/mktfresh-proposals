@@ -1118,3 +1118,8 @@ label.flow-quote-line {
   gap: 6px;
   margin-block-end: 12px;
 }
+
+/* The note under Sign proposal sits centered under the full-width button. */
+.client-flow p.flow-signature-reason {
+  text-align: center;
+}

@@ -229,6 +229,10 @@ test("the conditional quote switches care groups on desktop and phone and freeze
         Math.abs(box.x + box.width / 2 - page.viewportSize()!.width / 2),
       ).toBeLessThanOrEqual(24);
       await expect(page.getByText("Tick the agreement")).toHaveCount(0);
+      await expect(page.locator("#signature-reason")).toHaveCSS(
+        "text-align",
+        "center",
+      );
       // The hidden Own It Now care group never counts as an unmade choice.
       await expect(
         page.getByText(/choose one item in each choice group/),
