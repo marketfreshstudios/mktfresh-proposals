@@ -495,9 +495,54 @@ export function PagedPaper({
         observe();
       }
     }
+    // iOS holds a tap as a hover preview when the page changes between the
+    // touch and its click. A touch can itself prompt a layout pass (Safari
+    // resizes its toolbar), so passes wait until the tap's click has fired.
+    let touching = false,
+      deferred = false,
+      releaseTimer: ReturnType<typeof setTimeout> | undefined;
+    const touchStart = (event: PointerEvent) => {
+      if (event.pointerType === "mouse") return;
+      touching = true;
+      clearTimeout(releaseTimer);
+    };
+    const touchRelease = () => {
+      clearTimeout(releaseTimer);
+      if (!touching) return;
+      touching = false;
+      if (deferred) {
+        deferred = false;
+        schedule();
+      }
+    };
+    // A tap's click releases at once; a press with no click releases after
+    // the window iOS watches for changes.
+    const touchEnd = (event: PointerEvent) => {
+      if (event.pointerType === "mouse" || !touching) return;
+      clearTimeout(releaseTimer);
+      releaseTimer = setTimeout(touchRelease, 800);
+    };
+    const touchClick = () => {
+      if (touching) setTimeout(touchRelease, 0);
+    };
+    window.addEventListener("pointerdown", touchStart, true);
+    window.addEventListener("pointerup", touchEnd, true);
+    window.addEventListener("pointercancel", touchRelease, true);
+    window.addEventListener("click", touchClick, true);
     function schedule() {
-      if (!stopped && !frame)
-        frame = requestAnimationFrame(() => flushSync(update));
+      if (stopped || frame) return;
+      if (touching) {
+        deferred = true;
+        return;
+      }
+      frame = requestAnimationFrame(() => {
+        if (touching) {
+          frame = 0;
+          deferred = true;
+          return;
+        }
+        flushSync(update);
+      });
     }
     const flush = () => flushSync(update);
     root.addEventListener("pagination-flush", flush);
@@ -521,6 +566,11 @@ export function PagedPaper({
       stopped = true;
       cancelAnimationFrame(frame);
       clearTimeout(assetsTimer);
+      clearTimeout(releaseTimer);
+      window.removeEventListener("pointerdown", touchStart, true);
+      window.removeEventListener("pointerup", touchEnd, true);
+      window.removeEventListener("pointercancel", touchRelease, true);
+      window.removeEventListener("click", touchClick, true);
       observer.disconnect();
       resize.disconnect();
       root.removeEventListener("pagination-flush", flush);
