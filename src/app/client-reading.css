@@ -441,7 +441,7 @@
     display: none;
   }
   .flow-r25-reading .flow-document-footer {
-    padding-inline: 20px;
+    padding-inline: 0;
   }
 
   .flow-questions-phone-action {

@@ -430,8 +430,10 @@ test("QuickBooks connection states, invoice defaults, product mapping and record
   const invoiceLabel = row.getByText("One-time", { exact: true });
   const labelBox = (await invoiceLabel.boundingBox())!;
   const invoiceBox = (await invoice.boundingBox())!;
-  expect(invoiceBox.x).toBeGreaterThan(labelBox.x + labelBox.width);
-  expect(Math.abs(invoiceBox.y - labelBox.y)).toBeLessThanOrEqual(5);
+  // Billing sits in the narrow side column: the description stacks under
+  // its label, aligned to the same left edge.
+  expect(invoiceBox.y).toBeGreaterThanOrEqual(labelBox.y + labelBox.height - 2);
+  expect(Math.abs(invoiceBox.x - labelBox.x)).toBeLessThanOrEqual(24);
   await invoice.click();
   await expect(
     row.getByText("Invoices go to billing@example.test"),

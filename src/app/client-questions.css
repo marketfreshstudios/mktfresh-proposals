@@ -279,8 +279,11 @@
   }
   .client-flow .client-ask-header {
     display: inline-grid;
+    position: fixed;
+    top: auto;
     right: 16px;
-    bottom: -22px;
+    z-index: 31;
+    box-shadow: var(--shadow-lg, var(--shadow-sm));
   }
   .client-flow .client-ask-block-phone {
     transform: translate(calc(-100% - 8px), -50%);

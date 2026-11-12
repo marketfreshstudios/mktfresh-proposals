@@ -102,10 +102,6 @@ export function ProposalEngagement({
               ? "No tracked visits yet"
               : "Not opened yet"}
           </h3>
-          <p>
-            Visits count when your client reads the sent link. Previews and
-            visits while you’re signed in to Yeswell don’t count.
-          </p>
           {(report.downloads > 0 || report.questions > 0) && (
             <dl className="engagement-stats">
               {report.questions > 0 && stat("Questions", report.questions)}

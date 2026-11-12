@@ -374,6 +374,11 @@ test("client question reaches staff, receives a plain-text reply on the same lin
     page.getByRole("button", { name: "Ask about this heading" }),
   ).toHaveCount(0);
   await expect(form).toHaveCount(0);
+  // The floating ask button sits above the bottom bar, where toasts appear.
+  const toastDismiss = page
+    .locator(".client-question-toast")
+    .getByRole("button", { name: "Dismiss notification" });
+  if (await toastDismiss.count()) await toastDismiss.first().tap();
   await header
     .getByRole("button", { name: "Ask a question", exact: true })
     .tap();

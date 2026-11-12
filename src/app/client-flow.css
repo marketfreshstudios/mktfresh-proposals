@@ -310,6 +310,18 @@ label.flow-quote-line {
   grid-column: 1;
   font-size: 13px;
 }
+/* Two equal outline pills: ask first, decline second. */
+.flow-document-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+/* Desktop asks from the Your choices rail; phones ask here too. */
+@media (min-width: 700px) {
+  .flow-document-actions .flow-footer-ask {
+    display: none;
+  }
+}
 .flow-contact {
   margin-top: 24px;
   font-size: 14px;
@@ -906,9 +918,10 @@ label.flow-quote-line {
     border-inline: 0;
     width: 100%;
   }
+  /* The agreement summary stays a full card on phones: its text needs the
+     card's inset, unlike the reading document. */
   .client-flow.client-flow.client-flow .flow-acceptance {
-    padding-inline: 0;
-    border-inline: 0;
+    padding: 18px 16px;
   }
   .client-flow.client-flow.client-flow .flow-state,
   .client-flow.client-flow.client-flow .flow-result {
@@ -1066,4 +1079,29 @@ label.flow-quote-line {
 .flow-contract .contract > section {
   border-top: 1px solid var(--paper-border);
   padding-block: 16px;
+}
+
+/* While signing, "Review" in the progress bar goes back to the proposal. */
+.client-flow .flow-progress-back {
+  all: unset;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  /* A taller tap target that doesn't shift the label off the step line. */
+  padding-block: 12px;
+  margin-block: -12px;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+  text-underline-offset: 4px;
+}
+.client-flow .flow-progress-back:focus-visible {
+  outline: 2px solid var(--client-deep-accent, var(--accent));
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.client-flow .flow-sign-intro .flow-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-block-end: 12px;
 }

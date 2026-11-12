@@ -598,6 +598,7 @@ function NewClientFlow({
       step={activeStep}
       billing={recurring || requiresCheckout}
       className={review ? "flow-review-progress" : "flow-top-progress"}
+      onReview={step === "sign" ? () => go("read") : undefined}
     />
   );
   const ask = canAsk ? setQuestionRequest : undefined;
@@ -629,8 +630,28 @@ function NewClientFlow({
     setError("");
     setQuestionRequest(null);
     setQuestionHistoryOpen(false);
+    // Signing is a history entry, so the browser's back button (and the
+    // phone's back gesture) returns to the proposal.
+    if (value === "sign" && step === "read")
+      history.pushState({ ...history.state, yeswellStep: "sign" }, "");
+    else if (
+      value === "read" &&
+      step === "sign" &&
+      history.state?.yeswellStep === "sign"
+    ) {
+      history.back();
+      return;
+    }
     setStep(value);
   };
+  useEffect(() => {
+    const pop = () => {
+      if (history.state?.yeswellStep !== "sign")
+        setStep((current) => (current === "sign" ? "read" : current));
+    };
+    window.addEventListener("popstate", pop);
+    return () => window.removeEventListener("popstate", pop);
+  }, []);
   const previewBar = preview && initial && (
     <PreviewControls>
       <div className="preview-identity">
@@ -805,6 +826,8 @@ function NewClientFlow({
           <ClientQuestionButton
             label="Ask a question"
             className="client-ask-header"
+            // On phones it floats above the bottom bar, so it is always in reach.
+            style={{ bottom: barHeight + 16 }}
             onClick={(trigger) => ask({ target: generalQuestion, trigger })}
           />
         )}
@@ -1459,7 +1482,7 @@ function NewClientFlow({
                       p.cover && p.company.logo
                         ? preview
                           ? `/api/proposals/${token}/preview-logo`
-                          : `/api/public/${token}/logo`
+                          : `/api/public/${token}/brand/logo`
                         : undefined
                     }
                   />
@@ -1468,7 +1491,8 @@ function NewClientFlow({
             ) : step === "sign" ? (
               <section className="flow-sign">
                 <div className="flow-sign-intro">
-                  <Button variant="ghost" onClick={() => go("read")}>
+                  <Button className="flow-back" onClick={() => go("read")}>
+                    <ChevronLeft size={16} aria-hidden="true" />
                     Back to proposal
                   </Button>
                   <h1>Sign the proposal</h1>
@@ -1586,7 +1610,7 @@ function NewClientFlow({
                       p.cover && p.company.logo
                         ? preview
                           ? `/api/proposals/${token}/preview-logo`
-                          : `/api/public/${token}/logo`
+                          : `/api/public/${token}/brand/logo`
                         : undefined
                     }
                     proposal={p}
@@ -1712,13 +1736,27 @@ function NewClientFlow({
                       </DialogActions>
                     </section>
                   ) : (
-                    <Button
-                      variant="ghost"
-                      disabled={preview || stale}
-                      onClick={() => setDeclining(true)}
-                    >
-                      Decline this proposal
-                    </Button>
+                    <div className="flow-document-actions">
+                      {ask && (
+                        <Button
+                          className="flow-footer-ask"
+                          onClick={(event) =>
+                            ask({
+                              target: generalQuestion,
+                              trigger: event.currentTarget,
+                            })
+                          }
+                        >
+                          Ask a question
+                        </Button>
+                      )}
+                      <Button
+                        disabled={preview || stale}
+                        onClick={() => setDeclining(true)}
+                      >
+                        Decline this proposal
+                      </Button>
+                    </div>
                   )}
                 </div>
               </>
@@ -1809,10 +1847,13 @@ function FlowProgress({
   step,
   billing,
   className,
+  onReview,
 }: {
   step: "read" | "sign" | "billing" | "done";
   billing: boolean;
   className?: string;
+  /** While signing, the Review step goes back to the proposal. */
+  onReview?: () => void;
 }) {
   const current = { read: 0, sign: 1, billing: 2, done: 3 }[step];
   return (
@@ -1824,7 +1865,17 @@ function FlowProgress({
             aria-current={i === current ? "step" : undefined}
             className={i <= current ? "reached" : undefined}
           >
-            {label}
+            {i === 0 && onReview ? (
+              <button
+                type="button"
+                className="flow-progress-back"
+                onClick={onReview}
+              >
+                {label}
+              </button>
+            ) : (
+              label
+            )}
           </li>
         ))}
       </ol>
