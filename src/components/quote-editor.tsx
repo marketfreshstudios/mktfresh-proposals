@@ -158,7 +158,6 @@ import {
   resolveLabel,
 } from "../lib/presentation";
 import { readiness } from "../lib/quote";
-import { coverText } from "../lib/cover";
 import { withDraftSettings } from "../lib/proposal-settings";
 import { sellableCatalogue, itemDisplayName } from "../lib/catalogue-display";
 import { FieldEditor } from "./field-editor";
@@ -2964,27 +2963,9 @@ function QuoteEditorContent({
         onTitle={
           locked
             ? undefined
-            : (typed) => {
-                const title = resolveLabel(typed, map);
-                change({
-                  title,
-                  // Keep a hand-edited cover title in step with the proposal title.
-                  ...(p.cover?.elements?.some(
-                    (e) => e.kind === "title" && e.content,
-                  )
-                    ? {
-                        cover: {
-                          ...p.cover,
-                          elements: p.cover.elements.map((e) =>
-                            e.kind === "title"
-                              ? { ...e, content: coverText(title) }
-                              : e,
-                          ),
-                        },
-                      }
-                    : {}),
-                });
-              }
+            : // Renaming changes only the proposal name; the cover keeps
+              // its own title once it has been edited.
+              (typed) => change({ title: resolveLabel(typed, map) })
         }
         backLabel="Proposal"
         backHref={`/proposals/${p.id}?view=record`}
@@ -3276,14 +3257,6 @@ function QuoteEditorContent({
                       sender={map["sender.name"]}
                       validUntil={p.valid_until}
                       timezone={p.workspace_settings?.timezone}
-                      onTitle={
-                        locked
-                          ? undefined
-                          : // The cover keeps its live fields; the proposal
-                            // title (lists, emails, top bar) gets their values.
-                            (title) =>
-                              change({ title: resolveLabel(title, map) })
-                      }
                     />
                   )}
                   {firstBlock}

@@ -59,7 +59,7 @@ for (const scenario of [
     await page.goto(`/proposals/${f.draft.id}`);
     await page.getByRole("tab", { name: "Send", exact: true }).click();
     const title = page.getByRole("textbox", {
-      name: "Proposal title",
+      name: "Rename proposal",
       exact: true,
     });
     try {
