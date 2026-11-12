@@ -145,6 +145,21 @@ export function SectionsNav({
       return b.type === "pricing_table" || b.type === "contract";
     });
   };
+  // A page that only continues the previous page's content is labeled after
+  // the last row the outline showed for that content: a pricing or Terms
+  // block listed on its own page outranks the section heading before it.
+  const continuingLabel = (number: number, title: string) => {
+    for (let n = number - 1; n >= 1; n--) {
+      const prev = pages.find((page) => page.number === n);
+      if (!prev) break;
+      if (prev.sections.some((s) => s.blocks[0]?.type === "heading")) break;
+      const tail = pageBlocks(n).filter(
+        (b) => !prev.sections.some((s) => s.id === b.id),
+      );
+      if (tail.length) return blockLabel(tail.at(-1)!);
+    }
+    return title;
+  };
   const add = (after?: string) => {
     const next = addPage(content, after);
     onChange(next.content);
@@ -406,7 +421,7 @@ export function SectionsNav({
                         p.continuing && (
                           <SectionRow
                             className="outline-continuing"
-                            label={`${display(p.continuing.title)} (continued)`}
+                            label={`${display(continuingLabel(p.number, p.continuing.title))} (continued)`}
                             onClick={() => onPage?.(p.number)}
                           />
                         )}
