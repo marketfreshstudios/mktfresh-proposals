@@ -28,7 +28,7 @@ it("defaults attribution on and preserves workspace branding in public state and
       expect(mail.html).toContain('href="https://yeswell.co" rel="noopener"');
   }
   const staffMail = renderTemplate(definition("staff_signed"), p);
-  expect(staffMail.html).toContain("Yeswell · Staff notification");
+  expect(staffMail.html).toContain("Yeswell notification for Example Studio");
   expect(staffMail.html).not.toContain("Powered by Yeswell");
 });
 it("current workspace opt-out applies to already published links and newly prepared emails, without rewriting snapshots", async () => {

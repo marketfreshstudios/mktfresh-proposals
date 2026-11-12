@@ -19,7 +19,11 @@ import {
 import { emailLayout } from "./email-layout";
 import { escape } from "./presentation";
 import { appOrigin } from "./links";
-import { staffFromAddress, workspaceSecuritySender } from "./email-identity";
+import {
+  staffFromAddress,
+  workspaceSecuritySender,
+  yeswellFrom,
+} from "./email-identity";
 export async function sendTeamEmail(
   repo: Repository,
   mailer: Mailer,
@@ -40,7 +44,7 @@ export async function sendTeamEmail(
   const email = actor.staff_email ?? "";
   const from = staffFromAddress(email, settings);
   check(
-    from,
+    from || yeswellFrom(),
     "Set a verified sending domain in Workspace before sending team email",
     409,
   );
@@ -71,6 +75,7 @@ export async function sendTeamEmail(
   const layout = (buttonUrl: string) =>
     emailLayout({
       staff: true,
+      origin: appOrigin(),
       title: key === "team_invite" ? "You're invited" : "Choose a new password",
       bodyHtml: body.html,
       bodyText: body.text,
@@ -83,14 +88,18 @@ export async function sendTeamEmail(
         formattedBusinessAddress(settings),
       ]
         .filter(Boolean)
-        .join(" · "),
+        .join(" | "),
       accent: settings.accent_colour,
     });
   const name = actor.staff_name ?? email;
   const id = randomUUID(),
     identity = {
-      from: `${JSON.stringify(from === email ? `${name} · ${settings.company_name}` : name)} <${from}>`,
-      reply_to: input.replyTo ?? email,
+      from:
+        yeswellFrom(
+          actor.actor === "system" ? "Yeswell" : `${name} via Yeswell`,
+        ) ??
+        `${JSON.stringify(from === email ? `${name} | ${settings.company_name}` : name)} <${from}>`,
+      reply_to: input.replyTo ?? (email || settings.email),
     };
   await mailer.send(
     { to: input.email, ...identity, subject, ...layout(url.toString()) },
@@ -130,7 +139,11 @@ export async function sendPasswordChangedEmail(
     await repo.entities<WorkspaceSettings>("workspace_settings")
   )[0];
   const from = settings && workspaceSecuritySender(settings);
-  check(settings && from, "Configure a verified workspace sending domain", 409);
+  check(
+    settings && (from || yeswellFrom()),
+    "Configure a verified workspace sending domain",
+    409,
+  );
   const title = "Your Yeswell password was changed";
   const body = "Your Yeswell account now uses your new password.";
   const help = "Not you? Contact your workspace admin right away.";
@@ -138,6 +151,7 @@ export async function sendPasswordChangedEmail(
   const layout = emailLayout({
     title,
     staff: true,
+    origin: appOrigin(),
     bodyHtml: `<p>${escape(body)}</p><p>${escape(help)}</p>`,
     bodyText: `${body}\n\n${help}`,
     button,
@@ -147,7 +161,9 @@ export async function sendPasswordChangedEmail(
     accent: settings.accent_colour,
   });
   const identity = {
-    from: `${JSON.stringify(`Yeswell · ${settings.company_name}`)} <${from}>`,
+    from:
+      yeswellFrom() ??
+      `${JSON.stringify(`Yeswell | ${settings.company_name}`)} <${from}>`,
     reply_to: settings.email,
   };
   const id = randomUUID();

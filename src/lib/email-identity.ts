@@ -64,3 +64,17 @@ export function staffRecipients(p: Proposal) {
     ),
   ].filter(Boolean);
 }
+
+/**
+ * Emails to the agency's own team come from Yeswell, not the agency, once the
+ * yeswell.co sending domain is verified: set YESWELL_NOTIFICATIONS_EMAIL
+ * (e.g. notifications@yeswell.co). Unset, team email keeps the workspace
+ * sender. Client email always comes from the agency.
+ */
+export function yeswellFrom(name = "Yeswell") {
+  const address = process.env.YESWELL_NOTIFICATIONS_EMAIL?.trim();
+  if (!address || !/^[^@\s<>"]+@[^@\s<>"]+\.[^@\s<>"]+$/.test(address))
+    return null;
+  if (/[\r\n]/.test(name)) return null;
+  return `${JSON.stringify(name)} <${address}>`;
+}

@@ -26,7 +26,10 @@ export type EmailLayoutContent = {
   accent: string;
   logo?: string;
   test?: boolean;
+  /** Team notification: Yeswell-branded instead of the agency's brand. */
   staff?: boolean;
+  /** App origin, for Yeswell's logo on team notifications. */
+  origin?: string;
   fonts?: FontSettings["proposal_fonts"];
   poweredBy?: { origin: string };
 };
@@ -92,8 +95,8 @@ img{border:0;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic}a{
 <!--[if mso]><table role="presentation" width="600" align="center"><tr><td><![endif]-->
 <table class="email-card" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;table-layout:fixed;word-wrap:break-word;overflow-wrap:anywhere;background-color:#ffffff;border-top:6px solid ${band}">
 <tr><td class="email-pad" style="padding:36px 40px;font-family:${e(bodyFont)}">
-${c.logo ? `<img src="${e(c.logo)}" alt="${e(c.workspace)}" width="160" style="display:block;max-width:160px;width:auto;max-height:64px;height:auto;margin:0 0 26px;background:#ffffff;border-radius:4px">` : `<p class="email-ink" style="font-size:16px;font-weight:700;line-height:23px;color:${headingInk};margin:0 0 26px">${e(c.workspace)}</p>`}
-${c.test ? '<p style="margin:0 0 12px"><span class="email-test-tag" style="display:inline-block;border-radius:6px;padding:3px 8px;font-size:12px;line-height:18px;color:#3c4a50;background-color:#e4eaed">TEST EMAIL · SENT ONLY TO YOU</span></p>' : ""}
+${c.staff ? (c.origin ? `<img src="${e(c.origin)}/brand/yeswell/yeswell-logo-email.png" alt="Yeswell" width="148" height="25" style="display:block;width:148px;height:25px;margin:0 0 26px;background:#ffffff;border-radius:4px">` : `<p class="email-ink" style="font-size:16px;font-weight:700;line-height:23px;color:${headingInk};margin:0 0 26px">Yeswell</p>`) : c.logo ? `<img src="${e(c.logo)}" alt="${e(c.workspace)}" width="160" style="display:block;max-width:160px;width:auto;max-height:64px;height:auto;margin:0 0 26px;background:#ffffff;border-radius:4px">` : `<p class="email-ink" style="font-size:16px;font-weight:700;line-height:23px;color:${headingInk};margin:0 0 26px">${e(c.workspace)}</p>`}
+${c.test ? '<p style="margin:0 0 12px"><span class="email-test-tag" style="display:inline-block;border-radius:6px;padding:3px 8px;font-size:12px;line-height:18px;color:#3c4a50;background-color:#e4eaed">TEST EMAIL | SENT ONLY TO YOU</span></p>' : ""}
 <h1 class="email-title email-ink" style="font-family:${e(titleFont)};font-size:34px;line-height:40px;font-weight:${c.staff ? 400 : 650};color:${headingInk};margin:0 0 20px">${e(c.title)}</h1>
 <div class="email-body email-ink" style="font-size:16px;line-height:26px;color:#1c1b18">${c.bodyHtml}</div>
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="360" style="width:100%;max-width:360px;table-layout:fixed;border-collapse:separate!important;margin-top:24px">
@@ -102,22 +105,22 @@ ${c.test ? '<p style="margin:0 0 12px"><span class="email-test-tag" style="displ
 </td></tr></table>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:30px"><tr><td class="email-line" style="border-top:1px solid #dce3e6;padding-top:18px">
 ${c.senderPhoto ? `<img src="${e(c.senderPhoto)}" alt="" width="32" height="32" style="display:block;border-radius:50%;margin:0 0 8px">` : ""}
-<p class="email-muted" style="font-size:12px;line-height:19px;color:#56646a;margin:0">Sent by ${e(c.sender)} at ${e(c.workspace)}</p>${c.senderTitle ? `<p class="email-muted" style="font-size:12px;line-height:19px;color:#56646a;margin:0">${e(c.senderTitle)}</p>` : ""}
-${c.staff ? '<p class="email-muted" style="font-size:12px;line-height:19px;color:#56646a;margin:6px 0 0">Yeswell · Staff notification</p>' : ""}
-${c.contact ? `<p class="email-muted" style="font-size:12px;line-height:19px;color:#56646a;margin:6px 0 0;white-space:pre-line">${e(c.contact)}</p>` : ""}
+<p class="email-muted" style="font-size:12px;line-height:19px;color:#56646a;margin:0">${c.staff ? `Yeswell notification for ${e(c.workspace)}` : `Sent by ${e(c.sender)} at ${e(c.workspace)}`}</p>${c.senderTitle ? `<p class="email-muted" style="font-size:12px;line-height:19px;color:#56646a;margin:0">${e(c.senderTitle)}</p>` : ""}
+${c.contact && !c.staff ? `<p class="email-muted" style="font-size:12px;line-height:19px;color:#56646a;margin:6px 0 0;white-space:pre-line">${e(c.contact)}</p>` : ""}
 ${c.poweredBy && !c.staff ? `<p class="email-muted" style="font-size:11px;line-height:18px;color:#56646a;margin:18px 0 0"><a href="https://yeswell.co" rel="noopener" style="color:#56646a;text-decoration:none"><img src="${e(c.poweredBy.origin)}/favicon-16.png" width="14" height="14" alt="" style="vertical-align:middle;margin-right:5px">Powered by Yeswell</a></p>` : ""}
 </td></tr></table></td></tr></table><!--[if mso]></td></tr></table><![endif]--></td></tr></table></div></body></html>`;
   const text = [
-    c.workspace,
-    c.test ? "TEST EMAIL · SENT ONLY TO YOU" : "",
+    c.staff ? "Yeswell" : c.workspace,
+    c.test ? "TEST EMAIL | SENT ONLY TO YOU" : "",
     c.title,
     c.bodyText,
     `${c.button.label}: ${c.button.url}`,
-    `Sent by ${c.sender} at ${c.workspace}`,
+    c.staff
+      ? `Yeswell notification for ${c.workspace}`
+      : `Sent by ${c.sender} at ${c.workspace}`,
     c.senderTitle,
-    c.contact,
-    c.staff ? "Yeswell · Staff notification" : "",
-    c.poweredBy && !c.staff ? "Powered by Yeswell · https://yeswell.co" : "",
+    c.staff ? "" : c.contact,
+    c.poweredBy && !c.staff ? "Powered by Yeswell | https://yeswell.co" : "",
   ]
     .filter(Boolean)
     .join("\n\n");

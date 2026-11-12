@@ -216,7 +216,7 @@ test("per-email pickers and read-only notifications follow existing permissions 
         page.getByRole("textbox", { name: "Email body", exact: true }),
       ).toHaveAttribute("contenteditable", "false");
       await expect(page.locator(".email-rendered")).toContainText(
-        "Yeswell · Staff notification",
+        "Yeswell notification for",
       );
     } else {
       const fields = await page
@@ -355,7 +355,7 @@ test("email editor references, accessible panels, save failure recovery and lega
   await page.evaluate(() => (document.documentElement.dataset.theme = "light"));
   await page.goto("/studio/emails/staff_signed");
   await expect(page.locator(".email-rendered")).toContainText(
-    "Yeswell · Staff notification",
+    "Yeswell notification for",
   );
   await shot(page, "email-readonly-1440");
   await page.goto("/studio/emails/team_invite");

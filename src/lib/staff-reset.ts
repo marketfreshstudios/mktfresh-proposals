@@ -6,7 +6,7 @@ import { ResendMailer } from "./jobs";
 import { supabase, SupabaseRepository } from "./repository";
 import { SupabaseTeamAuth } from "./team";
 import { sendTeamEmail, sendPasswordChangedEmail } from "./team-email";
-import { workspaceSecuritySender } from "./email-identity";
+import { workspaceSecuritySender, yeswellFrom } from "./email-identity";
 import { SupabaseTeamStore } from "./team-store";
 import type { StaffMember } from "./team-model";
 import type { WorkspaceSettings } from "./workspace";
@@ -99,7 +99,7 @@ export async function processStaffPasswordReset(
       await repo.entities<WorkspaceSettings>("workspace_settings")
     )[0];
     const sender = settings && workspaceSecuritySender(settings);
-    if (!sender) return;
+    if (!sender && !yeswellFrom()) return;
     const link = await auth.link(email, "recovery");
     if (
       !eligibleIdentity(link.user, member.user_id, email) ||
@@ -112,7 +112,7 @@ export async function processStaffPasswordReset(
       {
         actor: "system",
         staff_name: "Yeswell",
-        staff_email: sender,
+        staff_email: sender ?? "",
         ip: "",
         user_agent: "",
       },

@@ -50,8 +50,16 @@ it("all client and read-only staff defaults render one primary action, automatic
     expect(r.html).toContain("max-width:600px");
     expect(r.html).toContain("prefers-color-scheme:dark");
     expect(r.text).toContain(t.button_label + ": https://");
-    expect(r.text).toContain("Sent by Alex Morgan at Example Studio");
-    expect(r.text).toContain(settings.phone);
+    if (t.staff) {
+      // Team notifications are Yeswell's, not the agency's.
+      expect(r.text).toContain("Yeswell notification for Example Studio");
+      expect(r.html).toContain("/brand/yeswell/yeswell-logo-email.png");
+      expect(r.text).not.toContain(settings.phone);
+    } else {
+      expect(r.text).toContain("Sent by Alex Morgan at Example Studio");
+      expect(r.text).toContain(settings.phone);
+    }
+    expect(r.text).not.toContain("·");
     expect(r.text).not.toMatch(/{{|<p>|\$/);
   }
   expect(emailDefaults.filter((t) => !t.staff)).toHaveLength(9);

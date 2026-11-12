@@ -1,6 +1,6 @@
 import { formattedBusinessAddress } from "./business-details";
 import { z } from "zod";
-import { emailIdentity, staffFromAddress } from "./email-identity";
+import { emailIdentity, staffFromAddress, yeswellFrom } from "./email-identity";
 import { check, type Actor, type Proposal } from "./model";
 import type { Repository } from "./repository";
 import { workspaceStaff } from "./auth";
@@ -177,7 +177,7 @@ export class ReassignmentService {
         const from =
           settings && staffFromAddress(actor.staff_email ?? "", settings);
         check(
-          settings && actor.staff_email && from,
+          settings && actor.staff_email && (from || yeswellFrom()),
           "Set a verified sending domain in Workspace before notifying the new owner",
           400,
         );
@@ -186,6 +186,7 @@ export class ReassignmentService {
         const text = `${name} assigned you ${p.title}.`;
         const layout = emailLayout({
           staff: true,
+          origin: appOrigin(),
           title: p.title,
           workspace: settings.company_name,
           sender: name,
@@ -196,7 +197,7 @@ export class ReassignmentService {
             formattedBusinessAddress(settings),
           ]
             .filter(Boolean)
-            .join(" · "),
+            .join(" | "),
           bodyHtml: `<p>${escape(text)}</p>`,
           bodyText: text,
           button: {
@@ -207,7 +208,9 @@ export class ReassignmentService {
         // Snapshot and queue once with the normal idempotent email worker.
         const payload = {
           to: owner.email,
-          from: `${JSON.stringify(from === actor.staff_email ? `${name} · ${settings.company_name}` : name)} <${from}>`,
+          from:
+            yeswellFrom(`${name} via Yeswell`) ??
+            `${JSON.stringify(from === actor.staff_email ? `${name} | ${settings.company_name}` : name)} <${from}>`,
           reply_to: actor.staff_email,
           subject,
           ...layout,
