@@ -8,13 +8,12 @@ export const choiceRequired = (item: QuoteItem) =>
   !!item.choice_group_id && item.choice_group_required !== false;
 
 export const defaultChoiceGroupLabel = "Choose one";
-export const choiceGroupLabel = (item: QuoteItem) =>
-  item.choice_group_label ?? defaultChoiceGroupLabel;
-
-// Preserve the wording in snapshots made before named groups.
+// An unnamed group reads the same everywhere (sidebar, document, client view):
+// "Choose one" when a choice is required, "Choose up to one" when it isn't.
 export const printedChoiceGroupLabel = (item: QuoteItem) =>
   item.choice_group_label ??
   (choiceRequired(item) ? defaultChoiceGroupLabel : "Choose up to one");
+export const choiceGroupLabel = printedChoiceGroupLabel;
 
 export function choiceGroups(quote: Quote) {
   const groups = new Map<string, QuoteItem[]>();

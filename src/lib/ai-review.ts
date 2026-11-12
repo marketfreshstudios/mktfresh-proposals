@@ -92,8 +92,11 @@ export function contentSections(content: Block[]) {
     pending: boolean;
   }[] = [];
   for (const [n, b] of content.entries()) {
+    // Terms is always its own section, even without a heading or page break.
     const starts =
-      (b.type === "heading" && (b.level ?? 1) === 1) || !sections.length;
+      (b.type === "heading" && (b.level ?? 1) === 1) ||
+      b.type === "contract" ||
+      !sections.length;
     if (starts)
       sections.push({
         id: b.id ?? `block-${n}`,
