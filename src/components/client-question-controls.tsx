@@ -70,12 +70,21 @@ function canAskAboutBlock(target: QuestionTarget, phone: boolean) {
     target.kind === "paragraph" ||
     target.kind === "list" ||
     target.kind === "image" ||
+    target.kind === "term" ||
     target.kind === "quote line"
   );
 }
 function rootOf(wrapper: HTMLElement) {
   const document = wrapper.querySelector("#proposal-document");
-  return document?.shadowRoot ?? document;
+  const root = document?.shadowRoot ?? document;
+  // Terms clauses come from the published HTML; tag each clause heading and
+  // body here (pagination splits them into separate atoms) instead of
+  // changing that frozen markup.
+  for (const part of root?.querySelectorAll<HTMLElement>(
+    "[data-print-part]:not([data-client-question-id])",
+  ) ?? [])
+    part.dataset.clientQuestionId = part.dataset.printPart;
+  return root;
 }
 
 export function goToQuestionTarget(id: string) {
@@ -234,10 +243,28 @@ export function ClientQuestionSurface({
       setActive((last) =>
         last?.node === node && last.phone === phone ? last : { node, phone },
       );
+    // Moving toward the ask button crosses other targets (a line item's
+    // group, the next paragraph). Switch only after the pointer rests, and
+    // keep the current target while the pointer is on the button itself.
+    let pending = 0;
     const pointer = (event: PointerEvent) => {
       if (event.pointerType === "touch" || isPhoneReading()) return;
+      window.clearTimeout(pending);
+      if (
+        event
+          .composedPath()
+          .some(
+            (node) =>
+              node instanceof HTMLElement &&
+              node.classList.contains("client-ask-icon"),
+          )
+      )
+        return;
       const target = targetFromEvent(event);
-      if (target && handlers.current.onAsk) select(target, false);
+      if (!target || !handlers.current.onAsk) return;
+      const current = handlers.current.active?.node;
+      if (!current?.isConnected || current === target) select(target, false);
+      else pending = window.setTimeout(() => select(target, false), 220);
     };
     const click = (event: MouseEvent) => {
       if (!isPhoneReading() || !handlers.current.onAsk) return;
@@ -285,6 +312,7 @@ export function ClientQuestionSurface({
       project();
     };
     const leave = () => {
+      window.clearTimeout(pending);
       if (!isPhoneReading() && !wrapper.contains(document.activeElement))
         setActive(null);
     };
@@ -298,6 +326,7 @@ export function ClientQuestionSurface({
     window.addEventListener("resize", resize);
     project();
     return () => {
+      window.clearTimeout(pending);
       cancelAnimationFrame(frame);
       observer.disconnect();
       wrapper.removeEventListener("pointerover", pointer);

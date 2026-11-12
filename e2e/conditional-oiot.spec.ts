@@ -157,6 +157,34 @@ test("the conditional quote switches care groups on desktop and phone and freeze
       page.getByText(/from \$239 to \$164 per month/).first(),
     ).toBeVisible();
     await expect(terms().locator("xpath=ancestor::details")).toHaveCount(0);
+    if (width === 1440) {
+      // Each Terms clause can be asked about.
+      await page.mouse.move(0, 0);
+      await terms().hover();
+      await expect(
+        page.getByRole("button", { name: "Ask about this term" }),
+      ).toBeVisible();
+      // A line inside a choice group keeps its ask button while the pointer
+      // travels to it across the group's frame.
+      const line = page
+        .locator("[data-client-item-id]")
+        .filter({ hasText: "Own It Over Time — Pro" })
+        .first();
+      await page.mouse.move(0, 0);
+      await line.hover({ position: { x: 20, y: 10 } });
+      const lineAsk = page.getByRole("button", {
+        name: "Ask about this quote line",
+      });
+      await expect(lineAsk).toBeVisible();
+      const to = (await lineAsk.boundingBox())!;
+      await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, {
+        steps: 12,
+      });
+      await lineAsk.click();
+      const ask = page.getByRole("dialog", { name: "Ask a question" });
+      await expect(ask).toBeVisible();
+      await ask.getByRole("button", { name: "Close" }).click();
+    }
     await shot("pro-terms", width);
     if (width === 1440) {
       // A care plan that depends on the build choice must not crash signing.

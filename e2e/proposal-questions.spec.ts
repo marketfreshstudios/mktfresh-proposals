@@ -175,6 +175,16 @@ test("client question reaches staff, receives a plain-text reply on the same lin
   await block.press("Enter");
   const form = page.getByRole("dialog", { name: "Ask a question" });
   await expect(form.getByText("Scope", { exact: true })).toHaveCount(1);
+  // The desktop panel docks over the right rail, never over the document.
+  const rail = (await page.locator(".flow-reading-rail").boundingBox())!;
+  const docked = (await page.locator(".client-ask-popover").boundingBox())!;
+  expect(Math.abs(docked.x - rail.x)).toBeLessThanOrEqual(1);
+  expect(docked.x).toBeGreaterThanOrEqual(
+    (await block.boundingBox())!.x + (await block.boundingBox())!.width,
+  );
+  await page.mouse.wheel(0, 600);
+  await expect(form).toBeVisible();
+  await page.mouse.wheel(0, -600);
   await expect(form.locator(".question-excerpt")).toHaveCount(0);
   await form.getByRole("button", { name: "Change" }).click();
   await expect(form.getByRole("combobox", { name: "Section" })).toHaveValue(
@@ -236,6 +246,15 @@ test("client question reaches staff, receives a plain-text reply on the same lin
     page.getByText("New client question · 1 open question", { exact: true }),
   ).toBeVisible();
   await capture(page, "proposals-badge-1440");
+  // Keep the client page open while staff replies: the reply arrives in place.
+  const waitingPage = await page.context().newPage();
+  await waitingPage.setViewportSize({ width: 1440, height: 1000 });
+  await waitingPage.goto(clientUrl);
+  await expect(
+    waitingPage
+      .getByRole("region", { name: "Your questions" })
+      .getByText("Waiting for a reply"),
+  ).toBeVisible();
   await page.goto(staffUrl);
   const panel = page.getByRole("region", { name: "Questions", exact: true });
   await expect(
@@ -250,6 +269,22 @@ test("client question reaches staff, receives a plain-text reply on the same lin
   await capture(page, "staff-questions-1440");
   await panel.getByRole("button", { name: "Send reply", exact: true }).click();
   await expect(panel.getByText("Answered", { exact: true })).toBeVisible();
+  await waitingPage.evaluate(() =>
+    document.dispatchEvent(new Event("visibilitychange")),
+  );
+  const answeredToast = waitingPage
+    .getByRole("status")
+    .filter({ hasText: "You have a reply to your question." });
+  await expect(answeredToast).toBeVisible();
+  // Replies are open by default, with no View reply toggle.
+  await expect(
+    waitingPage
+      .getByRole("region", { name: "Your questions" })
+      .getByText(/set up a call to review/),
+  ).toBeVisible();
+  await answeredToast.getByRole("button", { name: "View" }).click();
+  await expect(answeredToast).toHaveCount(0);
+  await waitingPage.close();
   for (const method of ["PATCH", "DELETE"]) {
     const response = await request.fetch(
       `/api/public/${p.token}/questions/${id}`,
