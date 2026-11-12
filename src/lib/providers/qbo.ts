@@ -529,7 +529,7 @@ export class QboProvider implements BillingProvider {
             ? "Sent"
             : "Draft",
       currency: invoice.CurrencyRef?.value,
-      url: `https://sandbox.qbo.intuit.com/app/invoice?txnId=${encodeURIComponent(invoice.Id)}`,
+      url: `https://app.sandbox.qbo.intuit.com/app/invoice?txnId=${encodeURIComponent(invoice.Id)}`,
       realm,
     };
   }

@@ -34,7 +34,7 @@ import { useQuickBooksItemName } from "./quickbooks-fields";
 import { ProviderMark, QuickBooksConnectButton } from "./provider-brand";
 
 const billingDefaults = "/studio/workspace?view=billing";
-const quickBooksDashboard = "https://sandbox.qbo.intuit.com/app/homepage";
+const quickBooksDashboard = "https://app.sandbox.qbo.intuit.com/app/homepage";
 
 export function ConnectionDetailLayout({
   name,

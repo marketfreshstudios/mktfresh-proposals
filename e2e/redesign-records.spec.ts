@@ -306,6 +306,13 @@ test("Phase 4: records, guarded countersign, list actions, clients, indefinite d
       const sheet = page.getByRole("dialog");
       await expect(sheet).toBeVisible();
       await expect(sheet.getByRole("heading", { level: 2 })).toBeFocused();
+      // Focus moves to the heading for screen readers, without a ring, and
+      // the sheet shows no version number or content hash.
+      await expect(sheet.getByRole("heading", { level: 2 })).toHaveCSS(
+        "outline-style",
+        "none",
+      );
+      await expect(sheet.locator("code.hash")).toHaveCount(0);
       await expect(
         sheet.getByRole("button", {
           name: width < 700 ? "Countersign" : "Countersign as Alex Morgan",

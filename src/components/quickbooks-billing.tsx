@@ -135,7 +135,16 @@ export function QuickBooksBilling({
                   {money(invoice.amount, invoice.currency ?? proposal.currency)}
                 </p>
               )}
-              <a href={invoice.url} target="_blank" rel="noreferrer">
+              <a
+                href={// Older invoices stored a host that redirects to live
+                // QuickBooks; sandbox invoices live on app.sandbox.
+                invoice.url?.replace(
+                  "https://sandbox.qbo.intuit.com/",
+                  "https://app.sandbox.qbo.intuit.com/",
+                )}
+                target="_blank"
+                rel="noreferrer"
+              >
                 Open in QuickBooks
               </a>
             </div>
