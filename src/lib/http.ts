@@ -159,7 +159,12 @@ import {
 } from "./staff-account";
 import { oauthServer } from "./oauth-runtime";
 import { StripeProvider } from "./providers/stripe";
-import { approveBilling, freshCheckoutUrl } from "./checkout-refresh";
+import {
+  approveBilling,
+  confirmCheckout,
+  freshCheckoutUrl,
+  openCheckouts,
+} from "./checkout-refresh";
 import { QboProvider } from "./providers/qbo";
 import { QBO_CALLBACK, QBO_STATE_COOKIE } from "./providers/qbo-connection";
 import {
@@ -655,6 +660,22 @@ async function handleRoute(
         );
         return json({ approved: true });
       }
+      if (action === "checkout" && path[3] === "confirm" && method === "POST") {
+        check(sameOrigin(req), "Same-origin request required", 403);
+        const { session_id } = z
+          .object({ session_id: z.string().regex(/^cs_[A-Za-z0-9_]+$/) })
+          .strict()
+          .parse(await body(req));
+        const stripe = rt.worker.providers.stripe;
+        check(stripe instanceof StripeProvider, "Stripe is not connected", 409);
+        const p = await rt.service.byToken(token, password);
+        const confirmed = await confirmCheckout(rt.repo, stripe, p, session_id);
+        if (confirmed)
+          afterResponse?.(async () => {
+            await rt.worker.drain(p.id);
+          });
+        return json({ confirmed });
+      }
       if (action === "checkout" && !path[3] && method === "POST") {
         check(sameOrigin(req), "Same-origin request required", 403);
         const { session_id } = z
@@ -852,6 +873,20 @@ async function handleRoute(
         await rt.repo.pruneEngagement(cutoff.toISOString());
         await refreshDueDocuments(rt.repo);
         await rt.service.tick();
+        // Finish card setups whose Stripe webhook never arrived (the client
+        // paid, then closed the tab before returning).
+        const stripe = rt.worker.providers.stripe;
+        if (stripe instanceof StripeProvider) {
+          const recent = Date.now() - 30 * 86400000;
+          for (const p of await rt.repo.list()) {
+            if (!p.client_signed_at || Date.parse(p.client_signed_at) < recent)
+              continue;
+            for (const session of openCheckouts(p))
+              await confirmCheckout(rt.repo, stripe, p, session).catch(() => {
+                console.error("Unable to confirm a pending Checkout");
+              });
+          }
+        }
         const [jobs] = await Promise.all([
           rt.worker.drain(),
           deliverQuestionMail(rt.repo, rt.mailer).catch(() => {

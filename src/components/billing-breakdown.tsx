@@ -52,6 +52,7 @@ export function BillingRecurringTotal({
   added?: boolean;
   setup?: boolean;
 }) {
+  if (!lines.length) return null;
   return (
     <dl className="flow-billing-totals">
       {(["month", "year"] as const)

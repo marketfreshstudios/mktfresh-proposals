@@ -484,9 +484,11 @@ test("client completion: exact charges, one contact footer, reading width, email
           /is charged right away, then on the same date each month|no charge today; your first invoice will be emailed/,
         ),
       ).toBeVisible();
+      // One item: its own row shows the rate; no repeated total box.
       await expect(
         page.getByText("Monthly subscription rate", { exact: true }),
-      ).toBeVisible();
+      ).toHaveCount(0);
+      await expect(page.locator(".flow-billing-totals")).toHaveCount(0);
       await expect(
         page.getByText("Monthly total today", { exact: true }),
       ).toHaveCount(0);

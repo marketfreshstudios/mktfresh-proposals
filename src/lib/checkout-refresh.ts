@@ -230,3 +230,52 @@ export async function approveBilling(
     });
   });
 }
+
+/**
+ * Confirm a Checkout the client just finished, without waiting for Stripe's
+ * webhook. Stripe is asked directly; a complete session is processed by the
+ * same job the webhook would queue, so a webhook arriving later is a no-op.
+ * Returns true once processing has been queued (or already happened).
+ */
+export async function confirmCheckout(
+  repo: Repository,
+  provider: StripeProvider,
+  p: Proposal,
+  sessionId: string,
+): Promise<boolean> {
+  const link = p.billing_links.find((l) => l.provider === "stripe");
+  const pending = (link?.metadata?.checkout ?? []) as PendingCheckout[];
+  if (!p.client_signed_at || !pending.some((s) => s.id === sessionId))
+    return false;
+  const receipt = `return_${sessionId}`;
+  if (p.jobs.some((j) => j.id === `${p.id}:webhook:${receipt}`)) return true;
+  const session = await provider.api.get<{
+    status: string;
+    livemode: boolean;
+    metadata?: Record<string, string>;
+  }>(`/v1/checkout/sessions/${sessionId}`, {});
+  if (
+    session.status !== "complete" ||
+    session.livemode !== false ||
+    session.metadata?.proposal_id !== p.id
+  )
+    return false;
+  await mutate(repo, p.id, (current) => {
+    queue(current, "stripe_webhook", `webhook:${receipt}`, {
+      event: {
+        id: receipt,
+        type: "checkout.session.completed",
+        data: { object: { id: sessionId } },
+      },
+    });
+  });
+  return true;
+}
+
+/** Signed proposals whose Checkout may have finished without a webhook. */
+export function openCheckouts(p: Proposal) {
+  const link = p.billing_links.find((l) => l.provider === "stripe");
+  if (!p.client_signed_at || link?.metadata?.requires_checkout !== true)
+    return [];
+  return ((link.metadata.checkout ?? []) as PendingCheckout[]).map((s) => s.id);
+}

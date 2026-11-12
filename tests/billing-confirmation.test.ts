@@ -274,3 +274,22 @@ it("one bounded proposal drain processes its verified webhook before older notif
     (await f.repo.get(f.p.id))!.jobs.every((j) => j.status === "done"),
   ).toBe(true);
 });
+
+it("a returned client finishes setup without the webhook, and a late webhook changes nothing", async () => {
+  const { confirmCheckout } = await import("../src/lib/checkout-refresh");
+  const f = await billingFixture("setup");
+  expect(await confirmCheckout(f.repo, f.provider, f.p, f.id)).toBe(true);
+  await f.worker.drain(f.p.id, "stripe_webhook");
+  const done = (await f.repo.get(f.p.id))!;
+  expect(completedCheckouts(done.billing_links[0])).toHaveLength(1);
+  expect(done.billing_links[0].metadata?.requires_checkout).toBe(false);
+  const subscription = done.billing_links[0].external_object_id;
+  expect(subscription).toMatch(/^sub_/);
+  const created = f.subscriptions.size;
+  await receive(f);
+  await f.worker.drain(f.p.id, "stripe_webhook");
+  const after = (await f.repo.get(f.p.id))!;
+  expect(completedCheckouts(after.billing_links[0])).toHaveLength(1);
+  expect(after.billing_links[0].external_object_id).toBe(subscription);
+  expect(f.subscriptions.size).toBe(created);
+});
