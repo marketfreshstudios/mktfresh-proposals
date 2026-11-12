@@ -88,7 +88,10 @@ function CoverEditBar({
   { variant: "cover" | "email" | "selection" }
 >) {
   const bar = useRef<HTMLSpanElement>(null);
-  useImageToolbar(frame, bar, true);
+  // A multi-block selection can be taller than the screen: keep its bar pinned.
+  useImageToolbar(frame, bar, true, {
+    hideWhenClipped: variant !== "selection",
+  });
   useEffect(() => {
     const viewport = window.visualViewport;
     const place = () =>

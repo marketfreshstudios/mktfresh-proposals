@@ -5,7 +5,13 @@ import {
 export function placeEditorToolbar(
   owner: HTMLElement,
   bar: HTMLElement,
-  options: { below?: boolean; gap?: number; withinCanvas?: boolean } = {},
+  options: {
+    below?: boolean;
+    gap?: number;
+    withinCanvas?: boolean;
+    /** Hide instead of pinning to the top once the owner's top scrolls away. */
+    hideWhenClipped?: boolean;
+  } = {},
 ) {
   if (innerWidth < 700) {
     delete bar.dataset.toolbarPlaced;
@@ -50,7 +56,11 @@ export function placeEditorToolbar(
   };
   // Viewport-fixed chrome escapes the canvas clip without becoming a native
   // popover. Only actual menus use popovers and their focus/teardown behavior.
-  if (root.bottom <= bounds.top || root.top >= bounds.bottom) {
+  if (
+    root.bottom <= bounds.top ||
+    root.top >= bounds.bottom ||
+    (options.hideWhenClipped && root.top < bounds.top)
+  ) {
     bar.style.visibility = "hidden";
     return;
   }

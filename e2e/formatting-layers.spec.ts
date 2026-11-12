@@ -293,10 +293,12 @@ test("formatting rows stay above content and every button is reachable in all ed
       await page.evaluate(() => window.scrollTo(0, 0));
       await expect(page.locator(".editor-paper")).toBeVisible();
     }
-    const clause = page.locator(".contract-editor details").first();
-    if ((await clause.getAttribute("open")) === null)
-      await clause.locator("summary").click();
+    // Terms are never collapsible: every clause body is visible.
+    const clause = page.locator(".contract-editor .editor-clause").first();
     await expect(clause.locator("p")).toBeVisible();
+    await expect(
+      page.locator(".contract-editor details, .contract-editor summary"),
+    ).toHaveCount(0);
     await clause.locator("p").click();
     await expect(
       pinned.getByRole("button", { name: "Bold", exact: true }),

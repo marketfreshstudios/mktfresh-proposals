@@ -49,7 +49,7 @@ export function useImageToolbar(
   image: RefObject<HTMLElement | null>,
   toolbar: RefObject<HTMLSpanElement | null>,
   selected: boolean,
-  options: { below?: boolean; gap?: number } = {},
+  options: { below?: boolean; gap?: number; hideWhenClipped?: boolean } = {},
 ) {
   useLayoutEffect(() => {
     const root = image.current,
@@ -74,6 +74,8 @@ export function useImageToolbar(
             : root.dataset.imageKind
               ? 24
               : 14,
+        // An image or cover line's bar never floats over other content.
+        hideWhenClipped: true,
         ...options,
       });
     };
