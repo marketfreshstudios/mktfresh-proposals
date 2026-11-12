@@ -23,7 +23,9 @@ export function eventLabel(
     client_changed: `Client changed from ${e.metadata.previous_company} to ${e.metadata.company}`,
     reassigned: `Reassigned from ${e.metadata.previous_name} to ${e.metadata.owner_name} by ${e.metadata.actor_name}`,
     created: "Draft created",
-    edited: "Proposal edited",
+    edited: e.metadata.client_contact_updated
+      ? "Client contact updated"
+      : "Proposal edited",
     ai_sections_reviewed: "Assistant sections reviewed",
     ai_review_undone: "Assistant review reopened",
     sent:
@@ -48,7 +50,7 @@ export function eventLabel(
     expired: "Proposal expired",
     downloaded: "Signed copy downloaded",
     reminder_sent: e.metadata.automatic
-      ? `Automatic reminder emailed${e.metadata.kind === "unopened" ? " · unopened" : e.metadata.kind === "viewed" ? " · viewed, not signed" : ""}`
+      ? `Automatic reminder emailed${e.metadata.kind === "unopened" ? " | not opened yet" : e.metadata.kind === "viewed" ? " | viewed, not signed" : ""}`
       : "Reminder emailed",
     countersign_reminder_sent: "Countersign reminder emailed",
     reminder_requested: "Reminder requested",
@@ -57,7 +59,7 @@ export function eventLabel(
     marked_lost: `Marked as lost by ${actorName}`,
     archived: "Proposal archived",
     unarchived: "Proposal restored from archive",
-    updated_after_send: `Proposal updated after sending · version ${e.metadata.previous_version} → ${e.metadata.new_version}`,
+    updated_after_send: "Proposal updated after sending",
     reopened: "Proposal reopened",
     manual_invoice_recorded: "Manual invoice recorded",
     invoice_created: "Invoice created",
@@ -99,7 +101,7 @@ export function eventLabel(
                 ? [String(e.metadata.provider)]
                 : [],
           );
-      return `${name}${e.metadata.status === "needs_review" ? " needs a decision" : e.metadata.terminal === false ? " retry scheduled" : " failed · Retry available"}`;
+      return `${name}${e.metadata.status === "needs_review" ? " needs a decision" : e.metadata.terminal === false ? " retry scheduled" : " failed | Retry available"}`;
     })(),
     editing_new_version: "Started a new version",
     document_version: "Pricing reference saved",

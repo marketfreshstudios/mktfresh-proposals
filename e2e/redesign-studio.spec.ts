@@ -592,9 +592,11 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
         await expect(page.locator(".timeline")).not.toContainText(
           "consent_given",
         );
-        await expect(page.locator(".timeline")).toContainText(
+        // Consent is part of signing; the Timeline shows the signature only.
+        await expect(page.locator(".timeline")).not.toContainText(
           "Client gave consent",
         );
+        await expect(page.locator(".timeline")).toContainText("Client signed");
         await capture(name, frame, width, theme);
       }
       await page.goto("/studio/connections?view=assistants");

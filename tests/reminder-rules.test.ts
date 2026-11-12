@@ -106,7 +106,7 @@ it("repeats in workspace calendar days across DST, switches on first view, and s
     "2026-03-09T19:00:00.000Z",
     "2026-03-11T19:00:00.000Z",
   ]);
-  expect(eventLabel(events[0])).toBe("Automatic reminder emailed · unopened");
+  expect(eventLabel(events[0])).toBe("Automatic reminder emailed | not opened yet");
   expect((await f.row()).versions).toEqual(f.sent.versions);
 });
 it("keeps exact legacy elapsed offsets and snapshots, even after workspace rules change", async () => {

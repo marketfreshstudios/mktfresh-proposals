@@ -3127,11 +3127,7 @@ export function RecordV4({
     | { kind: "view"; at: string; s: (typeof sessions)[number] };
   const timelineItems: TimelineItem[] = [
     ...timelineEvents(p.events)
-      .filter(
-        (e) =>
-          e.type !== "quote_changed" &&
-          !(e.type === "viewed" && sessions.length),
-      )
+      .filter((e) => !(e.type === "viewed" && sessions.length))
       .map((e) => ({ kind: "event" as const, at: e.created_at, e })),
     ...emails.map((log) => ({
       kind: "email" as const,
