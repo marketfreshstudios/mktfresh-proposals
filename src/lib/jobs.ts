@@ -443,7 +443,8 @@ export class Worker {
               monthly_total: number;
               yearly_total?: number;
             }[];
-            if (checkout.length)
+            const approval = (link.metadata?.approval ?? []) as unknown[];
+            if (checkout.length || approval.length)
               queue(p, "email", "billing-setup", {
                 to: p.client.email,
                 subject: `Billing setup: ${p.title}`,

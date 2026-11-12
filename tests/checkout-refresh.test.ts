@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { setup, staff, signature, clientActor } from "./helpers";
-import { freshCheckoutUrl } from "../src/lib/checkout-refresh";
+import { approveBilling, freshCheckoutUrl } from "../src/lib/checkout-refresh";
+import { NeedsReview } from "../src/lib/billing";
 import { billingLines } from "../src/lib/quote-model";
 import type { StripeProvider } from "../src/lib/providers/stripe";
 
@@ -109,16 +110,42 @@ describe("permanent payment link", () => {
     expect(saved.events.at(-1)?.type).toBe("billing_checkout_renewed");
   });
 
-  it("never re-creates billing for a customer who now has an active subscription", async () => {
-    const { repo, signed } = await signedWithCheckout();
-    const { provider, created } = fakeStripe(
-      { status: "expired", url: null, expires_at: 0 },
-      [{ id: "sub_1" }],
-    );
-    await expect(
-      freshCheckoutUrl(repo, provider, signed, "cs_old"),
-    ).rejects.toThrow("Payment setup needs staff review");
-    expect(created).toEqual([]);
+  it("turns an expired page into an approval when the client now pays a subscription", async () => {
+    const { repo, signed, lineIds } = await signedWithCheckout();
+    const { provider } = fakeStripe({
+      status: "expired",
+      url: null,
+      expires_at: 0,
+    });
+    (provider as unknown as { createObject: unknown }).createObject =
+      async () => ({
+        id: "approve:month",
+        metadata: {
+          checkout: [],
+          approval: [
+            {
+              id: "approve:month",
+              kind: "add",
+              subscription_id: "sub_1",
+              payment_method: "pm_1",
+              card: { brand: "visa", last4: "4242" },
+              line_ids: lineIds,
+              items: [],
+              interval: "month",
+              first_charge: 1_900_000_000,
+            },
+          ],
+        },
+      });
+    const url = await freshCheckoutUrl(repo, provider, signed, "cs_old");
+    expect(url).toContain(`/p/${signed.token}`);
+    const saved = (await repo.get(signed.id))!;
+    const meta = saved.billing_links[0].metadata!;
+    expect(meta.checkout).toEqual([]);
+    expect((meta.approval as { id: string }[]).map((a) => a.id)).toEqual([
+      "approve:month",
+    ]);
+    expect(meta.requires_checkout).toBe(true);
   });
 
   it("refuses sessions that aren't pending for this proposal", async () => {
@@ -131,5 +158,81 @@ describe("permanent payment link", () => {
     await expect(
       freshCheckoutUrl(repo, provider, signed, "cs_other"),
     ).rejects.toThrow("no longer pending");
+  });
+});
+
+describe("client approval for an existing subscription", () => {
+  async function signedWithApproval() {
+    const { repo, signed, lineIds } = await signedWithCheckout();
+    signed.billing_links[0].metadata = {
+      requires_checkout: true,
+      checkout: [],
+      approval: [
+        {
+          id: "approve:month",
+          kind: "add",
+          subscription_id: "sub_1",
+          payment_method: "pm_1",
+          card: { brand: "visa", last4: "4242" },
+          line_ids: lineIds,
+          items: [],
+          interval: "month",
+          first_charge: 1_900_000_000,
+        },
+      ],
+    };
+    await repo.save(signed, signed.revision);
+    return { repo, signed: (await repo.get(signed.id))!, lineIds };
+  }
+
+  it("adds only after approval, then records it and emails the client", async () => {
+    const { repo, signed, lineIds } = await signedWithApproval();
+    const applied: string[] = [];
+    const provider = {
+      applyApproval: async (
+        _c: unknown,
+        _lines: unknown,
+        approval: { id: string },
+      ) => {
+        applied.push(approval.id);
+        return {
+          id: "sub_1",
+          line_ids: lineIds,
+          items: [],
+          monthly_total: 12500,
+          yearly_total: 0,
+        };
+      },
+    } as unknown as StripeProvider;
+    await approveBilling(repo, provider, signed, "approve:month");
+    expect(applied).toEqual(["approve:month"]);
+    const saved = (await repo.get(signed.id))!;
+    const meta = saved.billing_links[0].metadata!;
+    expect(meta.approval).toEqual([]);
+    expect(meta.requires_checkout).toBe(false);
+    expect((meta.added_existing as { id: string }[])[0].id).toBe("sub_1");
+    expect(saved.events.at(-1)?.type).toBe("billing_approved");
+    expect(
+      saved.jobs.find((j) => j.id.endsWith(":billing-added:approve:month"))
+        ?.payload.email_template_key,
+    ).toBe("billing_updated");
+    await expect(
+      approveBilling(repo, provider, saved, "approve:month"),
+    ).rejects.toThrow("no longer pending");
+  });
+
+  it("hands a changed card or duplicate to staff instead of charging", async () => {
+    const { repo, signed } = await signedWithApproval();
+    const provider = {
+      applyApproval: async () => {
+        throw new NeedsReview("The subscription or card on file changed");
+      },
+    } as unknown as StripeProvider;
+    await expect(
+      approveBilling(repo, provider, signed, "approve:month"),
+    ).rejects.toThrow("We’ve let the sender know");
+    const saved = (await repo.get(signed.id))!;
+    expect(saved.billing_links[0].status).toBe("needs_review");
+    expect(saved.billing_links[0].last_error).toMatch(/card on file changed/);
   });
 });

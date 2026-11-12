@@ -387,9 +387,10 @@ export async function executeStripeWebhook(
             ...billing.metadata,
             bank_payments: { ...states, [session.id]: next },
           };
-          billing.metadata.requires_checkout = (
-            (billing.metadata.checkout ?? []) as { id: string }[]
-          ).some((c) => c.id !== session.id && !states[c.id]);
+          billing.metadata.requires_checkout =
+            ((billing.metadata.checkout ?? []) as { id: string }[]).some(
+              (c) => c.id !== session.id && !states[c.id],
+            ) || ((billing.metadata.approval ?? []) as unknown[]).length > 0;
           event(current, "billing_payment_" + state, system, {
             session_id: session.id,
           });
@@ -442,9 +443,10 @@ export async function executeStripeWebhook(
       billing.metadata = {
         ...billing.metadata,
         checkout: pending.filter((s) => s.id !== session.id),
-        requires_checkout: pending.some(
-          (s) => s.id !== session.id && !bankPayments(billing)[s.id],
-        ),
+        requires_checkout:
+          pending.some(
+            (s) => s.id !== session.id && !bankPayments(billing)[s.id],
+          ) || ((billing.metadata?.approval ?? []) as unknown[]).length > 0,
         completed_checkout: [...completedCheckouts(billing), confirmation],
         ...(method?.type === "us_bank_account"
           ? {

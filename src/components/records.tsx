@@ -2491,7 +2491,10 @@ export function RecordV4({
         : bankState === "processing"
           ? { text: "Bank payment processing", tone: "warning" }
           : stripe?.metadata?.requires_checkout
-            ? { text: "Waiting for checkout", tone: "warning" }
+            ? ((stripe.metadata.approval ?? []) as unknown[]).length &&
+              !((stripe.metadata.checkout ?? []) as unknown[]).length
+              ? { text: "Waiting for client approval", tone: "warning" }
+              : { text: "Waiting for checkout", tone: "warning" }
             : stripeActive
               ? { text: "Active", tone: "success" }
               : stripe?.status === "succeeded"

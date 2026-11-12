@@ -1,7 +1,14 @@
-import { quoteSublines, cloneQuote } from "../src/lib/quote-model";
+import {
+  quoteSublines,
+  cloneQuote,
+  billingLines,
+} from "../src/lib/quote-model";
 import { expect, it, vi } from "vitest";
 import { randomBytes, createHmac } from "node:crypto";
-import { StripeProvider } from "../src/lib/providers/stripe";
+import {
+  StripeProvider,
+  type BillingApproval,
+} from "../src/lib/providers/stripe";
 import {
   StripeHttp,
   requireTestStripeKey,
@@ -16,7 +23,7 @@ import { type StripeTransport } from "../src/lib/catalog";
 import { type BillingLine, BillingLineSchema } from "../src/lib/model";
 import { setup, staff, signature, clientActor } from "./helpers";
 import { bill } from "../src/lib/billing";
-function transport(existing = false, multi = false) {
+function transport(existing = false, multi = false, ownedProduct?: string) {
   const calls: { path: string; params: any; key: string }[] = [];
   const sub = {
     id: "sub_existing",
@@ -44,6 +51,7 @@ function transport(existing = false, multi = false) {
             lookup_key: multi ? null : "old-plan",
             recurring: { interval: "month" },
             currency: "usd",
+            ...(ownedProduct ? { product: ownedProduct } : {}),
           },
         },
       ],
@@ -132,6 +140,29 @@ function transport(existing = false, multi = false) {
   };
   return { api, calls };
 }
+/** Applies the first pending approval the way the client's approval does. */
+async function approveFirst(
+  p: Awaited<ReturnType<typeof setup>>["draft"],
+  result: { metadata?: Record<string, unknown> },
+  provider: StripeProvider,
+) {
+  const [approval] = result.metadata!.approval as BillingApproval[];
+  expect(approval).toMatchObject({
+    kind: "add",
+    subscription_id: "sub_existing",
+  });
+  const lines = billingLines(p.versions.at(-1)!.quote).filter((l) =>
+    approval.line_ids.includes(l.id),
+  );
+  return provider.applyApproval(
+    { id: "cus_test", email: p.client.email, company: p.client.company },
+    lines,
+    approval,
+    "approve-test",
+    { currency: "usd", proposal_id: p.id, proposal_title: p.title },
+  );
+}
+
 it("refuses live Stripe keys and non-sandbox QBO before any request", async () => {
   const { repo } = await setup();
   const fetcher = vi.fn();
@@ -167,6 +198,12 @@ it("D2 adds individual items with no proration or replacement array; D3 uses cus
     const result = await bill(p, "stripe", new StripeProvider(api, repo));
     expect(result.status).toBe("succeeded");
     if (existing) {
+      // Signing adds nothing: the client approves the add on the proposal.
+      expect(calls.some((c) => c.path === "/v1/subscription_items")).toBe(
+        false,
+      );
+      expect(result.metadata!.requires_checkout).toBe(true);
+      await approveFirst(p, result, new StripeProvider(api, repo));
       expect(
         calls.find((c) => c.path === "/v1/subscription_items")?.params,
       ).toMatchObject({
@@ -185,7 +222,6 @@ it("D2 adds individual items with no proration or replacement array; D3 uses cus
       expect(update).not.toHaveProperty("collection_method");
       expect(update.metadata.plan_items).toBe("old-plan,hosting-essentials-25");
       expect(calls.some((c) => c.path.includes("checkout"))).toBe(false);
-      expect(result.metadata!.requires_checkout).toBe(false);
     } else
       expect(
         calls.find((c) => c.path === "/v1/checkout/sessions")?.params,
@@ -420,6 +456,26 @@ it("scheduled plans preserve the phase anchor, count paid invoices and explicitl
   expect(phases[1].metadata.plan).toBe("next-plan");
 });
 
+it("never bills a product the client already pays for in an active subscription", async () => {
+  const { repo, service, draft } = await setup();
+  let p = await service.send(draft.id, staff);
+  p = await service.sign(p.id, signature(p.revision), "client", clientActor, {
+    token: p.token!,
+    password: "",
+  });
+  const { api, calls } = transport(true, false, "prod_lookup");
+  const result = await bill(p, "stripe", new StripeProvider(api, repo));
+  expect(result.status).toBe("needs_review");
+  expect(result.last_error).toMatch(/already has an active subscription/);
+  expect(
+    calls.some(
+      (c) =>
+        c.path === "/v1/subscription_items" ||
+        c.path === "/v1/checkout/sessions" ||
+        c.path === "/v1/subscriptions",
+    ),
+  ).toBe(false);
+});
 it("D2 preserves existing multi plan keys without a multi sentinel or JSON", async () => {
   const { repo, service, draft } = await setup();
   let p = await service.send(draft.id, staff);
@@ -430,6 +486,7 @@ it("D2 preserves existing multi plan keys without a multi sentinel or JSON", asy
   const { api, calls } = transport(true, true);
   const result = await bill(p, "stripe", new StripeProvider(api, repo));
   expect(result.status).toBe("succeeded");
+  await approveFirst(p, result, new StripeProvider(api, repo));
   const update = calls.find(
     (c) => c.path === "/v1/subscriptions/sub_existing",
   )!.params;
