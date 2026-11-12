@@ -349,7 +349,13 @@ async function sealedPdfOnce(
     }
     if (layout.overflow_columns?.length)
       throw new ColumnsOverflowError(layout.overflow_columns);
-    if (version.pagination && layout.overflow_pages?.length)
+    // Staff previews keep the overflow visible and reported (readiness warns);
+    // sealed PDFs follow the client's choices onto fresh pages.
+    if (
+      !options?.preview &&
+      version.pagination &&
+      layout.overflow_pages?.length
+    )
       throw new PlanOverflow("Planned pages overflow with these choices");
     const pricingIds = new Set(
       version.content

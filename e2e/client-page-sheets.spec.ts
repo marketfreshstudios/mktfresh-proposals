@@ -642,10 +642,7 @@ test("a choice that makes a frozen page overflow breaks the pages afresh on the 
     [],
     f.sent.currency,
     { settings: f.settings },
-    { preview: true },
   );
   expect(rendered.layout.overflow_pages ?? []).toEqual([]);
-  expect((await PDFDocument.load(rendered.pdf)).getPageCount()).toBeGreaterThan(
-    f.plan.pages,
-  );
+  expect(rendered.layout.pages).toBeGreaterThan(f.plan.pages);
 });
