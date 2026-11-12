@@ -432,23 +432,43 @@ function NewClientFlow({
     window.scrollTo(0, 0);
   }, [step]);
   useEffect(() => {
-    if (step === "read" && readSection !== null) {
-      const scroll = () => {
-        const target =
-          document
-            .getElementById("proposal-document")
-            ?.shadowRoot?.getElementById(`section-${readSection}`) ??
-          document.getElementById(`section-${readSection}`);
-        if (target) {
-          target.scrollIntoView({ block: "start" });
-          setReadSection(null);
-        }
-      };
-      scroll();
-      document.addEventListener("client-document-ready", scroll);
-      return () =>
-        document.removeEventListener("client-document-ready", scroll);
-    }
+    if (step !== "read" || readSection === null) return;
+    // Coming back from signing, the document is rebuilt (pages are laid out
+    // again and the reading position restored). Scroll only once that has
+    // settled, or the jump lands on a stale copy and is then undone.
+    let frame = 0;
+    const tryScroll = () => {
+      const root = document.getElementById("proposal-document");
+      if (!root) return;
+      if (root.shadowRoot && root.getAttribute("data-layout-ready") !== "true")
+        return;
+      const target = (root.shadowRoot ?? document).getElementById(
+        `section-${readSection}`,
+      );
+      if (!target?.checkVisibility({ visibilityProperty: true })) return;
+      target.scrollIntoView({ block: "start" });
+      setReadSection(null);
+    };
+    const schedule = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(tryScroll);
+    };
+    const observer = new MutationObserver(schedule);
+    observer.observe(document.body, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ["data-layout-ready", "hidden"],
+    });
+    document.addEventListener("client-document-ready", schedule);
+    const timeout = setTimeout(() => setReadSection(null), 5000);
+    schedule();
+    return () => {
+      observer.disconnect();
+      document.removeEventListener("client-document-ready", schedule);
+      cancelAnimationFrame(frame);
+      clearTimeout(timeout);
+    };
   }, [step, readSection]);
   useEffect(() => {
     const node = bar.current;
@@ -660,8 +680,16 @@ function NewClientFlow({
       if (history.state?.yeswellStep !== "sign")
         setStep((current) => (current === "sign" ? "read" : current));
     };
+    // The page sets its own scroll when switching steps (top of the step, or
+    // a section such as the Terms). The browser's own restoration would run
+    // after that on Back and undo it.
+    const restoration = history.scrollRestoration;
+    history.scrollRestoration = "manual";
     window.addEventListener("popstate", pop);
-    return () => window.removeEventListener("popstate", pop);
+    return () => {
+      window.removeEventListener("popstate", pop);
+      history.scrollRestoration = restoration;
+    };
   }, []);
   const previewBar = preview && initial && (
     <PreviewControls>

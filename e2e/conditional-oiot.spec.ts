@@ -225,6 +225,35 @@ test("the conditional quote switches care groups on desktop and phone and freeze
       await expect(
         page.getByText(/choose one item in each choice group/),
       ).toHaveCount(0);
+      // Read the Terms goes back to the proposal and lands on the Terms,
+      // even though returning goes through browser history.
+      await page
+        .locator(".flow-acceptance-terms")
+        .getByRole("button", { name: "Read the Terms" })
+        .click();
+      await expect(
+        page.getByRole("heading", { name: "Sign the proposal" }),
+      ).toHaveCount(0);
+      await expect
+        .poll(() =>
+          page.evaluate(() => {
+            const root =
+              document.getElementById("proposal-document")?.shadowRoot ??
+              document;
+            const node = [
+              ...root.querySelectorAll<HTMLElement>("[id^='section-']"),
+            ].find(
+              (n) =>
+                n.classList.contains("flow-contract") ||
+                /^Terms/.test(n.textContent ?? ""),
+            );
+            const r = node?.getBoundingClientRect();
+            return !!r && r.top < innerHeight && r.bottom > 0;
+          }),
+        )
+        .toBe(true);
+      await page.waitForTimeout(400);
+      expect(await page.evaluate(() => scrollY)).toBeGreaterThan(200);
     }
   }
   const chosen = await f.service.byToken(token);
