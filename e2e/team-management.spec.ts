@@ -281,7 +281,7 @@ test("expired set-password link explains resend; blocked removal lists work and 
   ).toBeDisabled();
   await expect(dialog.getByRole("link", { name: p.title })).toHaveAttribute(
     "href",
-    `/proposals/${p.id}`,
+    `/proposals/${p.id}?view=record`,
   );
   await dialog.getByRole("button", { name: "Deactivate instead" }).click();
   await dialog

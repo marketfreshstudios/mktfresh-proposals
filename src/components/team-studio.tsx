@@ -362,7 +362,7 @@ export function TeamStudio({
                   {work.map((p) => (
                     <li key={p.id}>
                       <a
-                        href={`/proposals/${p.id}`}
+                        href={`/proposals/${p.id}?view=record`}
                         target="_blank"
                         rel="noopener"
                       >
@@ -478,7 +478,9 @@ export function TeamStudio({
                         )
                         .map((p) => (
                           <li key={p.id}>
-                            <a href={`/proposals/${p.id}`}>{p.title}</a>
+                            <a href={`/proposals/${p.id}?view=record`}>
+                              {p.title}
+                            </a>
                           </li>
                         ))}
                     </ul>
