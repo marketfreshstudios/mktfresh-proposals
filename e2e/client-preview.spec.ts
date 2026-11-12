@@ -135,11 +135,11 @@ test("draft client preview has live local totals, branded steps and no client wr
         }
         if (step === "billing") {
           await expect(
-            page.getByText("Set up your monthly subscription"),
+            page.getByText("Set up your monthly billing"),
           ).toBeVisible();
           await expect(
             page.getByRole("button", {
-              name: /Continue to secure checkout/,
+              name: /Continue to secure payment|Save a card/,
             }),
           ).toBeDisabled();
         }

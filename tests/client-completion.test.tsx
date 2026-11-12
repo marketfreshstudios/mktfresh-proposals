@@ -397,7 +397,7 @@ it.each([false, true])(
     if (scheduled) {
       expect(request.mode).toBe("setup");
       expect(request.custom_text.submit.message).toContain(
-        "Store Care — Pro · $325/month",
+        "Store Care — Pro | $325/month",
       );
     } else
       expect(request.line_items).toEqual([

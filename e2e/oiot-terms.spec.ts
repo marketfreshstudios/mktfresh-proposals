@@ -277,7 +277,10 @@ test("staff enters both amounts, client chooses the plan and the full bold terms
     }),
   );
   await page.reload();
-  await page.getByRole("button", { name: "View the signed proposal" }).click();
+  // The billing step keeps one task; the proposal is one step away.
+  const later = page.getByRole("button", { name: "I’ll do this later" });
+  if (await later.count()) await later.first().click();
+  await page.getByRole("button", { name: "View the proposal" }).click();
   await expectRunIns(page.locator(".client-document-sheets"));
   const file = testInfo.outputPath("signed-oiot.pdf");
   const pdf = await request.get(`/api/proposals/${draft.id}/download`, {

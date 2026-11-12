@@ -256,10 +256,7 @@ test("full headless flow through the client interface, both PDFs, billing, downl
   await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: "Sign proposal" }).click();
   await expect(
-    page.getByText(
-      "Your proposal is signed. Your copy will be sent to jane@example.test.",
-      { exact: true },
-    ),
+    page.getByText(/^Signed\. Thank you|^You’re all set/).first(),
   ).toBeVisible();
   await expect
     .poll(async () => {
@@ -323,7 +320,9 @@ test("full headless flow through the client interface, both PDFs, billing, downl
   ).body();
   const frozen = structuredClone(p.versions.at(-1));
   await page.goto(`/p/${p.token}`);
-  await expect(page.getByText("Completed copy", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Your completed agreement" }),
+  ).toBeVisible();
   const afterReading = await (
     await request.get(`/api/proposals/${p.id}`, { headers })
   ).json();

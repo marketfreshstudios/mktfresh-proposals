@@ -328,33 +328,36 @@ test("client completion: exact charges, one contact footer, reading width, email
       await open(monthlyOnly);
       await expect(
         page.getByRole("heading", {
-          name: "Set up your monthly subscription",
+          name: "Set up your monthly billing",
           exact: true,
         }),
       ).toBeVisible();
-      const charges = page.locator(".flow-checkout-group");
+      const charges = page.getByRole("region", { name: "Recurring" });
       await expect(charges).toContainText("Store Care — Pro");
-      await expect(charges).toContainText("$325/month");
+      await expect(charges).toContainText("$325/mo");
       await expect(charges).not.toContainText("Website setup");
       await expect(
         page.getByRole("link", {
-          name: "Continue to secure checkout — $325/month",
+          name: "Continue to secure payment",
           exact: true,
         }),
       ).toHaveAttribute(
         "href",
         `https://checkout.stripe.com/test_${line(monthly)}`,
       );
-      await expect(page.locator(".flow-separate-invoice")).toContainText(
-        "Website setup",
-      );
-      await expect(page.locator(".flow-separate-invoice")).toContainText(
-        "We'll send you an invoice",
-      );
+      const separate = page.getByRole("region", {
+        name: "Invoiced separately",
+      });
+      await expect(separate).toContainText("Website setup");
+      await expect(separate).toContainText("Nothing to pay here.");
       await expect(page.locator(".flow-totals")).toHaveCount(0);
       await capture("billing-monthly-manual", "1e", width, theme, true);
+      // The billing step keeps one task; the proposal is a step away.
       await page
-        .getByRole("button", { name: "View the signed proposal", exact: true })
+        .getByRole("button", { name: "I’ll do this later", exact: true })
+        .click();
+      await page
+        .getByRole("button", { name: "View the proposal", exact: true })
         .click();
       expect(
         (await page.locator("#proposal-document").boundingBox())!.width,
@@ -378,19 +381,18 @@ test("client completion: exact charges, one contact footer, reading width, email
         },
       ];
       await open(mixed);
-      await expect(page.locator(".flow-checkout-group")).toHaveCount(2);
-      await expect(page.locator(".flow-added-items")).toContainText(
-        "Additional support",
-      );
-      await expect(page.locator(".flow-separate-invoice")).toContainText(
-        "After both sides sign, one-time fees are invoiced from QuickBooks.",
-      );
       await expect(
-        page.getByRole("link", {
-          name: "Continue to secure checkout — $120/year",
-          exact: true,
+        page.getByRole("heading", {
+          name: "Set up your billing in two steps",
         }),
       ).toBeVisible();
+      await expect(page.getByRole("region", { name: /^Step / })).toHaveCount(2);
+      await expect(
+        page.getByRole("region", { name: "Added to your plan" }),
+      ).toContainText("Additional support");
+      await expect(
+        page.getByRole("link", { name: "Continue to secure payment" }),
+      ).toHaveCount(2);
       await capture("billing-mixed-qbo", "1e", width, theme, true);
       const existing = structuredClone(accepted);
       existing.billing = [
@@ -409,13 +411,10 @@ test("client completion: exact charges, one contact footer, reading width, email
       ];
       await open(existing);
       await expect(
-        page.getByRole("heading", {
-          name: "Added to your subscription",
-          exact: true,
-        }),
+        page.getByRole("heading", { name: "Added to your plan", exact: true }),
       ).toBeVisible();
       await expect(
-        page.getByRole("link", { name: /Continue to secure checkout/ }),
+        page.getByRole("link", { name: /Continue to secure payment/ }),
       ).toHaveCount(0);
       await capture("existing-subscriber", "1f", width, theme, true);
       // A client who already pays a subscription approves the add first.
@@ -442,20 +441,18 @@ test("client completion: exact charges, one contact footer, reading width, email
       await open(approving);
       await expect(
         page.getByRole("heading", {
-          name: "Approve your new services",
+          name: "Approve your new monthly service",
           exact: true,
         }),
       ).toBeVisible();
       await expect(
-        page.getByText(
-          /charged to your Visa ending in 4242, starting with your next invoice/,
-        ),
+        page.getByText(/Charged to your Visa ending 4242\./),
       ).toBeVisible();
       await expect(
-        page.getByText(/Nothing is added or charged until you approve\./),
+        page.getByText(/Nothing is added until you approve\./),
       ).toBeVisible();
       const approve = page.getByRole("button", {
-        name: /^Approve and add — \$/,
+        name: /^Approve and add \$/,
       });
       await expect(approve).toBeVisible();
       await capture("existing-subscriber-approval", "1f", width, theme, true);
@@ -469,7 +466,7 @@ test("client completion: exact charges, one contact footer, reading width, email
         await approve.click();
         await expect(
           page.getByRole("heading", {
-            name: "Added to your subscription",
+            name: "Added to your plan",
             exact: true,
           }),
         ).toBeVisible();
@@ -481,7 +478,7 @@ test("client completion: exact charges, one contact footer, reading width, email
       await open(setupOnly);
       await expect(
         page.getByText(
-          /is charged right away, then on the same date each month|no charge today; your first invoice will be emailed/,
+          /^Then \$[\d,]+ on the \d+(st|nd|rd|th) of each month\.$|^Your first invoice for/,
         ),
       ).toBeVisible();
       // One item: its own row shows the rate; no repeated total box.
@@ -494,17 +491,20 @@ test("client completion: exact charges, one contact footer, reading width, email
       ).toHaveCount(0);
       await expect(
         page.getByRole("link", {
-          name: /Continue to secure card setup — no charge today|Continue to secure checkout — \$/,
+          name: /^(Save a card|Continue to secure payment)$/,
         }),
       ).toBeVisible();
       await capture("card-setup-explanation", "1e", width, theme, true);
       await open(finished);
       await expect(
-        page.getByRole("heading", { name: "Your completed copy", exact: true }),
+        page.getByRole("heading", {
+          name: "Your completed agreement",
+          exact: true,
+        }),
       ).toBeVisible();
       await capture("completed", "1g", width, theme, true);
       await page
-        .getByRole("button", { name: "View the signed proposal", exact: true })
+        .getByRole("button", { name: "View the proposal", exact: true })
         .click();
       expect(
         (await page.locator("#proposal-document").boundingBox())!.width,

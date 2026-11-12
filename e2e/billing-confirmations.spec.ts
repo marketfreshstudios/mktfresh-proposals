@@ -100,20 +100,18 @@ test("verified billing: mode-specific Checkout, immediate receipt, bounded retur
         await page.goto(`/p/${f.p.token}`);
         if (mode === "setup") {
           await expect(
-            page.getByText(
-              /no charge today; your first invoice will be emailed/,
-            ),
+            page.getByText(/^Your first invoice for .* is emailed once/),
           ).toBeVisible();
           await expect(
             page.getByText("Monthly total today", { exact: true }),
           ).toHaveCount(0);
           await expect(
-            page.getByRole("link", {
-              name: /Continue to secure card setup — no charge today/,
-            }),
+            page.getByRole("link", { name: "Save a card", exact: true }),
           ).toBeVisible();
         } else {
-          const paymentToday = page.locator(".flow-payment-today");
+          const paymentToday = page
+            .getByRole("region", { name: "Recurring" })
+            .locator(".after-total");
           await expect(
             paymentToday.getByText("First payment today", { exact: true }),
           ).toBeVisible();
@@ -141,7 +139,9 @@ test("verified billing: mode-specific Checkout, immediate receipt, bounded retur
             route.fulfill({ contentType: "text/html", body: "<p>Stripe</p>" }),
           );
           await page
-            .getByRole("link", { name: /Continue to secure/ })
+            .getByRole("link", {
+              name: /^(Continue to secure payment|Save a card)$/,
+            })
             .first()
             .click();
           await expect(page).toHaveURL(
@@ -160,14 +160,13 @@ test("verified billing: mode-specific Checkout, immediate receipt, bounded retur
         await page.goto(`/p/${f.p.token}?billing=returned&session_id=${f.id}`);
         await expect(
           page.getByRole("heading", {
-            name: "Payment details received — finishing setup…",
+            name: "Confirming your payment",
             exact: true,
           }),
         ).toBeVisible();
         await expect(
           page.getByRole("heading", {
-            name: "Billing setup complete",
-            exact: true,
+            name: /^(Monthly|Yearly) billing is set up$/,
           }),
         ).toHaveCount(0);
         await shot(`return-finishing-${mode}`, width, theme);
@@ -183,17 +182,12 @@ test("verified billing: mode-specific Checkout, immediate receipt, bounded retur
         await page.clock.runFor(3100);
         await expect(
           page.getByRole("heading", {
-            name: "Billing setup complete",
-            exact: true,
+            name: /^(Monthly|Yearly) billing is set up$/,
           }),
         ).toBeVisible();
+        await expect(page.getByText(/Visa ending 4242/)).toBeVisible();
         await expect(
-          page.getByText("Visa ending 4242", { exact: true }),
-        ).toBeVisible();
-        await expect(
-          page.getByText("Next billing date: November 30, 2026", {
-            exact: true,
-          }),
+          page.getByText(/Next payment .* on November 30, 2026\./),
         ).toBeVisible();
         await shot(`return-confirmed-${mode}`, width, theme);
         const count = polls;
@@ -236,7 +230,7 @@ test("verified billing: mode-specific Checkout, immediate receipt, bounded retur
       await page.goto(`/p/${f.p.token}`);
       await expect(
         page.getByRole("heading", {
-          name: "Set up your yearly subscription",
+          name: "Set up your yearly billing",
           exact: true,
         }),
       ).toBeVisible();
@@ -253,12 +247,11 @@ test("verified billing: mode-specific Checkout, immediate receipt, bounded retur
       await page.goto(`/p/${f.p.token}?billing=returned&session_id=${f.id}`);
       await expect(
         page.getByRole("heading", {
-          name: "Billing setup complete",
-          exact: true,
+          name: /^(Monthly|Yearly) billing is set up$/,
         }),
       ).toBeVisible();
       await expect(
-        page.getByText("Next billing date: October 31, 2027", { exact: true }),
+        page.getByText(/Next payment .* on October 31, 2027\./),
       ).toBeVisible();
       await shot("return-confirmed-yearly", width, theme);
       f = await billingFixture();
@@ -266,16 +259,19 @@ test("verified billing: mode-specific Checkout, immediate receipt, bounded retur
       await page.goto(`/p/${f.p.token}?billing=returned`);
       await expect(
         page.getByRole("heading", {
-          name: "Payment details received — finishing setup…",
+          name: "Confirming your payment",
           exact: true,
         }),
       ).toBeVisible();
       await page.clock.fastForward(61000);
       await expect(
-        page.getByText(
-          "This can take a minute. We'll email you when it's done.",
-          { exact: true },
-        ),
+        page.getByRole("heading", {
+          name: "Still confirming your payment",
+          exact: true,
+        }),
+      ).toBeVisible();
+      await expect(
+        page.getByText("You don’t need to pay again.", { exact: false }),
       ).toBeVisible();
       expect(polls).toBeLessThanOrEqual(21);
       await shot("return-timeout", width, theme);
@@ -284,8 +280,7 @@ test("verified billing: mode-specific Checkout, immediate receipt, bounded retur
       expect(polls).toBe(count);
       await expect(
         page.getByRole("heading", {
-          name: "Billing setup complete",
-          exact: true,
+          name: /^(Monthly|Yearly) billing is set up$/,
         }),
       ).toHaveCount(0);
     }
