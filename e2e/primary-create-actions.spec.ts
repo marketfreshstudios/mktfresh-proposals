@@ -103,9 +103,9 @@ test("staff create pages have one clay action and keep secondary actions outline
 
   await page.goto("/studio/products");
   await expect(
-    page.getByRole("button", { name: "New custom family", exact: true }),
+    page.getByRole("button", { name: "New billing category", exact: true }),
   ).toBeEnabled();
-  await primary("New custom family");
+  await primary("New billing category");
   await expect(
     page.getByRole("button", { name: "Add one-time product" }),
   ).not.toHaveClass(/\baction\b/);
@@ -113,7 +113,7 @@ test("staff create pages have one clay action and keep secondary actions outline
   await expect(
     page.getByRole("button", { name: "Save item and terms" }),
   ).toBeVisible();
-  await primary("New custom family");
+  await primary("New billing category");
   await expect(
     page.getByRole("button", { name: "Save item and terms" }),
   ).not.toHaveClass(/\b(action|studio-primary)\b/);

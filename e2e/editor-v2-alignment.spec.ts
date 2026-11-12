@@ -198,7 +198,7 @@ test("Quote alignment retains optional, sub-line and recurring Details controls"
   ).toHaveCount(2);
   await body.getByRole("button", { name: "Details", exact: true }).click();
   await expect(
-    body.getByRole("combobox", { name: "Custom family", exact: true }),
+    body.getByRole("combobox", { name: "Bill under", exact: true }),
   ).toHaveCount(0);
   await panel
     .getByText("Add from catalog or a custom item", { exact: true })
@@ -206,18 +206,40 @@ test("Quote alignment retains optional, sub-line and recurring Details controls"
   await panel.getByRole("button", { name: "Custom item", exact: true }).click();
   const custom = panel.locator(".quote-row-body");
   await expect(
-    custom.getByRole("combobox", { name: "Custom family", exact: true }),
+    custom.getByRole("combobox", { name: "Bill under", exact: true }),
   ).toHaveCount(0);
   await custom
     .getByRole("combobox", { name: /Interval/ })
     .selectOption("month");
   await expect(
-    custom.getByRole("combobox", { name: "Custom family", exact: true }),
+    custom.getByRole("combobox", { name: "Bill under", exact: true }),
   ).toHaveCount(0);
   await custom.getByRole("button", { name: "Details", exact: true }).click();
   await expect(
-    custom.getByRole("combobox", { name: "Custom family", exact: true }),
+    custom.getByRole("combobox", { name: "Bill under", exact: true }),
   ).toBeVisible();
+  // A billing category can be created from the line without leaving the editor.
+  const category = {
+    id: crypto.randomUUID(),
+    name: "Custom care",
+    active: true,
+  };
+  await page.route("**/api/custom-families", (route) =>
+    route.fulfill({ status: 201, json: category }),
+  );
+  await custom
+    .getByRole("combobox", { name: "Bill under", exact: true })
+    .selectOption({ label: "New billing category…" });
+  const sheet = page.getByRole("dialog", { name: "New billing category" });
+  await sheet.getByLabel("Category name").fill(category.name);
+  await sheet
+    .getByRole("button", { name: "Create in Stripe test mode" })
+    .click();
+  await expect(sheet).toHaveCount(0);
+  await expect(
+    custom.getByRole("combobox", { name: "Bill under", exact: true }),
+  ).toHaveValue(category.id);
+  await page.unroute("**/api/custom-families");
   const handles = await panel.locator(".quote-row").evaluateAll((rows) =>
     rows.map((row) => {
       const handle = row

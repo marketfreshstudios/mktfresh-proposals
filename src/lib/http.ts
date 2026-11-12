@@ -1896,7 +1896,7 @@ async function handleRoute(
         } else if (table === "custom_families") {
           throw new AppError(
             405,
-            "Create custom families through the verified Stripe action",
+            "Create billing categories through the verified Stripe action",
           );
         } else if (table === "clients") {
           const previous = (

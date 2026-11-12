@@ -36,6 +36,13 @@ import { DisclosureChevron } from "./disclosure-chevron";
 import { QuoteGroupSort, type QuoteDrop } from "./quote-group-sort";
 import { useMoney } from "./money-context";
 import { Button, Field, Disclosure, Totals } from "./ui";
+import { Sheet } from "./foundation";
+import {
+  BillingCategoryForm,
+  type BillingCategory,
+} from "./billing-category-form";
+
+const newCategory = "__new_billing_category";
 const uid = () => crypto.randomUUID();
 function sublinePlaceholder(line: Subline, index: number) {
   return `Sub-line ${index + 1} | ${intervalLabel(line.interval)}`;
@@ -150,6 +157,13 @@ export function QuoteItemsPanel({
   const focusGroup = useRef<string | null>(null);
   const groups = choiceGroups(items);
   const focusSubline = useRef<string | null>(null);
+  // Categories created from a line join the list until the next data load.
+  const [created, setCreated] = useState<BillingCategory[]>([]);
+  const [creatingCategory, setCreatingCategory] = useState<string | null>(null);
+  const categories = [
+    ...families,
+    ...created.filter((c) => !families.some((f) => f.id === c.id)),
+  ];
   useLayoutEffect(() => {
     if (focusGroup.current) {
       const name = panel.current?.querySelector<HTMLInputElement>(
@@ -931,23 +945,28 @@ export function QuoteItemsPanel({
             {i.source === "custom" &&
               itemDetails === i.id &&
               i.sublines.some((s) => s.interval !== "one_time") && (
-                <Field label="Custom family">
+                <Field label="Bill under">
                   <Select
                     value={i.custom_family_id ?? ""}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      if (e.target.value === newCategory) {
+                        setCreatingCategory(i.id);
+                        return;
+                      }
                       updateItem(i.id, {
                         custom_family_id: e.target.value || null,
-                      })
-                    }
+                      });
+                    }}
                   >
-                    <option value="">Choose a family</option>
-                    {families
+                    <option value="">Choose a billing category</option>
+                    {categories
                       .filter((f) => f.active)
                       .map((f) => (
                         <option key={f.id} value={f.id}>
                           {f.name}
                         </option>
                       ))}
+                    <option value={newCategory}>New billing category…</option>
                   </Select>
                 </Field>
               )}
@@ -1184,5 +1203,23 @@ export function QuoteItemsPanel({
     </div>
   );
 
-  return quotePanel;
+  return (
+    <>
+      {quotePanel}
+      {creatingCategory && (
+        <Sheet
+          title="New billing category"
+          onClose={() => setCreatingCategory(null)}
+        >
+          <BillingCategoryForm
+            close={() => setCreatingCategory(null)}
+            onCreated={(category) => {
+              setCreated((list) => [...list, category]);
+              updateItem(creatingCategory, { custom_family_id: category.id });
+            }}
+          />
+        </Sheet>
+      )}
+    </>
+  );
 }
