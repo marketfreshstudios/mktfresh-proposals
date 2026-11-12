@@ -1,3 +1,4 @@
+import { assembleDraftContent } from "./draft-layout";
 import {
   oiotPlan,
   oiotKickoffRequired,
@@ -390,13 +391,10 @@ export async function aiTool(
         valid_until: input.valid_until,
         brief: input.brief,
         document_versions: await readDocumentsForDraft(repo, actor),
-        content: [
-          ...blocks,
-          ...template.content.filter((b) => b.type === "contract"),
-          { type: "pricing_table" },
-          { type: "signature_block", role: "client" },
-          { type: "signature_block", role: "company" },
-        ],
+        content: assembleDraftContent(
+          blocks,
+          template.content.filter((b) => b.type === "contract"),
+        ),
         quote: input.items,
       },
       actor,
@@ -426,8 +424,8 @@ export async function aiTool(
   const content =
     input.content_markdown === undefined
       ? undefined
-      : [
-          ...markdownBlocks(
+      : assembleDraftContent(
+          markdownBlocks(
             input.content_markdown,
             Object.keys(variables(p)),
             await markdownImages(input.content_markdown),
@@ -439,11 +437,8 @@ export async function aiTool(
               ),
             ).contentWidth,
           ),
-          ...p.content.filter((b) => b.type === "contract"),
-          { type: "pricing_table" as const },
-          { type: "signature_block" as const, role: "client" as const },
-          { type: "signature_block" as const, role: "company" as const },
-        ];
+          p.content.filter((b) => b.type === "contract"),
+        );
   return proposalView(
     await service.edit(
       p.id,
