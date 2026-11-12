@@ -170,6 +170,10 @@ export function starterTemplates(
       }
     }
     content.forEach((b, index) => (b.id = starterId(id, `block-${index}`)));
+    // Terms follow the pricing directly: the client reads the price and the
+    // terms that govern it together, then Next steps and the signatures.
+    // Ids are assigned first so every block keeps its existing starter id.
+    moveTermsAfterPricing(content);
     // A missing/inactive member leaves the entire template quote empty.
     const complete = products.every((p) => !p.issue);
     const default_items =
@@ -255,4 +259,33 @@ export function workspaceStarterTemplates(workspace: string, catalog: Item[]) {
     marketfresh: workspace === LOCAL_WORKSPACE_ID,
     catalog,
   });
+}
+
+/** Move the Terms (and the page break before it) to just after the pricing
+ * section, i.e. before the first heading that follows the pricing table. */
+export function moveTermsAfterPricing(content: Block[]) {
+  const terms = content.findIndex((b) => b.type === "contract");
+  const pricing = content.findIndex((b) => b.type === "pricing_table");
+  if (terms < 0 || pricing < 0 || terms < pricing) return content;
+  // Only when Terms is the last thing before the signatures.
+  const after = content.slice(terms + 1);
+  if (
+    !after.some((b) => b.type === "signature_block") ||
+    after.some(
+      (b) => !["page_break", "heading", "signature_block"].includes(b.type),
+    )
+  )
+    return content;
+  const start = content[terms - 1]?.type === "page_break" ? terms - 1 : terms;
+  const moved = content.splice(start, terms - start + 1);
+  let at = pricing + 1;
+  while (
+    at < content.length &&
+    content[at].type !== "heading" &&
+    content[at].type !== "page_break"
+  )
+    at++;
+  // Keep the signatures on their own page: Next steps now follows the Terms.
+  content.splice(at, 0, ...moved);
+  return content;
 }

@@ -28,3 +28,17 @@ export function americanStarterContent(content: Block[]): Block[] {
       ),
   );
 }
+
+/** Starters before 12 Nov 2026 placed Terms on its own page just before the
+ * signatures. Tests use this to compare historical migrations' payloads. */
+export function preTermsMoveStarter(seed: Template): Template {
+  const content = structuredClone(seed.content);
+  const terms = content.findIndex((b) => b.type === "contract");
+  const pricing = content.findIndex((b) => b.type === "pricing_table");
+  if (terms < 0 || pricing < 0 || terms < pricing) return seed;
+  const start = content[terms - 1]?.type === "page_break" ? terms - 1 : terms;
+  const moved = content.splice(start, terms - start + 1);
+  const lastBreak = content.findLastIndex((b) => b.type === "page_break");
+  content.splice(lastBreak, 0, ...moved);
+  return { ...seed, content };
+}
