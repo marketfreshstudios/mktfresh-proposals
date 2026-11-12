@@ -1,6 +1,9 @@
 import oldCovers from "../seed/starter-covers-pr-a.json" with { type: "json" };
 import { planAwarePaymentPlanClause } from "../seed/oiot-clause";
-import { preAmericanEnglishStarter } from "../seed/starter-legacy-copy";
+import {
+  preAmericanEnglishStarter,
+  preTermsMoveStarter,
+} from "../seed/starter-legacy-copy";
 import { validateItems } from "../src/lib/quote-model";
 import { expect, it } from "vitest";
 import { readFile } from "node:fs/promises";
@@ -248,7 +251,7 @@ it("workspace creation trigger seeds seven; backfill is idempotent, atomic and p
     );
     const reference = starterTemplates(
       "00000000-0000-4000-8000-000000000000",
-    ).map(preAmericanEnglishStarter);
+    ).map((t) => preTermsMoveStarter(preAmericanEnglishStarter(t)));
     expect(rows.rows.map(({ data: { id, ...t } }) => t)).toEqual(
       reference.map(({ id, ...t }) => t),
     );
