@@ -415,6 +415,17 @@ it("new Stripe and QuickBooks customers receive address and E.164 phone; finding
   post.mockClear();
   await provider.findCustomers({ ...client, stripe_customer_id: "cus_1" });
   expect(post).not.toHaveBeenCalled();
+  // A linked customer may keep a separate billing email in Stripe: the link
+  // is by ID, so a different Yeswell email never blocks billing.
+  expect(
+    (
+      await provider.findCustomers({
+        ...client,
+        email: "proposals@example.test",
+        stripe_customer_id: "cus_1",
+      })
+    ).map((c) => c.id),
+  ).toEqual(["cus_1"]);
   const requests: any[] = [];
   const qbo = new QboProvider(
     repo,

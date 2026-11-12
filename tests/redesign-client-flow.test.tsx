@@ -97,7 +97,8 @@ it("the sign step fixes recipient email and keeps signature, full consent and di
   expect(html.indexOf("Exact full consent.")).toBeLessThan(
     html.indexOf("Sign proposal"),
   );
-  expect(html).toContain("Tick the agreement before signing.");
+  // The unticked agreement box speaks for itself; no extra hint.
+  expect(html).not.toContain("Tick the agreement");
 });
 
 it("decline records the exact optional note and queues a notification to the chosen staff sender", async () => {

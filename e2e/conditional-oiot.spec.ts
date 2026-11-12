@@ -221,6 +221,14 @@ test("the conditional quote switches care groups on desktop and phone and freeze
       await expect(
         page.getByRole("heading", { name: "Sign the proposal" }),
       ).toBeVisible();
+      // The viewing notice is centered under the contact line.
+      const privacy = page.locator(".flow-engagement-privacy");
+      await expect(privacy).toHaveCSS("text-align", "center");
+      const box = (await privacy.boundingBox())!;
+      expect(
+        Math.abs(box.x + box.width / 2 - page.viewportSize()!.width / 2),
+      ).toBeLessThanOrEqual(24);
+      await expect(page.getByText("Tick the agreement")).toHaveCount(0);
       // The hidden Own It Now care group never counts as an unmade choice.
       await expect(
         page.getByText(/choose one item in each choice group/),

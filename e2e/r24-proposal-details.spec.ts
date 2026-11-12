@@ -526,6 +526,16 @@ test("R24 record states use saved proposal, publication, and signing data at all
           page.getByRole("region", { name: "Questions", exact: true }),
         ).toHaveCount(0);
       }
+      // A sent, unsigned proposal's contact can be corrected from here;
+      // signed ones keep the contact they were signed with.
+      if (fixture.frame === "4a")
+        await expect(
+          details.getByRole("button", { name: "Edit contact" }),
+        ).toBeVisible();
+      if (["4e", "4f"].includes(fixture.frame))
+        await expect(
+          details.getByRole("button", { name: "Edit contact" }),
+        ).toHaveCount(0);
       if (["4e", "4f", "4g", "4h", "4l", "4m"].includes(fixture.frame)) {
         await expect(
           quote.getByRole("link", { name: "Edit", exact: true }),
