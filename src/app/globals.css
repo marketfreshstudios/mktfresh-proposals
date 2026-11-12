@@ -49,7 +49,7 @@ textarea {
 }
 /* Dialogs move focus to their heading for screen readers. A heading isn't a
    control, so it never shows a focus ring. */
-:where(h1, h2, h3)[tabindex="-1"]:focus {
+:is(h1, h2, h3)[tabindex="-1"]:focus {
   outline: none;
 }
 button {
