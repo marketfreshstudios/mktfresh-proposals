@@ -432,9 +432,7 @@ test("QuickBooks connection states, invoice defaults, product mapping and record
   const invoiceBox = (await invoice.boundingBox())!;
   // Billing sits in the narrow side column: the description stacks under
   // its label, aligned to the same left edge.
-  expect(invoiceBox.y).toBeGreaterThanOrEqual(
-    labelBox.y + labelBox.height - 2,
-  );
+  expect(invoiceBox.y).toBeGreaterThanOrEqual(labelBox.y + labelBox.height - 2);
   expect(Math.abs(invoiceBox.x - labelBox.x)).toBeLessThanOrEqual(24);
   await invoice.click();
   await expect(
