@@ -13,7 +13,10 @@ import {
 } from "../seed/starter-templates";
 import { starterEnglishUpdates } from "../seed/starter-english-updates";
 import { starterEnglishSql } from "../scripts/starter-english-sql";
-import { preAmericanEnglishStarter } from "../seed/starter-legacy-copy";
+import {
+  preAmericanEnglishStarter,
+  preTermsMoveStarter,
+} from "../seed/starter-legacy-copy";
 import oldCovers from "../seed/starter-covers-pr-a.json" with { type: "json" };
 import { applyCoverLayout, type Cover } from "../src/lib/cover";
 import type { Template } from "../src/lib/model";
@@ -77,8 +80,9 @@ it("American default copy matches the hosted trigger; exact unedited starters up
     expect(current.map(({ id, ...t }) => t)).toEqual(
       JSON.parse(
         JSON.stringify(
-          starterTemplates("00000000-0000-4000-8000-000000000000").map(
-            ({ id, ...t }) => ({
+          starterTemplates("00000000-0000-4000-8000-000000000000")
+            .map(preTermsMoveStarter)
+            .map(({ id, ...t }) => ({
               ...t,
               ...(t.starter_key! in starterCoverLayouts && {
                 cover: applyCoverLayout(
@@ -86,8 +90,7 @@ it("American default copy matches the hosted trigger; exact unedited starters up
                   "editorial",
                 ),
               }),
-            }),
-          ),
+            })),
         ),
       ),
     );

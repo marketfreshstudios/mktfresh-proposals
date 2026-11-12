@@ -125,6 +125,23 @@ export function resolveLabel(text: string, map: Record<string, string>) {
     map[path] ? map[path] : token,
   );
 }
+/** A proposal name never stores field codes: known fields take this
+ * proposal's values, and anything unknown is left as written. */
+export function proposalTitle(p: Proposal, title = p.title) {
+  if (!title.includes("{{")) return title;
+  let map: Record<string, string>;
+  try {
+    map = variables(p);
+  } catch {
+    map = {
+      "client.first_name": p.client.first_name,
+      "client.last_name": p.client.last_name,
+      "client.company": p.client.company,
+    };
+  }
+  const { "proposal.title": _self, ...fields } = map;
+  return resolveLabel(title, fields).trim() || title;
+}
 export const permitsEmptyVariable = (path: string) =>
   ["proposal.validity", "proposal.valid_until", "client.address"].includes(
     path,

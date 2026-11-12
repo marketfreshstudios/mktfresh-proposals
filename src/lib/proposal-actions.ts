@@ -21,7 +21,7 @@ import { draftItems } from "./quote-model";
 import { settingsSnapshot } from "./proposal-settings";
 import type { WorkspaceSettings } from "./workspace";
 import { defaultValidUntil } from "./validity";
-import { variables } from "./presentation";
+import { proposalTitle, variables } from "./presentation";
 import { versionHash, sha256, canonical } from "./content";
 import { proposalLink } from "./links";
 export const proposalActions = [
@@ -179,6 +179,7 @@ export async function proposalAction(
     delete p.archived_by;
     delete p.marked_won_by;
     delete p.marked_lost_by;
+    p.title = proposalTitle(p);
     event(p, "created", actor, { duplicated_from: id }, now.toISOString());
     await repo.save(p, -1);
     return p;
@@ -214,7 +215,7 @@ export async function proposalAction(
       );
       const previous = p.client;
       p.client = structuredClone(client);
-      if (title) p.title = title;
+      if (title) p.title = proposalTitle(p, title);
       event(
         p,
         "client_changed",
