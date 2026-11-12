@@ -83,18 +83,6 @@
   color: var(--ink-muted);
   font-size: 12px;
 }
-/* A reply is the news the client is waiting for: a tinted chip, not muted text. */
-.client-flow .client-question-answered {
-  display: inline-flex;
-  align-items: center;
-  align-self: center;
-  gap: 5px;
-  padding: 3px 8px;
-  border-radius: 4px;
-  background: color-mix(in srgb, var(--client-deep-accent) 12%, var(--surface));
-  color: var(--client-deep-accent);
-  font-weight: 600;
-}
 .client-question-actions > div {
   display: flex;
   flex-wrap: wrap;

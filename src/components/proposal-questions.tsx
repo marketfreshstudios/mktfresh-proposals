@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { MessageCircleReply, X } from "lucide-react";
+import { X } from "lucide-react";
 import type { z } from "zod";
 import type { AskQuestionSchema } from "../lib/proposal-questions";
 import {
@@ -156,11 +156,11 @@ export function ClientQuestions({
   );
   const [loadError, setLoadError] = useState("");
   const [toast, setToast] = useState("");
+  const [answered, setAnswered] = useState<string | null>(null);
   const [edit, setEdit] = useState<PublicQuestion | null>(null);
   const [remove, setRemove] = useState<PublicQuestion | null>(null);
   const [removeBusy, setRemoveBusy] = useState(false);
   const [removeError, setRemoveError] = useState("");
-  const [reply, setReply] = useState<string | null>(null);
   const openedHash = useRef(false);
   const threads = result?.threads ?? emptyClientThreads;
   useEffect(() => {
@@ -181,13 +181,58 @@ export function ClientQuestions({
     };
   }, [url, password, proposal.status, preview, historyOpen]);
   useEffect(() => onThreadsChange(threads), [onThreadsChange, threads]);
+  // While the client waits on an open question, check quietly for replies
+  // (only with the tab visible) and show a new one in place, with a notice.
+  const known = useRef(threads);
+  known.current = threads;
+  const waiting = threads.some((thread) => thread.status !== "resolved");
+  useEffect(() => {
+    if (preview || !waiting) return;
+    let active = true;
+    const check = () => {
+      if (document.visibilityState !== "visible") return;
+      api<ClientQuestionsResult>(url, { headers })
+        .then((data) => {
+          if (!active || !Array.isArray(data.threads)) return;
+          const before = new Map(
+            known.current.map((thread) => [thread.id, thread.replies.length]),
+          );
+          const fresh = data.threads.find(
+            (thread) =>
+              before.has(thread.id) &&
+              thread.replies.length > (before.get(thread.id) ?? 0),
+          );
+          setResult(data);
+          if (fresh) setAnswered(fresh.id);
+        })
+        .catch(() => {});
+    };
+    const timer = window.setInterval(check, 30000);
+    document.addEventListener("visibilitychange", check);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", check);
+    };
+  }, [preview, waiting, url, password]);
+  const viewAnswer = (id: string) => {
+    setAnswered(null);
+    if (inReadingRail && isPhoneReading()) setHistoryOpen(true);
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        const node = document.getElementById(`question-${id}`);
+        node?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        node?.focus({ preventScroll: true });
+      }),
+    );
+  };
   useEffect(() => {
     if (!result || openedHash.current) return;
     openedHash.current = true;
     const hash = location.hash.slice(1);
     const linked = threads.find((thread) => hash === `question-${thread.id}`);
     if (!linked) return;
-    setReply(linked.id);
+
     if (inReadingRail && isPhoneReading()) setHistoryOpen(true);
     const frame = requestAnimationFrame(() =>
       requestAnimationFrame(() => {
@@ -296,29 +341,24 @@ export function ClientQuestions({
             )}
             <p className="question-text">{thread.question}</p>
             <div className="client-question-actions">
-              {hasReply ? (
-                <span className="client-question-answered">
-                  <MessageCircleReply size={14} aria-hidden="true" />
-                  Answered by {thread.replies[0].name}
-                </span>
-              ) : (
-                <span>
-                  {thread.status === "resolved"
+              <span>
+                {hasReply
+                  ? `Answered by ${thread.replies[0].name}`
+                  : thread.status === "resolved"
                     ? "Resolved"
                     : "Waiting for a reply"}
-                </span>
-              )}
+              </span>
               <div>
                 {hasReply ? (
-                  <button
-                    className="question-text-action"
-                    onClick={() =>
-                      setReply(reply === thread.id ? null : thread.id)
-                    }
-                    aria-expanded={reply === thread.id}
-                  >
-                    {reply === thread.id ? "Hide reply" : "View reply"}
-                  </button>
+                  !historyOpen &&
+                  canLocate && (
+                    <button
+                      className="question-text-action"
+                      onClick={() => showTarget(thread)}
+                    >
+                      Go to
+                    </button>
+                  )
                 ) : (
                   <>
                     {writable && (
@@ -352,8 +392,8 @@ export function ClientQuestions({
                 )}
               </div>
             </div>
+            {/* Replies are always open: nothing the client waits for is hidden. */}
             {hasReply &&
-              (historyOpen || reply === thread.id) &&
               thread.replies.map((answer) => (
                 <div className="question-reply" key={answer.id}>
                   <strong>{answer.name}</strong>
@@ -540,6 +580,17 @@ export function ClientQuestions({
             </Button>
           </DialogActions>
         </Sheet>
+      )}
+      {answered && !toast && (
+        <ToastSurface
+          className="client-question-toast"
+          onDismiss={() => setAnswered(null)}
+        >
+          You have a reply to your question.{" "}
+          <button type="button" onClick={() => viewAnswer(answered)}>
+            View
+          </button>
+        </ToastSurface>
       )}
       {toast && (
         <ToastSurface

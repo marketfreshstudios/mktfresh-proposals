@@ -77,15 +77,13 @@ function canAskAboutBlock(target: QuestionTarget, phone: boolean) {
 function rootOf(wrapper: HTMLElement) {
   const document = wrapper.querySelector("#proposal-document");
   const root = document?.shadowRoot ?? document;
-  // Terms clauses come from the published HTML; tag each clause section here
-  // (on every page it spans) instead of changing that frozen markup.
+  // Terms clauses come from the published HTML; tag each clause heading and
+  // body here (pagination splits them into separate atoms) instead of
+  // changing that frozen markup.
   for (const part of root?.querySelectorAll<HTMLElement>(
-    ".contract section > [data-print-part]",
-  ) ?? []) {
-    const section = part.parentElement!;
-    if (!section.dataset.clientQuestionId)
-      section.dataset.clientQuestionId = part.dataset.printPart;
-  }
+    "[data-print-part]:not([data-client-question-id])",
+  ) ?? [])
+    part.dataset.clientQuestionId = part.dataset.printPart;
   return root;
 }
 
