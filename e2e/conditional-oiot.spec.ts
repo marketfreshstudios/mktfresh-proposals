@@ -195,6 +195,10 @@ test("the conditional quote switches care groups on desktop and phone and freeze
       await expect(
         page.locator(".flow-acceptance").getByText(/Own It Over Time — Pro/),
       ).toBeVisible();
+      // The hidden Own It Now care group never counts as an unmade choice.
+      await expect(
+        page.getByText(/choose one item in each choice group/),
+      ).toHaveCount(0);
     }
   }
   const chosen = await f.service.byToken(token);

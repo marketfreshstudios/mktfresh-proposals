@@ -3,6 +3,7 @@ import { quickBooksInvoiceTiming } from "../lib/proposal-state";
 import {
   printedChoiceGroupLabel,
   choiceRequired,
+  missingChoiceGroups,
   visibleQuote,
 } from "../lib/quote-options";
 import {
@@ -225,6 +226,7 @@ function NewClientFlow({
     setCheckoutReturned(query.get("billing") === "returned");
     setReturnSession(query.get("session_id") ?? "");
   }, [preview, token]);
+  const [choiceNotice, setChoiceNotice] = useState(false);
   const [locked, setLocked] = useState(false),
     [ended, setEnded] = useState(false),
     [password, setPassword] = useState("");
@@ -555,15 +557,24 @@ function NewClientFlow({
       (b.type === "heading" &&
         /contract|statement of work/i.test(b.text ?? "")),
   );
-  const missingChoice =
-    !!p &&
-    p.quote.some(
-      (i) =>
-        i.choice_group_id &&
-        !p.quote.some(
-          (v) => v.choice_group_id === i.choice_group_id && v.selected,
-        ),
-    );
+  // Hidden groups and "Choose up to one" groups never block signing.
+  const missingGroups = p ? missingChoiceGroups(p.quote as QuoteItem[]) : [];
+  const missingChoice = missingGroups.length > 0;
+  const showMissingChoice = () => {
+    setChoiceNotice(true);
+    const first = missingGroups[0]?.[0]?.id;
+    const host = document.querySelector("#proposal-document");
+    const root = host?.shadowRoot ?? host;
+    const node = first
+      ? root?.querySelector<HTMLElement>(
+          `[data-client-item-id="${CSS.escape(first)}"]`,
+        )
+      : null;
+    (node?.closest<HTMLElement>("[role=radiogroup]") ?? node)?.scrollIntoView({
+      block: "center",
+      behavior: "smooth",
+    });
+  };
   const reading = !!p && review && !locked && !ended;
   const palette = p?.resolved_styles?.layout?.quote_neutrals;
   const progress = !!p && !locked && !ended && (
@@ -1454,10 +1465,19 @@ function NewClientFlow({
                         variant="primary"
                         disabled={busy || stale}
                         note={busy ? "Saving your selection…" : undefined}
-                        onClick={() => go("sign")}
+                        onClick={() =>
+                          missingChoice ? showMissingChoice() : go("sign")
+                        }
                       >
                         Review and sign
                       </Button>
+                      {choiceNotice && missingChoice && (
+                        <p role="alert" className="flow-choice-needed">
+                          Choose one option in each group marked “
+                          {printedChoiceGroupLabel(missingGroups[0][0])}” to
+                          continue.
+                        </p>
+                      )}
                       {ask && (
                         <Button
                           aria-haspopup="dialog"

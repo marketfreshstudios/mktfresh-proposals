@@ -1021,6 +1021,12 @@ label.flow-quote-line {
   display: grid;
   gap: 8px;
 }
+.client-flow .flow-choice-needed {
+  margin: 0;
+  color: var(--danger, #b42318);
+  font-size: 14px;
+  line-height: 1.4;
+}
 .client-flow .flow-review-actions .btn {
   min-width: 0;
   min-height: 44px;
