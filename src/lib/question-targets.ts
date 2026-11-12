@@ -2,6 +2,7 @@ import type { Block, Quote } from "./model";
 import { blockText } from "./editor-document";
 import { resolve } from "./presentation";
 import { visibleQuote } from "./quote-options";
+import { selectedContent } from "./quote-model";
 
 export type QuestionTarget = {
   block_id?: string;
@@ -66,6 +67,21 @@ export function questionTargets(
         block.type === "paragraph" && containsList(block.content)
           ? "list"
           : blockKinds[block.type];
+      if (block.type === "contract") {
+        // Each Terms clause the client can see is its own question target.
+        const heading = resolve(block.text || "Terms", variables);
+        for (const clause of selectedContent([block], quote)[0].clauses ?? [])
+          blocks.set(clause.id, {
+            block_id: clause.id,
+            section,
+            label: `${label} | ${resolve(clause.heading, variables) || heading}`,
+            excerpt: questionExcerpt(
+              resolve(`${clause.heading}: ${clause.body}`, variables),
+            ),
+            kind: "term",
+          });
+        continue;
+      }
       if (!kind) continue;
       blocks.set(id, {
         block_id: id,
