@@ -229,6 +229,9 @@ async function clientFixture(page: Page) {
           ended: ended ? "expired" : null,
         },
       });
+    // Signed pages poll for billing updates.
+    if (path === `/api/public/${sent.token}/state`)
+      return route.fulfill({ json: value });
     if (path.endsWith("/engagement"))
       return route.fulfill({ json: { ok: true } });
     if (path.endsWith("/questions"))
@@ -496,28 +499,39 @@ for (const width of [1440, 1024, 768, 375]) {
 
     await f.open("billing");
     await expect(
-      page.getByRole("heading", { name: "Set up your monthly subscription" }),
+      page.getByRole("heading", { name: "Set up your monthly billing" }),
     ).toBeVisible();
+    // Success is green on every workspace accent.
+    await expect(page.locator(".after-success")).toHaveCSS(
+      "color",
+      "rgb(20, 107, 63)",
+    );
     await inspect("new billing");
     if (width === 1440) await capture(page, "client-billing-1440");
     await page
       .getByRole("button", { name: "I’ll do this later", exact: true })
+      .first()
       .click();
     await expect(
-      page.getByRole("heading", { name: /You’re all set/ }),
+      page.getByRole("heading", { name: "One step left: billing" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Finish billing" }),
     ).toBeVisible();
     await inspect("done");
     if (width === 1440) await capture(page, "client-done-1440");
 
     await f.open("existing");
     await expect(
-      page.getByRole("heading", { name: "Billing is already taken care of" }),
+      page.getByRole("heading", { name: /You’re all set/ }),
     ).toBeVisible();
     await expect(
-      page.getByRole("link", { name: /secure checkout/ }),
+      page.getByRole("heading", { name: "Added to your plan" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: /secure payment/ }),
     ).toHaveCount(0);
     await inspect("existing subscription");
-    await page.getByRole("button", { name: "Done", exact: true }).click();
 
     await f.open("expired");
     await expect(

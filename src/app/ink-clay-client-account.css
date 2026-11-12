@@ -493,3 +493,254 @@
 .flow-brand-mark img {
   object-fit: contain;
 }
+
+/* After signing (Redesign 26). One 640px column; cards side by side on wide
+   screens; the main action is a sticky bottom bar on phones. */
+.client-flow .flow-result-summary:has(> .after-signing) {
+  max-width: 640px;
+}
+.after-signing {
+  display: grid;
+  gap: 16px;
+}
+.after-signing > h1 {
+  margin: 4px 0 0;
+  font: 400 30px/1.15 var(--client-font-heading, var(--font-doc-heading));
+}
+.after-signing > p {
+  margin: 0;
+}
+/* Success is always green, whatever the workspace accent. */
+.client-flow .after-success {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: var(--success);
+  background: var(--success-soft);
+  font-weight: 600;
+}
+.client-flow .after-note {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: 8px;
+  color: var(--info);
+  background: var(--info-soft);
+}
+.client-flow .after-note[data-tone="danger"] {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+.after-note svg {
+  flex: none;
+  margin-top: 2px;
+}
+.after-note p {
+  margin: 2px 0 0;
+}
+.after-cards {
+  display: grid;
+  gap: 12px;
+}
+.after-card {
+  display: grid;
+  gap: 8px;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.after-card-quiet {
+  background: transparent;
+}
+.after-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.client-flow .after-signing .after-eyebrow {
+  margin: 0;
+  color: var(--ink-muted);
+  font: 600 11px/16px var(--client-font-body, var(--font-ui));
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.client-flow .after-tag {
+  padding: 1px 8px;
+  border-radius: 4px;
+  color: var(--ink-muted);
+  background: var(--neutral-soft);
+  font-size: 11px;
+  font-weight: 600;
+}
+.after-lines {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-variant-numeric: tabular-nums;
+}
+.after-lines li,
+.after-total {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.after-lines li > :last-child,
+.after-total > :last-child {
+  flex: none;
+  white-space: nowrap;
+}
+.after-total {
+  margin: 4px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  font-variant-numeric: tabular-nums;
+}
+.client-flow .after-total small {
+  display: block;
+  color: var(--ink-muted);
+  font-weight: 400;
+}
+.client-flow .after-small {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.client-flow .after-signing .after-confirmed {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: var(--ink);
+  font: 600 15px/1.4 var(--client-font-body, var(--font-ui));
+}
+.after-confirmed svg {
+  color: var(--success);
+}
+.after-checklist ol {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.after-checklist li {
+  display: flex;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+.after-checklist li:first-child {
+  border-top: 0;
+}
+.after-checklist li > div {
+  display: grid;
+  gap: 2px;
+  justify-items: start;
+}
+.after-checklist li small {
+  color: var(--ink-muted);
+}
+.after-checklist li .btn {
+  margin-top: 8px;
+}
+.after-check-mark {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 999px;
+  color: var(--success-soft);
+}
+.after-checklist li[data-state="done"] .after-check-mark {
+  border-color: var(--success);
+  background: var(--success);
+  color: #fff;
+}
+.after-checklist li[data-state="current"] .after-check-mark {
+  border-color: var(--ink);
+  box-shadow:
+    inset 0 0 0 4px var(--surface),
+    inset 0 0 0 10px var(--ink);
+}
+.after-checklist li[data-state="waiting"] .after-check-mark {
+  border: 0;
+  color: var(--warning, #8a5a00);
+}
+.after-actions,
+.after-copies {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+.after-actions .btn svg,
+.after-copies .btn svg,
+.after-checklist .btn svg {
+  margin-right: 6px;
+  vertical-align: -3px;
+}
+.after-hint {
+  flex-basis: 100%;
+}
+.client-flow .after-contact {
+  color: var(--ink-muted);
+  font-size: 13px;
+}
+/* Phone: the main action sits in a sticky bar at the bottom. */
+@media (max-width: 699px) {
+  .after-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 12px 0 calc(12px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    /* Full-bleed bar without widening the page. */
+    box-shadow: 0 0 0 100vmax var(--surface);
+    clip-path: inset(0 -100vmax);
+  }
+  .after-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .after-hint {
+    display: none;
+  }
+}
+/* Desktop: recurring and one-time cards side by side. */
+@media (min-width: 700px) {
+  .after-cards:has(> .after-card + .after-card) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+  .after-cards > .after-card[aria-label^="Step "] {
+    grid-column: auto;
+  }
+}
+/* Progress: finished steps get a check; the current step a half bar. */
+.flow-progress li.finished {
+  display: block;
+}
+.flow-progress .flow-progress-check {
+  margin-right: 3px;
+  vertical-align: -1px;
+}
+.flow-progress:has(li.finished) li.reached:not(.finished)::before {
+  background: linear-gradient(
+    90deg,
+    var(--accent) 50%,
+    var(--border-strong) 50%
+  );
+}

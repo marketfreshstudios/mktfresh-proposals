@@ -266,10 +266,7 @@ test("client redesign: every responsive state, safe preview and signature retrie
       await capture("sealing", width, theme, "1d");
       release?.();
       await expect(
-        page.getByText(
-          "Your proposal is signed. Your copy will be sent to jane@example.test.",
-          { exact: true },
-        ),
+        page.getByRole("heading", { name: /^You’re all set/ }),
       ).toBeVisible();
       const newBilling = structuredClone(accepted);
       newBilling.billing = [
@@ -283,14 +280,14 @@ test("client redesign: every responsive state, safe preview and signature retrie
       await open("billing", newBilling);
       await expect(
         page.getByRole("heading", {
-          name: "Set up your monthly subscription",
+          name: "Set up your monthly billing",
           exact: true,
         }),
       ).toBeVisible();
       await capture("billing", width, theme, "1e");
       await expect(
         page.getByRole("link", {
-          name: /Continue to secure checkout/,
+          name: "Continue to secure payment",
           exact: true,
         }),
       ).toHaveAttribute("href", "https://checkout.stripe.com/test_only");
@@ -298,9 +295,7 @@ test("client redesign: every responsive state, safe preview and signature retrie
         .getByRole("button", { name: "I’ll do this later", exact: true })
         .click();
       await expect(
-        page.getByText("Signed by you · awaiting countersignature", {
-          exact: true,
-        }),
+        page.getByRole("heading", { name: "One step left: billing" }),
       ).toBeVisible();
       await capture("signed", width, theme, "1g");
       const existing = structuredClone(accepted);
@@ -314,26 +309,21 @@ test("client redesign: every responsive state, safe preview and signature retrie
       ];
       await open("existing", existing);
       await expect(
-        page.getByRole("heading", {
-          name: "Billing is already taken care of",
-          exact: true,
-        }),
+        page.getByRole("heading", { name: /You’re all set/ }),
       ).toBeVisible();
       await expect(
-        page.getByRole("link", {
-          name: /Continue to secure checkout/,
-          exact: true,
-        }),
+        page.getByRole("link", { name: "Continue to secure payment" }),
       ).toHaveCount(0);
       await capture("existing", width, theme, "1f");
       const failed = structuredClone(newBilling);
       failed.billing[0].status = "needs_review";
       await open("failed-billing", failed);
       await expect(
-        page.getByText("Your proposal is signed. Billing needs attention.", {
-          exact: true,
-        }),
+        page.getByRole("heading", { name: /will finish your billing setup$/ }),
       ).toBeVisible();
+      await expect(
+        page.getByRole("link", { name: "Continue to secure payment" }),
+      ).toHaveCount(0);
       await capture("failed-billing", width, theme, "8o");
       const complete = structuredClone(accepted);
       complete.status = "completed";
@@ -349,17 +339,8 @@ test("client redesign: every responsive state, safe preview and signature retrie
         { id: "final", stage: "company", sha256: "a".repeat(64) },
       ];
       await open("completed", complete);
-      await page
-        .getByRole("button", { name: "Done", exact: true })
-        .count()
-        .then(async (n) => {
-          if (n)
-            await page
-              .getByRole("button", { name: "Done", exact: true })
-              .click();
-        });
       await expect(
-        page.getByText("Completed copy", { exact: true }),
+        page.getByRole("heading", { name: "Your completed agreement" }),
       ).toBeVisible();
       await expect(
         page.getByRole("button", {
@@ -756,13 +737,11 @@ test("touch signature drawing is preserved after failure; one-time acceptance sk
     .getByRole("button", { name: "Sign proposal", exact: true })
     .click();
   await expect(
-    page.getByText("Signed by you · awaiting countersignature", {
-      exact: true,
-    }),
+    page.getByRole("heading", { name: /You’re all set/ }),
   ).toBeVisible();
   await expect(
     page.getByRole("heading", {
-      name: "Set up your monthly subscription",
+      name: "Set up your monthly billing",
       exact: true,
     }),
   ).toHaveCount(0);

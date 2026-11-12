@@ -393,7 +393,7 @@ test("Quote model editor: responsive sections, prices, alternatives, keyboard, r
       await page.goto(`/p/${active.token}`);
       await expect(
         page.getByRole("heading", {
-          name: "Set up your monthly subscription",
+          name: "Set up your monthly billing",
         }),
       ).toBeVisible();
       await page.evaluate(

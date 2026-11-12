@@ -1,5 +1,4 @@
 "use client";
-import { quickBooksInvoiceTiming } from "../lib/proposal-state";
 import {
   printedChoiceGroupLabel,
   choiceRequired,
@@ -24,7 +23,7 @@ import { questionTargets } from "../lib/question-targets";
 import type { PublicQuestion } from "../lib/proposal-questions";
 import { useClientEngagement } from "./use-client-engagement";
 import { accessibleAccent } from "../lib/brand";
-import { ChevronLeft, CircleAlert, LockKeyhole } from "lucide-react";
+import { Check, ChevronLeft, CircleAlert, LockKeyhole } from "lucide-react";
 import { blockText } from "../lib/editor-document";
 import { sizeListMarkers } from "../lib/list-markers";
 import { DialogActions } from "./dialog-actions";
@@ -46,13 +45,8 @@ import { blockBoxStyle } from "../lib/block-style";
 import { documentSpacing } from "../lib/document-spacing";
 import type { CSSProperties } from "react";
 import type { Block } from "../lib/model";
-import {
-  BillingItems,
-  BillingRecurringTotal,
-  checkoutActionLabel,
-  BillingConfirmationCard,
-} from "./billing-breakdown";
 import { billingDisplay } from "../lib/billing-display";
+import { AfterSigning, afterSigningView } from "./after-signing";
 import { ContactToast, copyContactValue } from "./contact-value";
 import { fontCss, fontFamily, type FontSettings } from "../lib/proposal-fonts";
 import { readableDate } from "../lib/validity";
@@ -222,12 +216,14 @@ function NewClientFlow({
   const [checkoutError, setCheckoutError] = useState("");
   const [checkoutReturned, setCheckoutReturned] = useState(false),
     [returnSession, setReturnSession] = useState(""),
+    [checkoutLeft, setCheckoutLeft] = useState(false),
     [returnTimedOut, setReturnTimedOut] = useState(false),
     [pollCycle, setPollCycle] = useState(0);
   useEffect(() => {
     if (preview) return;
     const query = new URLSearchParams(location.search);
     setCheckoutReturned(query.get("billing") === "returned");
+    setCheckoutLeft(query.get("billing") === "pending");
     setReturnSession(query.get("session_id") ?? "");
   }, [preview, token]);
   const [choiceNotice, setChoiceNotice] = useState(false);
@@ -665,6 +661,11 @@ function NewClientFlow({
     <FlowProgress
       step={activeStep}
       billing={recurring || requiresCheckout}
+      billed={
+        signed &&
+        !requiresCheckout &&
+        (confirmations.length > 0 || existing.length > 0)
+      }
       className={review ? "flow-review-progress" : "flow-top-progress"}
       onReview={step === "sign" ? () => go("read") : undefined}
     />
@@ -1036,510 +1037,110 @@ function NewClientFlow({
             {signed || step === "billing" || step === "done" ? (
               <section className="flow-result stack">
                 <div className="flow-result-summary stack">
-                  <p className="flow-success">
-                    <Icon name="verified" />{" "}
-                    {p.status === "completed"
-                      ? "Completed copy"
-                      : `Signed. Thank you${firstName ? `, ${firstName}` : ""}.`}
-                  </p>
-                  <p>
-                    {preview
-                      ? "This is a preview. No signature or billing has been submitted."
-                      : `Your proposal is signed. Your copy will be sent to ${p.recipient.email}.`}
-                  </p>
-                  {bankState && !requiresCheckout ? (
-                    <>
-                      <h1>
-                        {bankState === "processing"
-                          ? "Bank payment processing"
-                          : "Bank payment failed"}
-                      </h1>
-                      <p role="status">
-                        {bankState === "processing"
-                          ? "Bank payments take a few business days to clear. We'll email you when Stripe confirms your payment."
-                          : "Stripe could not complete your bank payment. Please contact us to arrange payment."}
-                      </p>
-                    </>
-                  ) : finishingReturn ? (
-                    <>
-                      <h1>Payment details received — finishing setup…</h1>
-                      <p role="status">
-                        {returnTimedOut
-                          ? "This can take a minute. We'll email you when it's done."
-                          : "We’re checking the confirmation from Stripe."}
-                      </p>
-                      {confirmations.length > 0 && (
-                        <BillingConfirmationCard
-                          confirmations={confirmations}
-                          timezone={p.timezone}
-                          cents={p.money_cents}
-                        />
-                      )}
-                      {returnTimedOut && (
-                        <Button
-                          onClick={() => {
-                            setReturnTimedOut(false);
-                            setPollCycle((c) => c + 1);
-                          }}
-                        >
-                          Check again
-                        </Button>
-                      )}
-                    </>
-                  ) : step !== "done" && requiresCheckout ? (
-                    <>
-                      <h1>
-                        {!checkout.length && approvals.length
-                          ? "Approve your new services"
-                          : checkout.length &&
-                              checkout.every(
-                                (s) =>
-                                  s.mode === "setup" &&
-                                  (s.collection_method ??
-                                    p.billing_collection_method) ===
-                                    "send_invoice",
-                              )
-                            ? "Save a card for your subscription"
-                            : checkout.length &&
-                                checkout.every((s) =>
-                                  s.lines.every((l) => l.interval === "year"),
-                                )
-                              ? "Set up your yearly subscription"
-                              : "Set up your monthly subscription"}
-                      </h1>
-                      {confirmations.length > 0 && (
-                        <BillingConfirmationCard
-                          confirmations={confirmations}
-                          timezone={p.timezone}
-                          cents={p.money_cents}
-                        />
-                      )}
-                      <p>
-                        Only the recurring services below are arranged through
-                        Stripe. One-time fees are invoiced separately.
-                      </p>
-                      {checkout.length > 1 && (
-                        <p>Each group has its own secure checkout.</p>
-                      )}
-                      {checkoutError && (
-                        <Banner
-                          tone="danger"
-                          title="Secure checkout didn’t open"
-                        >
-                          {`${checkoutError} You can also contact ${contact.name || "the sender"} for help.`}
-                        </Banner>
-                      )}
-                      {/* A total only helps when it adds up more than one line. */}
-                      {checkout
-                        .filter((s) => s.mode !== "setup")
-                        .flatMap((s) => s.lines).length > 1 && (
-                        <BillingRecurringTotal
-                          lines={checkout
-                            .filter((s) => s.mode !== "setup")
-                            .flatMap((s) => s.lines)}
-                          currency={p.currency}
-                          cents={p.money_cents}
-                        />
-                      )}
-                      {billing.some(
+                  {preview && (
+                    <p className="after-small">
+                      This is a preview. No signature or billing has been
+                      submitted.
+                    </p>
+                  )}
+                  <AfterSigning
+                    view={afterSigningView({
+                      completed: p.status === "completed",
+                      step: step === "done" ? "done" : "billing",
+                      requiresCheckout,
+                      billingProblem: billing.some(
                         (b) =>
                           b.status === "failed" || b.status === "needs_review",
-                      ) && (
-                        <Banner
-                          tone="warning"
-                          title="Your proposal is signed. Billing needs attention."
-                        >
-                          You can try secure checkout again, or contact{" "}
-                          {contact.name || "the sender"} for help.
-                        </Banner>
-                      )}
-                      {approvals.map((a) => {
-                        const total = a.lines.reduce(
-                          (sum, l) => sum + l.amount * l.qty,
-                          0,
-                        );
-                        const per = a.interval === "year" ? "year" : "month";
-                        const card = a.card
-                          ? `your ${a.card.brand.charAt(0).toUpperCase()}${a.card.brand.slice(1)} ending in ${a.card.last4}`
-                          : "your card on file";
-                        return (
-                          <section
-                            className="flow-checkout-group flow-approval"
-                            key={a.id}
-                          >
-                            <h2>
-                              {a.kind === "add"
-                                ? "Add to your current subscription"
-                                : "Start on your card on file"}
-                            </h2>
-                            <BillingItems
-                              lines={a.lines}
-                              currency={p.currency}
-                              cents={p.money_cents}
-                            />
-                            {a.lines.map((line) => (
-                              <Terms
-                                key={line.id}
-                                line={line}
-                                currency={p.currency}
-                              />
-                            ))}
-                            <p>
-                              {a.kind === "add" && a.first_charge
-                                ? `It will be charged to ${card}, starting with your next invoice on ${new Intl.DateTimeFormat(
-                                    "en-US",
-                                    {
-                                      dateStyle: "long",
-                                      timeZone: p.timezone,
-                                    },
-                                  ).format(new Date(a.first_charge * 1000))}.`
-                                : `It will be charged to ${card}. The first payment is taken as soon as you approve.`}{" "}
-                              Nothing is added or charged until you approve.
-                            </p>
-                            {preview ? null : (
-                              <Button
-                                variant="primary"
-                                busy={approving === a.id}
-                                disabled={!!approving}
-                                onClick={() => {
-                                  setApproving(a.id);
-                                  setCheckoutError("");
-                                  api(`/api/public/${token}/billing/approve`, {
-                                    method: "POST",
-                                    headers,
-                                    body: JSON.stringify({ approval_id: a.id }),
-                                  })
-                                    .then(() => load())
-                                    .catch((failure) =>
-                                      setCheckoutError(
-                                        failure instanceof Error
-                                          ? failure.message
-                                          : "Your approval wasn’t saved. Try again.",
-                                      ),
-                                    )
-                                    .finally(() => setApproving(""));
-                                }}
-                              >
-                                {`Approve and add — ${formatMoney(total, p.currency, p.money_cents)}/${per}`}
-                              </Button>
-                            )}
-                            <small>
-                              To use a different card, contact{" "}
-                              {contact.name || "the sender"}.
-                            </small>
-                          </section>
-                        );
-                      })}
-                      {checkout.length ? (
-                        checkout.map((session, index) => (
-                          <section
-                            className="flow-checkout-group"
-                            key={session.url || index}
-                          >
-                            <BillingItems
-                              lines={session.lines}
-                              currency={p.currency}
-                              cents={p.money_cents}
-                            />
-                            {session.lines.map((line) => (
-                              <Terms
-                                key={line.id}
-                                line={line}
-                                currency={p.currency}
-                              />
-                            ))}
-                            {session.mode === "setup" &&
-                              session.lines.length > 1 && (
-                                <BillingRecurringTotal
-                                  lines={session.lines}
-                                  currency={p.currency}
-                                  cents={p.money_cents}
-                                  setup
-                                />
-                              )}
-                            {session.mode === "setup" && (
-                              <p>
-                                {(session.collection_method ??
-                                  p.billing_collection_method) ===
-                                "send_invoice"
-                                  ? `Save a card for your ${session.lines.every((l) => l.interval === "year") ? "yearly" : "monthly"} subscription — no charge today; your first invoice will be emailed.`
-                                  : `Saving your card starts your subscription. Your first payment of ${formatMoney(
-                                      session.lines.reduce(
-                                        (sum, l) => sum + l.amount * l.qty,
-                                        0,
-                                      ),
-                                      p.currency,
-                                      p.money_cents,
-                                    )} is charged right away, then on the same date each ${session.lines.every((l) => l.interval === "year") ? "year" : "month"}.`}
-                              </p>
-                            )}
-                            {session.mode !== "setup" && (
-                              <p className="flow-payment-today">
-                                <strong>First payment today</strong>
-                                <span>
-                                  {formatMoney(
-                                    session.amount_due_today ??
-                                      session.lines.reduce(
-                                        (sum, l) => sum + l.amount * l.qty,
-                                        0,
-                                      ),
-                                    p.currency,
-                                    p.money_cents,
-                                  )}
-                                </span>
-                              </p>
-                            )}
-                            {session.lines.length ? (
-                              preview ? (
-                                <Button variant="primary" disabled>
-                                  {checkoutActionLabel(
-                                    session,
-                                    p.currency,
-                                    p.money_cents,
-                                    p.billing_collection_method,
-                                  )}
-                                </Button>
-                              ) : (
-                                <a
-                                  className="btn primary"
-                                  href={session.url}
-                                  aria-busy={opening === session.id}
-                                  onClick={(event) => {
-                                    // Ask for a live checkout page: the one
-                                    // made at signing may have expired.
-                                    if (!session.id) return;
-                                    event.preventDefault();
-                                    if (opening) return;
-                                    setOpening(session.id);
-                                    setCheckoutError("");
-                                    api<{ url: string }>(
-                                      `/api/public/${token}/checkout`,
-                                      {
-                                        method: "POST",
-                                        headers,
-                                        body: JSON.stringify({
-                                          session_id: session.id,
-                                        }),
-                                      },
-                                    )
-                                      .then(({ url }) =>
-                                        window.location.assign(url),
-                                      )
-                                      .catch((failure) => {
-                                        setOpening("");
-                                        setCheckoutError(
-                                          failure instanceof Error
-                                            ? failure.message
-                                            : "Secure checkout couldn’t open. Try again.",
-                                        );
-                                      });
-                                  }}
-                                >
-                                  {checkoutActionLabel(
-                                    session,
-                                    p.currency,
-                                    p.money_cents,
-                                    p.billing_collection_method,
-                                  )}
-                                </a>
-                              )
-                            ) : (
-                              <p role="status">
-                                The itemized checkout details are unavailable.
-                                Contact the sender before continuing.
-                              </p>
-                            )}
-                          </section>
-                        ))
-                      ) : approvals.length ? null : (
-                        <p role="status">
-                          Your secure checkout link is being prepared. Your
-                          signature is saved.
-                        </p>
-                      )}
-                      {existing.length > 0 && (
-                        <section className="flow-added-items">
-                          <h2>Added to your subscription</h2>
-                          <BillingItems
-                            lines={existing}
-                            currency={p.currency}
-                            cents={p.money_cents}
-                          />
-                          <BillingRecurringTotal
-                            lines={existing}
-                            currency={p.currency}
-                            cents={p.money_cents}
-                            added
-                          />
-                        </section>
-                      )}
-                      <SeparateInvoice
-                        proposal={p}
-                        lines={display?.oneTime ?? []}
-                      />
-                      <Button variant="ghost" onClick={() => go("done")}>
-                        I’ll do this later
-                      </Button>
-                      <small>
-                        We’ll email the same billing link so you can finish
-                        later.
-                      </small>
-                    </>
-                  ) : step !== "done" &&
-                    existing.length > 0 &&
-                    !requiresCheckout ? (
-                    <>
-                      <h1>Billing is already taken care of</h1>
-                      <p>
-                        These services were added to your existing subscription
-                        and will appear on your next invoice. No payment setup
-                        is needed here.
-                      </p>
-                      <h2>Added to your subscription</h2>
-                      <BillingItems
-                        lines={existing}
-                        currency={p.currency}
-                        cents={p.money_cents}
-                      />
-                      <BillingRecurringTotal
-                        lines={existing}
-                        currency={p.currency}
-                        cents={p.money_cents}
-                        added
-                      />
-                      <SeparateInvoice
-                        proposal={p}
-                        lines={display?.oneTime ?? []}
-                      />
-                      <Button variant="primary" onClick={() => go("done")}>
-                        Done
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      {confirmations.length > 0 && (
-                        <BillingConfirmationCard
-                          confirmations={confirmations}
-                          timezone={p.timezone}
-                          cents={p.money_cents}
-                        />
-                      )}
-                      <p className="flow-eyebrow">
-                        {p.status === "completed"
-                          ? "Both signatures complete"
-                          : "Signed by you · awaiting countersignature"}
-                      </p>
-                      <h1>
-                        {p.status === "completed"
-                          ? "Your completed copy"
-                          : `You’re all set${firstName ? `, ${firstName}` : ""}.`}
-                      </h1>
-                      <p>
-                        {p.status === "completed"
-                          ? "The final sealed copy will be emailed to you."
-                          : `${p.company.signatory_name || brand.name} will countersign, then we’ll email the final sealed copy.`}
-                      </p>
-                      <ol className="flow-checklist">
-                        <li>
-                          <Icon name="verified" />
-                          <div>
-                            You signed
-                            <small>
-                              {date(
-                                p.signers.find((s) => s.role === "client")
-                                  ?.signed_at,
-                              )}
-                            </small>
-                          </div>
-                        </li>
-                        <li>
-                          <Icon
-                            name={requiresCheckout ? "clock" : "verified"}
-                          />
-                          <div>
-                            {requiresCheckout
-                              ? "Billing still to finish"
-                              : billing.some(
-                                    (b) =>
-                                      b.status === "failed" ||
-                                      b.status === "needs_review",
-                                  )
-                                ? "Billing will be reviewed separately."
-                                : !recurring
-                                  ? "One-time items are invoiced separately"
-                                  : !billing.length ||
-                                      billing.some(
-                                        (b) => b.status !== "succeeded",
-                                      )
-                                    ? "Billing is being prepared."
-                                    : "Billing arranged"}
-                            {requiresCheckout && (
-                              <Button onClick={() => go("billing")}>
-                                Finish billing
-                              </Button>
-                            )}
-                            <small>
-                              One-time items are invoiced separately.
-                            </small>
-                          </div>
-                        </li>
-                        <li>
-                          <Icon
-                            name={
-                              p.status === "completed"
-                                ? "verified"
-                                : "signature"
-                            }
-                          />
-                          <div>
-                            {p.status === "completed"
-                              ? `${p.company.signatory_name || brand.name} countersigned`
-                              : `${p.company.signatory_name || brand.name} countersigns`}
-                            <small>
-                              For {brand.name}.{" "}
-                              {p.status !== "completed" &&
-                                "Nothing needed from you."}
-                            </small>
-                          </div>
-                        </li>
-                        <li>
-                          <Icon name="download" />
-                          <div>
-                            {p.files.some((f) => f.stage === "company")
-                              ? "Final sealed copy available"
-                              : "Final sealed copy will be emailed to you"}
-                          </div>
-                        </li>
-                      </ol>
-                    </>
-                  )}
-                  <div className="flow-copy-actions">
-                    {p.files.map((f) => (
-                      <Button
-                        key={f.id}
-                        icon="download"
-                        onClick={() => download(f.id)}
-                      >
-                        {f.stage === "company"
-                          ? "Download the final copy"
-                          : "Download your signed copy"}
-                      </Button>
-                    ))}
-                    {step === "done" && !p.files.length && (
-                      <p role="status">
-                        Your signature is saved. Your signed copy is being
-                        sealed and will arrive by email.
-                      </p>
-                    )}
-                    <Button
-                      variant="ghost"
-                      onClick={() => setShowCopy(!showCopy)}
-                    >
-                      {showCopy
-                        ? "Hide the signed proposal"
-                        : "View the signed proposal"}
-                    </Button>
-                  </div>
+                      ),
+                      bankState:
+                        bankState && !requiresCheckout ? bankState : undefined,
+                      returned: finishingReturn,
+                      returnConfirmed,
+                      returnTimedOut,
+                    })}
+                    preview={preview}
+                    firstName={firstName}
+                    email={p.recipient.email}
+                    timezone={p.timezone}
+                    currency={p.currency}
+                    cents={p.money_cents}
+                    studio={p.company.name || brand.name}
+                    contact={{
+                      name: contact.name ?? "",
+                      email: contact.email,
+                      phone: contact.phone,
+                    }}
+                    signedAt={
+                      p.signers.find((s) => s.role === "client")?.signed_at
+                    }
+                    countersignedAt={
+                      p.signers.find((s) => s.role === "company")?.signed_at
+                    }
+                    collection={
+                      p.billing_collection_method ?? "charge_automatically"
+                    }
+                    invoiceMethod={p.invoice_method}
+                    recurring={billingLines(
+                      (p.quote ?? []) as QuoteItem[],
+                    ).filter((l) => l.interval !== "one_time")}
+                    oneTime={display?.oneTime ?? []}
+                    sessions={checkout}
+                    approvals={approvals}
+                    confirmations={confirmations}
+                    added={existing}
+                    leftCheckout={checkoutLeft}
+                    checkoutError={checkoutError}
+                    opening={opening}
+                    approving={approving}
+                    files={p.files}
+                    showCopy={showCopy}
+                    onOpen={(session) => {
+                      // Ask for a live checkout page: the one made at
+                      // signing may have expired.
+                      setOpening(session.id!);
+                      setCheckoutError("");
+                      api<{ url: string }>(`/api/public/${token}/checkout`, {
+                        method: "POST",
+                        headers,
+                        body: JSON.stringify({ session_id: session.id }),
+                      })
+                        .then(({ url }) => window.location.assign(url))
+                        .catch((failure) => {
+                          setOpening("");
+                          setCheckoutError(
+                            failure instanceof Error
+                              ? failure.message
+                              : "Secure checkout couldn’t open. Try again.",
+                          );
+                        });
+                    }}
+                    onApprove={(a) => {
+                      setApproving(a.id);
+                      setCheckoutError("");
+                      api(`/api/public/${token}/billing/approve`, {
+                        method: "POST",
+                        headers,
+                        body: JSON.stringify({ approval_id: a.id }),
+                      })
+                        .then(() => load())
+                        .catch((failure) =>
+                          setCheckoutError(
+                            failure instanceof Error
+                              ? failure.message
+                              : "Your approval wasn’t saved. Try again.",
+                          ),
+                        )
+                        .finally(() => setApproving(""));
+                    }}
+                    onLater={() => go("done")}
+                    onFinishBilling={() => go("billing")}
+                    onCheckAgain={() => {
+                      setReturnTimedOut(false);
+                      setPollCycle((c) => c + 1);
+                    }}
+                    onDownload={(id) => download(id)}
+                    onToggleCopy={() => setShowCopy(!showCopy)}
+                  />
                 </div>
                 {showCopy && (
                   <FlowDocument
@@ -1930,25 +1531,46 @@ export function FlowTotals({ proposal: p }: { proposal: PublicProposal }) {
 function FlowProgress({
   step,
   billing,
+  billed = false,
   className,
   onReview,
 }: {
   step: "read" | "sign" | "billing" | "done";
   billing: boolean;
+  /** Billing is confirmed: every step is finished. */
+  billed?: boolean;
   className?: string;
   /** While signing, the Review step goes back to the proposal. */
   onReview?: () => void;
 }) {
-  const current = { read: 0, sign: 1, billing: 2, done: 3 }[step];
+  const labels = ["Review", "Sign", ...(billing ? ["Billing"] : [])];
+  // After signing, the last step is current until billing is confirmed.
+  const current = billed
+    ? labels.length
+    : Math.min({ read: 0, sign: 1, billing: 2, done: 2 }[step], labels.length);
   return (
     <nav className={className} aria-label="Proposal progress">
       <ol className="flow-progress">
-        {["Review", "Sign", ...(billing ? ["Billing"] : [])].map((label, i) => (
+        {labels.map((label, i) => (
           <li
             key={label}
             aria-current={i === current ? "step" : undefined}
-            className={i <= current ? "reached" : undefined}
+            className={
+              i < current
+                ? "reached finished"
+                : i === current
+                  ? "reached"
+                  : undefined
+            }
           >
+            {i < current && (
+              <Check
+                className="flow-progress-check"
+                size={12}
+                strokeWidth={3}
+                aria-hidden="true"
+              />
+            )}
             {i === 0 && onReview ? (
               <button
                 type="button"
@@ -1960,6 +1582,7 @@ function FlowProgress({
             ) : (
               label
             )}
+            {i < current && <span className="sr-only"> (done)</span>}
           </li>
         ))}
       </ol>
@@ -2110,25 +1733,6 @@ function Contact({
       )}
     </footer>
   );
-}
-function SeparateInvoice({
-  proposal: p,
-  lines,
-}: {
-  proposal: PublicProposal;
-  lines: BillingLine[];
-}) {
-  return lines.length ? (
-    <section className="flow-separate-invoice">
-      <h2>Invoiced separately</h2>
-      <BillingItems lines={lines} currency={p.currency} cents={p.money_cents} />
-      <p>
-        {p.invoice_method === "quickbooks"
-          ? quickBooksInvoiceTiming
-          : "We'll send you an invoice for these one-time fees."}
-      </p>
-    </section>
-  ) : null;
 }
 function FlowDocument(props: {
   logo?: string;

@@ -44,9 +44,9 @@ test("Payment methods autosave for Super admins and are read-only for Staff, at 
   await shot(page, "billing-card-1440");
   await input.selectOption("card_ach");
   await expect.poll(() => f.settings.payment_methods).toBe("card_ach");
-  await expect(
-    page.locator(".workspace-section [role=status]"),
-  ).toHaveText("Saved");
+  await expect(page.locator(".workspace-section [role=status]")).toHaveText(
+    "Saved",
+  );
   await shot(page, "billing-ach-1440");
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.reload();
@@ -88,21 +88,24 @@ test("client return shows ACH processing or failure without claiming subscriptio
   );
   await page.goto(`/p/${f.p.token}?billing=returned&session_id=${f.id}`);
   await expect(
-    page.getByRole("heading", { name: "Bank payment processing", exact: true }),
+    page.getByRole("heading", {
+      name: "Your bank payment is processing",
+      exact: true,
+    }),
   ).toBeVisible();
   await expect(page.getByText(/few business days to clear/)).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Billing setup complete" }),
+    page.getByRole("heading", { name: /billing is set up/ }),
   ).toHaveCount(0);
   await expect(
-    page.getByRole("link", { name: /Continue to secure/ }),
+    page.getByRole("link", { name: /Continue to secure|Save a card/ }),
   ).toHaveCount(0);
   await mutate(f.repo, f.p.id, (p) => {
     (p.billing_links[0].metadata!.bank_payments as any)[f.id].state = "failed";
   });
   await page.reload();
   await expect(
-    page.getByRole("heading", { name: "Bank payment failed", exact: true }),
+    page.getByRole("heading", { name: "Try another way to pay", exact: true }),
   ).toBeVisible();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });

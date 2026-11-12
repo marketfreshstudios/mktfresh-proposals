@@ -256,10 +256,7 @@ test("full headless flow through the client interface, both PDFs, billing, downl
   await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: "Sign proposal" }).click();
   await expect(
-    page.getByText(
-      "Your proposal is signed. Your copy will be sent to jane@example.test.",
-      { exact: true },
-    ),
+    page.getByText(/^Signed\. Thank you|^You’re all set/).first(),
   ).toBeVisible();
   await expect
     .poll(async () => {

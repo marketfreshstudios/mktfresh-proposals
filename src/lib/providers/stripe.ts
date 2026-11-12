@@ -311,7 +311,7 @@ export class StripeProvider implements BillingProvider {
         group
           .map(
             (l) =>
-              `${names.get(l.id) || l.name} · ${formatMoney(l.amount * l.qty, currency)}/${l.interval === "year" ? "year" : "month"}`,
+              `${names.get(l.id) || l.name} | ${formatMoney(l.amount * l.qty, currency)}/${l.interval === "year" ? "year" : "month"}`,
           )
           .join("; ") +
         // Say plainly when saving the card starts the charge (scheduled plans

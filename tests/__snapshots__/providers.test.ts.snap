@@ -6,7 +6,7 @@ exports[`Checkout permits only the configured methods in subscription, invoice-s
   "currency": "usd",
   "custom_text": {
     "submit": {
-      "message": "Plan · $25/month. Saving your card charges nothing today. Your subscription starts after you save it, and your first invoice is emailed.",
+      "message": "Plan | $25/month. Saving your card charges nothing today. Your subscription starts after you save it, and your first invoice is emailed.",
     },
   },
   "customer": "cus_test",
@@ -26,7 +26,7 @@ exports[`Checkout permits only the configured methods in subscription, invoice-s
   "currency": "usd",
   "custom_text": {
     "submit": {
-      "message": "Plan · $25/month. Saving your card starts your subscription, and the first payment of $25 is charged right away.",
+      "message": "Plan | $25/month. Saving your card starts your subscription, and the first payment of $25 is charged right away.",
     },
   },
   "customer": "cus_test",
