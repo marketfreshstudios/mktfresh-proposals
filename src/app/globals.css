@@ -1395,7 +1395,7 @@ select:hover:not(:disabled),
   height: 45px;
   border-bottom: 1px solid var(--paper-border);
 }
-.contract-editor details {
+.contract-editor :is(details, .editor-clause) {
   margin: 12px 0;
   border-top: 1px solid var(--border);
   padding-top: 10px;

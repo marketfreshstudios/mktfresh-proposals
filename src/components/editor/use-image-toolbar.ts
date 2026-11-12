@@ -74,6 +74,8 @@ export function useImageToolbar(
             : root.dataset.imageKind
               ? 24
               : 14,
+        // An image or cover line's bar never floats over other content.
+        hideWhenClipped: true,
         ...options,
       });
     };

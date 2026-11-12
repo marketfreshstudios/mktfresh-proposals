@@ -2470,18 +2470,17 @@ function QuoteEditorContent({
                           </>
                         }
                       >
-                        <details open={panels.printMode || undefined}>
-                          <Disclosure>
-                            <h3 data-terms-heading={c.id}>
-                              <HeadingTokens text={c.heading} map={map} />
-                            </h3>
-                          </Disclosure>
+                        {/* Terms are never collapsible. */}
+                        <div className="editor-clause">
+                          <h3 data-terms-heading={c.id}>
+                            <HeadingTokens text={c.heading} map={map} />
+                          </h3>
                           <SourceParagraph
                             text={c.body}
                             map={map}
                             boldRunIns={finalOiotClause(c)}
                           />
-                        </details>
+                        </div>
                       </BlockFrame>
                     </Sortable>
                   ) : null,

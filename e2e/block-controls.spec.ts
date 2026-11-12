@@ -322,9 +322,11 @@ test("block controls own one block and never move document content on hover, foc
           ).hover();
           await shot(`${editor}-before`, width, theme);
           if (editor === "proposal") {
-            const clause = page.locator(".contract-editor details").first();
+            const clause = page
+              .locator(".contract-editor .editor-clause")
+              .first();
             await showBlock(clause, width, editor);
-            await clause.locator("summary").click();
+            await clause.locator("h3").click();
             await clause.hover();
           } else
             await page.locator(".contract-clause-list button").first().hover();

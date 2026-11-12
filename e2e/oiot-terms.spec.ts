@@ -188,13 +188,9 @@ test("staff enters both amounts, client chooses the plan and the full bold terms
   });
   await defaultPlan.check();
   const clause = page
-    .locator(".contract-editor details")
+    .locator(".contract-editor .editor-clause")
     .filter({ hasText: "4.4 Own It Over Time" });
   await expect(clause).toBeVisible();
-  if (
-    !(await clause.evaluate((details) => (details as HTMLDetailsElement).open))
-  )
-    await clause.locator("summary").click();
   await expect(clause.locator('[data-field="oiot.kickoff"]')).toHaveText(
     "$1,500",
   );
@@ -203,7 +199,7 @@ test("staff enters both amounts, client chooses the plan and the full bold terms
   );
   await expectRunIns(clause);
   if (captureRunIns) {
-    await clause.locator("summary").evaluate((el) => {
+    await clause.locator("h3").evaluate((el) => {
       el.scrollIntoView({ block: "start" });
       el.closest(".editor-document-region")?.scrollBy(0, -190);
     });
@@ -411,9 +407,9 @@ test("template canvas and clause settings edit bold run-ins without exposing del
   // The proposal's edit sheet uses the same marked field as the template.
   await page.goto(`/proposals/${draft.id}`);
   const contract = page
-    .locator(".contract-editor details")
+    .locator(".contract-editor .editor-clause")
     .filter({ hasText: "4.4 Own It Over Time" });
-  const summary = contract.locator("summary");
+  const summary = contract.locator("h3");
   await expect(summary).toBeVisible();
   await summary.click();
   const clauseFrame = page.getByRole("group", {

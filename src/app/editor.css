@@ -161,7 +161,7 @@
   padding: 0;
   border: 0;
 }
-.document-reading .contract-editor details {
+.document-reading .contract-editor :is(details, .editor-clause) {
   border: 0;
   border-bottom: 1px solid var(--paper-border);
   padding: 12px 0;
@@ -522,7 +522,7 @@
 .document-reading .draft-block[data-ai="true"]::before {
   display: none;
 }
-.document-reading .contract-editor details {
+.document-reading .contract-editor :is(details, .editor-clause) {
   border: 0;
   border-top: 1px solid var(--paper-border);
   padding: 16px 0;
@@ -1665,7 +1665,10 @@
   font: 12px/1.5 var(--font-ui);
   color: var(--ink-muted);
 }
-.pdf-width-editor .document-reading .contract-editor details {
+.pdf-width-editor
+  .document-reading
+  .contract-editor
+  :is(details, .editor-clause) {
   border: 0;
   padding: 0;
 }
