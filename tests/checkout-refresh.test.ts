@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { setup, staff, signature, clientActor } from "./helpers";
-import { approveBilling, freshCheckoutUrl } from "../src/lib/checkout-refresh";
+import {
+  approveBilling,
+  confirmCheckout,
+  freshCheckoutUrl,
+  openCheckouts,
+} from "../src/lib/checkout-refresh";
 import { NeedsReview } from "../src/lib/billing";
 import { billingLines } from "../src/lib/quote-model";
 import type { StripeProvider } from "../src/lib/providers/stripe";
@@ -234,5 +239,69 @@ describe("client approval for an existing subscription", () => {
     const saved = (await repo.get(signed.id))!;
     expect(saved.billing_links[0].status).toBe("needs_review");
     expect(saved.billing_links[0].last_error).toMatch(/card on file changed/);
+  });
+});
+
+describe("confirming a finished Checkout without the webhook", () => {
+  const stripeWith = (session: Record<string, unknown>) =>
+    ({
+      api: { get: async () => session },
+    }) as unknown as StripeProvider;
+  it("queues the same processing job the webhook would, once", async () => {
+    const { repo, signed } = await signedWithCheckout();
+    expect(openCheckouts(signed)).toEqual(["cs_old"]);
+    const provider = stripeWith({
+      status: "complete",
+      livemode: false,
+      metadata: { proposal_id: signed.id },
+    });
+    expect(await confirmCheckout(repo, provider, signed, "cs_old")).toBe(true);
+    const queued = (await repo.get(signed.id))!;
+    const jobs = queued.jobs.filter((j) => j.kind === "stripe_webhook");
+    expect(jobs).toHaveLength(1);
+    expect(jobs[0].payload.event).toEqual({
+      id: "return_cs_old",
+      type: "checkout.session.completed",
+      data: { object: { id: "cs_old" } },
+    });
+    // Asking again (page reload, hourly check) adds nothing.
+    expect(await confirmCheckout(repo, provider, queued, "cs_old")).toBe(true);
+    expect(
+      (await repo.get(signed.id))!.jobs.filter(
+        (j) => j.kind === "stripe_webhook",
+      ),
+    ).toHaveLength(1);
+  });
+  it("does nothing for unfinished, foreign or unknown sessions", async () => {
+    const { repo, signed } = await signedWithCheckout();
+    for (const session of [
+      { status: "open", livemode: false, metadata: { proposal_id: signed.id } },
+      {
+        status: "complete",
+        livemode: true,
+        metadata: { proposal_id: signed.id },
+      },
+      {
+        status: "complete",
+        livemode: false,
+        metadata: { proposal_id: "other" },
+      },
+    ])
+      expect(
+        await confirmCheckout(repo, stripeWith(session), signed, "cs_old"),
+      ).toBe(false);
+    expect(
+      await confirmCheckout(
+        repo,
+        stripeWith({ status: "complete", livemode: false }),
+        signed,
+        "cs_unknown",
+      ),
+    ).toBe(false);
+    expect(
+      (await repo.get(signed.id))!.jobs.some(
+        (j) => j.kind === "stripe_webhook",
+      ),
+    ).toBe(false);
   });
 });

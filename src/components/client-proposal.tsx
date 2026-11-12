@@ -423,6 +423,45 @@ function NewClientFlow({
     pollCycle,
   ]);
 
+  // Back from Stripe: ask the server to confirm with Stripe directly, so
+  // setup finishes even if Stripe's webhook is slow or never arrives.
+  const confirmAsked = useRef("");
+  useEffect(() => {
+    if (
+      preview ||
+      !signed ||
+      !checkoutReturned ||
+      !returnSession ||
+      returnConfirmed ||
+      confirmAsked.current === returnSession
+    )
+      return;
+    confirmAsked.current = returnSession;
+    let cancelled = false;
+    const ask = (retry: boolean) =>
+      api<{ confirmed: boolean }>(`/api/public/${token}/checkout/confirm`, {
+        method: "POST",
+        headers: { ...headers, "content-type": "application/json" },
+        body: JSON.stringify({ session_id: returnSession }),
+      })
+        .then((r) => {
+          if (!r.confirmed && retry && !cancelled)
+            setTimeout(() => void ask(false), 4000);
+        })
+        .catch(() => {});
+    void ask(true);
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    preview,
+    signed,
+    checkoutReturned,
+    returnSession,
+    returnConfirmed,
+    token,
+  ]);
+
   useEffect(() => {
     if (p?.title) document.title = p.title;
   }, [p?.title]);
@@ -582,9 +621,7 @@ function NewClientFlow({
       link.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch {
-      setError(
-        "Your signature is safe. We couldn’t download the copy. Please try again.",
-      );
+      setError("We couldn’t download the copy. Please try again.");
     }
   }
   const hasContract = p?.content.some(
@@ -1029,7 +1066,7 @@ function NewClientFlow({
                       <p role="status">
                         {returnTimedOut
                           ? "This can take a minute. We'll email you when it's done."
-                          : "We’re checking the confirmation from Stripe. Your signature is safe."}
+                          : "We’re checking the confirmation from Stripe."}
                       </p>
                       {confirmations.length > 0 && (
                         <BillingConfirmationCard
@@ -1092,13 +1129,18 @@ function NewClientFlow({
                           {`${checkoutError} You can also contact ${contact.name || "the sender"} for help.`}
                         </Banner>
                       )}
-                      <BillingRecurringTotal
-                        lines={checkout
-                          .filter((s) => s.mode !== "setup")
-                          .flatMap((s) => s.lines)}
-                        currency={p.currency}
-                        cents={p.money_cents}
-                      />
+                      {/* A total only helps when it adds up more than one line. */}
+                      {checkout
+                        .filter((s) => s.mode !== "setup")
+                        .flatMap((s) => s.lines).length > 1 && (
+                        <BillingRecurringTotal
+                          lines={checkout
+                            .filter((s) => s.mode !== "setup")
+                            .flatMap((s) => s.lines)}
+                          currency={p.currency}
+                          cents={p.money_cents}
+                        />
+                      )}
                       {billing.some(
                         (b) =>
                           b.status === "failed" || b.status === "needs_review",
@@ -1206,14 +1248,15 @@ function NewClientFlow({
                                 currency={p.currency}
                               />
                             ))}
-                            {session.mode === "setup" && (
-                              <BillingRecurringTotal
-                                lines={session.lines}
-                                currency={p.currency}
-                                cents={p.money_cents}
-                                setup
-                              />
-                            )}
+                            {session.mode === "setup" &&
+                              session.lines.length > 1 && (
+                                <BillingRecurringTotal
+                                  lines={session.lines}
+                                  currency={p.currency}
+                                  cents={p.money_cents}
+                                  setup
+                                />
+                              )}
                             {session.mode === "setup" && (
                               <p>
                                 {(session.collection_method ??
@@ -1421,14 +1464,14 @@ function NewClientFlow({
                                       b.status === "failed" ||
                                       b.status === "needs_review",
                                   )
-                                ? "Billing will be reviewed separately. Your signature is safe."
+                                ? "Billing will be reviewed separately."
                                 : !recurring
                                   ? "One-time items are invoiced separately"
                                   : !billing.length ||
                                       billing.some(
                                         (b) => b.status !== "succeeded",
                                       )
-                                    ? "Billing is being prepared. Your signature is safe."
+                                    ? "Billing is being prepared."
                                     : "Billing arranged"}
                             {requiresCheckout && (
                               <Button onClick={() => go("billing")}>
