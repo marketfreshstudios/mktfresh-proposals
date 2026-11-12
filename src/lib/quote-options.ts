@@ -72,9 +72,7 @@ export function missingChoiceGroups(quote: Quote) {
     const options = group.filter(
       (item) => shown.has(item.id) && !item.choice_group_placeholder,
     );
-    return choiceRequired(group[0]) &&
-      options.length &&
-      !options.some(selected)
+    return choiceRequired(group[0]) && options.length && !options.some(selected)
       ? [options]
       : [];
   });
