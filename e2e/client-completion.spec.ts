@@ -423,7 +423,7 @@ test("client completion: exact charges, one contact footer, reading width, email
       await open(setupOnly);
       await expect(
         page.getByText(
-          /No charge is taken in this card-saving step|no charge today; your first invoice will be emailed/,
+          /is charged right away, then on the same date each month|no charge today; your first invoice will be emailed/,
         ),
       ).toBeVisible();
       await expect(
@@ -433,7 +433,9 @@ test("client completion: exact charges, one contact footer, reading width, email
         page.getByText("Monthly total today", { exact: true }),
       ).toHaveCount(0);
       await expect(
-        page.getByRole("link", { name: /Continue to secure card setup/ }),
+        page.getByRole("link", {
+          name: /Continue to secure card setup — no charge today|Continue to secure checkout — \$/,
+        }),
       ).toBeVisible();
       await capture("card-setup-explanation", "1e", width, theme, true);
       await open(finished);

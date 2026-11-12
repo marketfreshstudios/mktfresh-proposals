@@ -189,6 +189,8 @@ export function checkoutActionLabel(
   collection?: string,
 ) {
   return session.mode === "setup"
-    ? `Continue to secure card setup${(session.collection_method ?? collection) === "send_invoice" ? " — no charge today" : ""}`
+    ? (session.collection_method ?? collection) === "send_invoice"
+      ? "Continue to secure card setup — no charge today"
+      : `Continue to secure checkout — ${checkoutAmount(session.lines, currency, cents)}`
     : `Continue to secure checkout — ${checkoutAmount(session.lines, currency, cents)}`;
 }
