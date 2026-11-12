@@ -418,6 +418,64 @@ test("client completion: exact charges, one contact footer, reading width, email
         page.getByRole("link", { name: /Continue to secure checkout/ }),
       ).toHaveCount(0);
       await capture("existing-subscriber", "1f", width, theme, true);
+      // A client who already pays a subscription approves the add first.
+      const approving = structuredClone(accepted);
+      approving.billing = [
+        {
+          status: "succeeded",
+          requires_checkout: true,
+          checkout: [],
+          added_existing: [],
+          approval: [
+            {
+              id: "approve:month",
+              kind: "add",
+              card: { brand: "visa", last4: "4242" },
+              line_ids: [line(monthly)],
+              items: [{ line_id: line(monthly), name: monthly.name }],
+              interval: "month",
+              first_charge: 1_900_000_000,
+            },
+          ],
+        },
+      ];
+      await open(approving);
+      await expect(
+        page.getByRole("heading", {
+          name: "Approve your new services",
+          exact: true,
+        }),
+      ).toBeVisible();
+      await expect(
+        page.getByText(
+          /charged to your Visa ending in 4242, starting with your next invoice/,
+        ),
+      ).toBeVisible();
+      await expect(
+        page.getByText(/Nothing is added or charged until you approve\./),
+      ).toBeVisible();
+      const approve = page.getByRole("button", {
+        name: /^Approve and add — \$/,
+      });
+      await expect(approve).toBeVisible();
+      await capture("existing-subscriber-approval", "1f", width, theme, true);
+      if (width === 1440 && theme === "light") {
+        let approved = "";
+        await page.route("**/api/public/*/billing/approve", async (route) => {
+          approved = route.request().postDataJSON().approval_id;
+          current = structuredClone(existing);
+          await route.fulfill({ json: { approved: true } });
+        });
+        await approve.click();
+        await expect(
+          page.getByRole("heading", {
+            name: "Added to your subscription",
+            exact: true,
+          }),
+        ).toBeVisible();
+        expect(approved).toBe("approve:month");
+        await page.unroute("**/api/public/*/billing/approve");
+      }
       const setupOnly = structuredClone(monthlyOnly);
       setupOnly.billing = [checkout([monthly], "setup")];
       await open(setupOnly);

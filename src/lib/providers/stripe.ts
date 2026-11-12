@@ -38,17 +38,35 @@ type Subscription = {
     data: {
       id: string;
       quantity: number;
+      metadata?: Record<string, string>;
       price: {
         id: string;
         unit_amount: number;
         lookup_key: string | null;
         recurring: { interval: string };
         currency: string;
+        product?: string | { id: string };
       };
     }[];
   };
   metadata: Record<string, string>;
 };
+/** Recurring lines that would join a subscription the client already pays.
+ * Nothing is added or charged until the client approves on the proposal. */
+export type BillingApproval = {
+  id: string;
+  kind: "add" | "own";
+  subscription_id: string | null;
+  payment_method: string;
+  card: { brand: string; last4: string } | null;
+  line_ids: string[];
+  items: { line_id: string; name: string }[];
+  interval: "month" | "year";
+  /** Unix seconds of the first charge: the next invoice, or now for "own". */
+  first_charge: number | null;
+};
+const productOf = (price: { product?: string | { id: string } }) =>
+  typeof price.product === "string" ? price.product : price.product?.id;
 const customer = (c: StripeCustomer): Customer => ({
   id: c.id,
   email: c.email ?? "",
@@ -163,6 +181,52 @@ export class StripeProvider implements BillingProvider {
       quantity: line.qty,
     };
   }
+  /** The Stripe product a line bills under (catalog price or billing category). */
+  private async productId(line: BillingLine) {
+    if (line.stripe_lookup_key)
+      return (await resolveLookup(this.api, line.stripe_lookup_key)).product.id;
+    return (
+      await this.repo.entities<{
+        id: string;
+        stripe_product_id: string;
+        active: boolean;
+      }>("custom_families")
+    ).find((f) => f.id === line.custom_family_id)?.stripe_product_id;
+  }
+  /** Never bill a product the client already pays for in an active subscription. */
+  private async rejectDuplicates(
+    lines: BillingLine[],
+    active: Subscription[],
+    proposal: string,
+  ) {
+    // Items this proposal already created (a retried job or approval) are not
+    // duplicates of themselves.
+    const owned = new Set(
+      active
+        .filter((sub) => sub.metadata?.proposal_id !== proposal)
+        .flatMap((sub) =>
+          sub.items.data
+            .filter((i) => i.metadata?.proposal_id !== proposal)
+            .map((i) => productOf(i.price))
+            .filter(Boolean),
+        ),
+    );
+    for (const line of lines) {
+      const product = await this.productId(line);
+      if (product && owned.has(product))
+        throw new NeedsReview(
+          `${line.name}: this client already has an active subscription for this product. Review it before billing so they aren't charged twice.`,
+        );
+    }
+  }
+  private async cardOf(id: string) {
+    const pm = await this.api.get<{
+      card?: { brand: string; last4: string };
+    }>(`/v1/payment_methods/${id}`, {});
+    return pm.card && /^\d{4}$/.test(pm.card.last4)
+      ? { brand: String(pm.card.brand), last4: pm.card.last4 }
+      : null;
+  }
   private plan(line: BillingLine) {
     return line.stripe_lookup_key ?? `custom:${line.custom_family_id}`;
   }
@@ -236,6 +300,11 @@ export class StripeProvider implements BillingProvider {
       check(page.data.length, "Empty Stripe subscription page");
       cursor = page.data.at(-1)!.id;
     } while (true);
+    await this.rejectDuplicates(
+      lines.filter((l) => l.interval !== "one_time"),
+      all,
+      proposal,
+    );
     const names = new Map<string, string>();
     const displayItems = (group: BillingLine[]) =>
       group.map((l) => ({ line_id: l.id, name: names.get(l.id) || l.name }));
@@ -278,6 +347,7 @@ export class StripeProvider implements BillingProvider {
       monthly_total: number;
       yearly_total: number;
     }[] = [];
+    const approval: BillingApproval[] = [];
     const ordinary = lines.filter((l) => !l.schedule);
     // Mixed intervals are separate Checkout sessions to avoid interval conversion.
     for (const interval of ["month", "year"] as const) {
@@ -299,62 +369,18 @@ export class StripeProvider implements BillingProvider {
         group.map((l) => this.item(l, currency, names)),
       );
       if (existing) {
-        const priorPlan = existing.metadata.plan;
-        const priorKeys =
-          priorPlan === "multi"
-            ? (existing.metadata.plan_items ?? "")
-                .split(",")
-                .map((k) => k.trim())
-                .filter(Boolean)
-            : priorPlan
-              ? [priorPlan]
-              : [];
-        const keys = [
-          ...new Set([
-            ...priorKeys,
-            ...existing.items.data
-              .map((i) => i.price.lookup_key)
-              .filter((k): k is string => !!k),
-            ...group.map((l) => this.plan(l)),
-          ]),
-        ].filter((k) => k !== "multi");
-        for (let i = 0; i < group.length; i++)
-          await this.api.post(
-            "/v1/subscription_items",
-            {
-              subscription: existing.id,
-              ...items[i],
-              proration_behavior: "none",
-              metadata: { proposal_id: proposal, line_id: group[i].id },
-            },
-            key + ":add:" + group[i].id,
-          );
-        await this.api.post(
-          `/v1/subscriptions/${existing.id}`,
-          {
-            metadata: {
-              plan: keys.length > 1 ? "multi" : keys[0],
-              plan_items: keys.join(","),
-            },
-          },
-          key + ":metadata:" + interval,
-        );
-        // Query after writes rather than adding to a potentially stale pre-write total on retry.
-        const current = await this.api.get<Subscription>(
-          `/v1/subscriptions/${existing.id}`,
-          {},
-        );
-        const total = current.items.data
-          .filter((i) => i.price.recurring.interval === "month")
-          .reduce((sum, i) => sum + i.price.unit_amount * i.quantity, 0);
-        added.push({
-          id: existing.id,
+        const pm = (existing.default_payment_method ??
+          sc.invoice_settings?.default_payment_method)!;
+        approval.push({
+          id: `approve:${interval}`,
+          kind: "add",
+          subscription_id: existing.id,
+          payment_method: pm,
+          card: await this.cardOf(pm),
           line_ids: group.map((l) => l.id),
           items: displayItems(group),
-          monthly_total: total,
-          yearly_total: current.items.data
-            .filter((i) => i.price.recurring.interval === "year")
-            .reduce((sum, i) => sum + i.price.unit_amount * i.quantity, 0),
+          interval,
+          first_charge: existing.current_period_end ?? null,
         });
       } else {
         const session = await this.api.post<{
@@ -425,20 +451,18 @@ export class StripeProvider implements BillingProvider {
           sc.invoice_settings?.default_payment_method,
       );
       if (usable && (await this.workingCard(usable, sc))) {
-        const subscriptions = await this.finishSetup(
-          c.id,
-          [line],
-          usable.default_payment_method ??
-            sc.invoice_settings!.default_payment_method!,
-          key + ":own:" + line.id,
-          { ...metadata, collection_method: settings.collection_method },
-        );
-        added.push({
-          id: subscriptions[0],
+        const pm = (usable.default_payment_method ??
+          sc.invoice_settings!.default_payment_method)!;
+        approval.push({
+          id: `approve:${line.id}`,
+          kind: "own",
+          subscription_id: null,
+          payment_method: pm,
+          card: await this.cardOf(pm),
           line_ids: [line.id],
           items: displayItems([line]),
-          monthly_total: line.interval === "month" ? line.amount * line.qty : 0,
-          yearly_total: line.interval === "year" ? line.amount * line.qty : 0,
+          interval: line.interval === "year" ? "year" : "month",
+          first_charge: null,
         });
         continue;
       }
@@ -483,14 +507,161 @@ export class StripeProvider implements BillingProvider {
       });
     }
     return {
-      id: added[0]?.id ?? checkout[0]?.id,
+      id: added[0]?.id ?? checkout[0]?.id ?? approval[0]?.id,
       metadata: {
         ...metadata,
         added_existing: added,
         checkout,
-        requires_checkout: checkout.length > 0,
+        approval,
+        requires_checkout: checkout.length > 0 || approval.length > 0,
       },
     };
+  }
+  /**
+   * Carries out an approval the client gave on the proposal: adds the lines to
+   * the subscription they already pay, or starts a scheduled plan on their card
+   * on file. Everything is re-checked first, because the subscription or card
+   * may have changed since signing.
+   */
+  async applyApproval(
+    c: Customer,
+    lines: BillingLine[],
+    approval: BillingApproval,
+    key: string,
+    metadata: Record<string, unknown>,
+  ) {
+    const settings = (
+      await this.repo.entities<WorkspaceSettings>("workspace_settings")
+    )[0];
+    check(settings, "Workspace settings required");
+    const currency = String(metadata.currency),
+      proposal = String(metadata.proposal_id);
+    const sc = await this.api.get<StripeCustomer>(`/v1/customers/${c.id}`, {});
+    const all: Subscription[] = [];
+    let cursor = "";
+    do {
+      const page = await this.api.get<StripePage<Subscription>>(
+        "/v1/subscriptions",
+        {
+          customer: c.id,
+          status: "active",
+          limit: "100",
+          ...(cursor ? { starting_after: cursor } : {}),
+        },
+      );
+      all.push(...page.data);
+      if (!page.has_more) break;
+      check(page.data.length, "Empty Stripe subscription page");
+      cursor = page.data.at(-1)!.id;
+    } while (true);
+    await this.rejectDuplicates(lines, all, proposal);
+    const names = new Map<string, string>();
+    const displayItems = (group: BillingLine[]) =>
+      group.map((l) => ({ line_id: l.id, name: names.get(l.id) || l.name }));
+    if (approval.kind === "own") {
+      const line = lines[0];
+      check(line?.schedule, "Scheduled plan required");
+      await this.item(line, currency, names);
+      const usable = all.find(
+        (s) =>
+          (s.default_payment_method ??
+            sc.invoice_settings?.default_payment_method) ===
+          approval.payment_method,
+      );
+      if (!usable || !(await this.workingCard(usable, sc)))
+        throw new NeedsReview(
+          "The card on file changed; the client needs to check out instead",
+        );
+      const subscriptions = await this.finishSetup(
+        c.id,
+        [line],
+        approval.payment_method,
+        key + ":own:" + line.id,
+        { ...metadata, collection_method: settings.collection_method },
+      );
+      return {
+        id: subscriptions[0],
+        line_ids: [line.id],
+        items: displayItems([line]),
+        monthly_total: line.interval === "month" ? line.amount * line.qty : 0,
+        yearly_total: line.interval === "year" ? line.amount * line.qty : 0,
+      };
+    }
+    const existing = all.find((s) => s.id === approval.subscription_id);
+    if (!existing || !(await this.workingCard(existing, sc)))
+      throw new NeedsReview(
+        "The subscription or card on file changed; the client needs to check out instead",
+      );
+    const group = lines;
+    const interval = approval.interval;
+    const items = await Promise.all(
+      group.map((l) => this.item(l, currency, names)),
+    );
+    const added: {
+      id: string;
+      line_ids: string[];
+      items: { line_id: string; name: string }[];
+      monthly_total: number;
+      yearly_total: number;
+    }[] = [];
+    const priorPlan = existing.metadata.plan;
+    const priorKeys =
+      priorPlan === "multi"
+        ? (existing.metadata.plan_items ?? "")
+            .split(",")
+            .map((k) => k.trim())
+            .filter(Boolean)
+        : priorPlan
+          ? [priorPlan]
+          : [];
+    const keys = [
+      ...new Set([
+        ...priorKeys,
+        ...existing.items.data
+          .map((i) => i.price.lookup_key)
+          .filter((k): k is string => !!k),
+        ...group.map((l) => this.plan(l)),
+      ]),
+    ].filter((k) => k !== "multi");
+    for (let i = 0; i < group.length; i++)
+      await this.api.post(
+        "/v1/subscription_items",
+        {
+          subscription: existing.id,
+          ...items[i],
+          proration_behavior: "none",
+          metadata: { proposal_id: proposal, line_id: group[i].id },
+        },
+        key + ":add:" + group[i].id,
+      );
+    await this.api.post(
+      `/v1/subscriptions/${existing.id}`,
+      {
+        metadata: {
+          plan: keys.length > 1 ? "multi" : keys[0],
+          plan_items: keys.join(","),
+        },
+      },
+      key + ":metadata:" + interval,
+    );
+    // Query after writes rather than adding to a potentially stale pre-write total on retry.
+    const current = await this.api.get<Subscription>(
+      `/v1/subscriptions/${existing.id}`,
+      {},
+    );
+    const total = current.items.data
+      .filter((i) => i.price.recurring.interval === "month")
+      .reduce((sum, i) => sum + i.price.unit_amount * i.quantity, 0);
+    added.push({
+      id: existing.id,
+      line_ids: group.map((l) => l.id),
+      items: displayItems(group),
+      monthly_total: total,
+      yearly_total: current.items.data
+        .filter((i) => i.price.recurring.interval === "year")
+        .reduce((sum, i) => sum + i.price.unit_amount * i.quantity, 0),
+    });
+    return added[0];
   }
   async finishSetup(
     c: string,

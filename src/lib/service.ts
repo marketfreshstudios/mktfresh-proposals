@@ -1666,6 +1666,33 @@ export function publicResult(
                   }
                 : {}),
             })),
+            // Adds to an existing subscription wait for the client's approval.
+            ...(((l.metadata?.approval ?? []) as unknown[]).length
+              ? {
+                  approval: (
+                    (l.metadata?.approval ?? []) as {
+                      id: string;
+                      kind: "add" | "own";
+                      card: { brand: string; last4: string } | null;
+                      line_ids: string[];
+                      items: { line_id: string; name: string }[];
+                      interval: "month" | "year";
+                      first_charge: number | null;
+                    }[]
+                  ).map((a) => ({
+                    id: a.id,
+                    kind: a.kind,
+                    card: a.card,
+                    line_ids: a.line_ids,
+                    items: a.items.map((i) => ({
+                      line_id: i.line_id,
+                      name: i.name,
+                    })),
+                    interval: a.interval,
+                    first_charge: a.first_charge,
+                  })),
+                }
+              : {}),
           }))
       : [],
     consent_text: p.workspace_settings?.consent_text ?? CONSENT,

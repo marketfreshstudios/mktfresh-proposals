@@ -57,6 +57,7 @@ import { ContactToast, copyContactValue } from "./contact-value";
 import { fontCss, fontFamily, type FontSettings } from "../lib/proposal-fonts";
 import { readableDate } from "../lib/validity";
 import {
+  billingLines,
   chooseItem,
   quoteSublines,
   orderedItems,
@@ -217,6 +218,7 @@ function NewClientFlow({
     "read",
   );
   const [opening, setOpening] = useState("");
+  const [approving, setApproving] = useState("");
   const [checkoutError, setCheckoutError] = useState("");
   const [checkoutReturned, setCheckoutReturned] = useState(false),
     [returnSession, setReturnSession] = useState(""),
@@ -293,6 +295,18 @@ function NewClientFlow({
   const requiresCheckout =
     recurring && billing.some((b) => b.requires_checkout);
   const existing = display?.added ?? [];
+  // Services joining a subscription the client already pays: shown with the
+  // card on file and added only when the client approves.
+  const approvals = (preview ? [] : (p?.billing ?? [])).flatMap((b) =>
+    (b.approval ?? []).map((a) => ({
+      ...a,
+      lines: p
+        ? billingLines(p.quote as QuoteItem[]).filter((l) =>
+            a.line_ids.includes(l.id),
+          )
+        : [],
+    })),
+  );
   const confirmations = p?.billing.flatMap((b) => b.confirmations ?? []) ?? [];
   const returnConfirmed = returnSession
     ? confirmations.some((c) => c.checkout_session_id === returnSession)
@@ -976,20 +990,23 @@ function NewClientFlow({
                   ) : step !== "done" && requiresCheckout ? (
                     <>
                       <h1>
-                        {checkout.length &&
-                        checkout.every(
-                          (s) =>
-                            s.mode === "setup" &&
-                            (s.collection_method ??
-                              p.billing_collection_method) === "send_invoice",
-                        )
-                          ? "Save a card for your subscription"
+                        {!checkout.length && approvals.length
+                          ? "Approve your new services"
                           : checkout.length &&
-                              checkout.every((s) =>
-                                s.lines.every((l) => l.interval === "year"),
+                              checkout.every(
+                                (s) =>
+                                  s.mode === "setup" &&
+                                  (s.collection_method ??
+                                    p.billing_collection_method) ===
+                                    "send_invoice",
                               )
-                            ? "Set up your yearly subscription"
-                            : "Set up your monthly subscription"}
+                            ? "Save a card for your subscription"
+                            : checkout.length &&
+                                checkout.every((s) =>
+                                  s.lines.every((l) => l.interval === "year"),
+                                )
+                              ? "Set up your yearly subscription"
+                              : "Set up your monthly subscription"}
                       </h1>
                       {confirmations.length > 0 && (
                         <BillingConfirmationCard
@@ -1032,6 +1049,83 @@ function NewClientFlow({
                           {contact.name || "the sender"} for help.
                         </Banner>
                       )}
+                      {approvals.map((a) => {
+                        const total = a.lines.reduce(
+                          (sum, l) => sum + l.amount * l.qty,
+                          0,
+                        );
+                        const per = a.interval === "year" ? "year" : "month";
+                        const card = a.card
+                          ? `your ${a.card.brand.charAt(0).toUpperCase()}${a.card.brand.slice(1)} ending in ${a.card.last4}`
+                          : "your card on file";
+                        return (
+                          <section
+                            className="flow-checkout-group flow-approval"
+                            key={a.id}
+                          >
+                            <h2>
+                              {a.kind === "add"
+                                ? "Add to your current subscription"
+                                : "Start on your card on file"}
+                            </h2>
+                            <BillingItems
+                              lines={a.lines}
+                              currency={p.currency}
+                              cents={p.money_cents}
+                            />
+                            {a.lines.map((line) => (
+                              <Terms
+                                key={line.id}
+                                line={line}
+                                currency={p.currency}
+                              />
+                            ))}
+                            <p>
+                              {a.kind === "add" && a.first_charge
+                                ? `It will be charged to ${card}, starting with your next invoice on ${new Intl.DateTimeFormat(
+                                    "en-US",
+                                    {
+                                      dateStyle: "long",
+                                      timeZone: p.timezone,
+                                    },
+                                  ).format(new Date(a.first_charge * 1000))}.`
+                                : `It will be charged to ${card}. The first payment is taken as soon as you approve.`}{" "}
+                              Nothing is added or charged until you approve.
+                            </p>
+                            {preview ? null : (
+                              <Button
+                                variant="primary"
+                                busy={approving === a.id}
+                                disabled={!!approving}
+                                onClick={() => {
+                                  setApproving(a.id);
+                                  setCheckoutError("");
+                                  api(`/api/public/${token}/billing/approve`, {
+                                    method: "POST",
+                                    headers,
+                                    body: JSON.stringify({ approval_id: a.id }),
+                                  })
+                                    .then(() => load())
+                                    .catch((failure) =>
+                                      setCheckoutError(
+                                        failure instanceof Error
+                                          ? failure.message
+                                          : "Your approval wasn’t saved. Try again.",
+                                      ),
+                                    )
+                                    .finally(() => setApproving(""));
+                                }}
+                              >
+                                {`Approve and add — ${formatMoney(total, p.currency, p.money_cents)}/${per}`}
+                              </Button>
+                            )}
+                            <small>
+                              To use a different card, contact{" "}
+                              {contact.name || "the sender"}.
+                            </small>
+                          </section>
+                        );
+                      })}
                       {checkout.length ? (
                         checkout.map((session, index) => (
                           <section
@@ -1152,7 +1246,7 @@ function NewClientFlow({
                             )}
                           </section>
                         ))
-                      ) : (
+                      ) : approvals.length ? null : (
                         <p role="status">
                           Your secure checkout link is being prepared. Your
                           signature is saved.

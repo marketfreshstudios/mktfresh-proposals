@@ -159,7 +159,7 @@ import {
 } from "./staff-account";
 import { oauthServer } from "./oauth-runtime";
 import { StripeProvider } from "./providers/stripe";
-import { freshCheckoutUrl } from "./checkout-refresh";
+import { approveBilling, freshCheckoutUrl } from "./checkout-refresh";
 import { QboProvider } from "./providers/qbo";
 import { QBO_CALLBACK, QBO_STATE_COOKIE } from "./providers/qbo-connection";
 import {
@@ -633,6 +633,27 @@ async function handleRoute(
             }
           }
         }
+      }
+      if (
+        action === "billing" &&
+        path[3] === "approve" &&
+        !path[4] &&
+        method === "POST"
+      ) {
+        check(sameOrigin(req), "Same-origin request required", 403);
+        const { approval_id } = z
+          .object({ approval_id: z.string().regex(/^approve:[A-Za-z0-9-]+$/) })
+          .strict()
+          .parse(await body(req));
+        const stripe = rt.worker.providers.stripe;
+        check(stripe instanceof StripeProvider, "Stripe is not connected", 409);
+        await approveBilling(
+          rt.repo,
+          stripe,
+          await rt.service.byToken(token, password),
+          approval_id,
+        );
+        return json({ approved: true });
       }
       if (action === "checkout" && !path[3] && method === "POST") {
         check(sameOrigin(req), "Same-origin request required", 403);
