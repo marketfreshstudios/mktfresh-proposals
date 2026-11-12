@@ -19,6 +19,7 @@ export function eventLabel(
       : "Email template updated",
     client_stripe_linked: "Stripe customer linked",
     client_stripe_unlinked: "Stripe customer unlinked",
+    client_changed: `Client changed from ${e.metadata.previous_company} to ${e.metadata.company}`,
     reassigned: `Reassigned from ${e.metadata.previous_name} to ${e.metadata.owner_name} by ${e.metadata.actor_name}`,
     created: "Draft created",
     edited: "Proposal edited",

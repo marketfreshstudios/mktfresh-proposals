@@ -44,6 +44,10 @@ import {
 import { useBlockDrop, defaultBlockInsertion } from "./editor/block-drop";
 import { withSignatureHeadings } from "../lib/signature-headings";
 import { ReassignDialog } from "./reassign-proposal";
+import {
+  canChangeClient,
+  ProposalClientDialog,
+} from "./proposal-client-dialog";
 import { ReplaceSavedBlockDialog } from "./replace-saved-block";
 import { canReassign } from "../lib/proposal-owner";
 import { pageGeometry } from "../lib/page-bands";
@@ -247,6 +251,7 @@ function QuoteEditorContent({
 }) {
   const blockFeedback = useBlockFeedback();
   const [reassignOpen, setReassignOpen] = useState(false);
+  const [clientOpen, setClientOpen] = useState(false);
   const [replaceBlockOpen, setReplaceBlockOpen] = useState(false);
   const [editClientOpen, setEditClientOpen] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
@@ -1316,6 +1321,17 @@ function QuoteEditorContent({
               >
                 Edit client
               </button>
+              {!locked && canChangeClient(p) && (
+                <button
+                  type="button"
+                  className="text-link"
+                  onClick={async () => {
+                    if (await save()) setClientOpen(true);
+                  }}
+                >
+                  Change client
+                </button>
+              )}
             </header>
             <p>
               {p.client.company} |{" "}
@@ -1372,6 +1388,17 @@ function QuoteEditorContent({
                 readOnly
               />
             </Field>
+            {!locked && canChangeClient(p) && (
+              <button
+                type="button"
+                className="text-link send-change-client"
+                onClick={async () => {
+                  if (await save()) setClientOpen(true);
+                }}
+              >
+                Change client
+              </button>
+            )}
           </>
         )}
         {delivery === "email" && (
@@ -2775,6 +2802,20 @@ function QuoteEditorContent({
           }}
         />
       )}
+      {clientOpen && (
+        <ProposalClientDialog
+          proposal={p}
+          mode="change"
+          onClose={() => setClientOpen(false)}
+          onDone={(next) => {
+            setClientOpen(false);
+            revision.current = next.revision;
+            latest.current = next;
+            setP(next);
+            onSaved(next);
+          }}
+        />
+      )}
       {reassignOpen && (
         <ReassignDialog
           proposal={p}
@@ -2795,6 +2836,14 @@ function QuoteEditorContent({
           !locked && live && p.content.some((b) => b.saved_block_id)
             ? async () => {
                 if (await save()) setReplaceBlockOpen(true);
+              }
+            : undefined
+        }
+        client={p.client.company}
+        onChangeClient={
+          !locked && canChangeClient(p)
+            ? async () => {
+                if (await save()) setClientOpen(true);
               }
             : undefined
         }

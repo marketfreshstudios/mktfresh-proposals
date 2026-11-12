@@ -42,6 +42,10 @@ import {
 import { clientReminderAllowed, dueClientReminders } from "../lib/reminders";
 import { afterLocalDays } from "../lib/reminder-time";
 import { ReassignDialog } from "./reassign-proposal";
+import {
+  canChangeClient,
+  ProposalClientDialog,
+} from "./proposal-client-dialog";
 import { ReplaceSavedBlockDialog } from "./replace-saved-block";
 import { canReassign, proposalOwnerId } from "../lib/proposal-owner";
 import {
@@ -244,6 +248,7 @@ export function ProposalMenu({
   const anchor = useRef<HTMLButtonElement>(null);
   const [reassign, setReassign] = useState(false);
   const [replaceBlock, setReplaceBlock] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
   const [open, setOpen] = useState(false),
     [confirm, setConfirm] = useState<ProposalAction | null>(null),
     [busy, setBusy] = useState(false),
@@ -371,7 +376,7 @@ export function ProposalMenu({
                   disabled={busy}
                   aria-label="Duplicate"
                   aria-describedby={hint}
-                  onClick={() => void act("duplicate")}
+                  onClick={() => setDuplicating(true)}
                 >
                   <Copy size={18} aria-hidden="true" />
                 </button>
@@ -407,6 +412,16 @@ export function ProposalMenu({
         <ToastSurface role="alert" onDismiss={() => setError("")}>
           {error}
         </ToastSurface>
+      )}
+      {duplicating && (
+        <ProposalClientDialog
+          proposal={p}
+          mode="duplicate"
+          onClose={() => setDuplicating(false)}
+          onDone={(next) => {
+            location.href = `/proposals/${next.id}`;
+          }}
+        />
       )}
       {reassign && (
         <ReassignDialog
@@ -503,7 +518,7 @@ export function ProposalMenu({
                   href={`/proposals/${p.id}?view=record`}
                   onClick={rememberList}
                 >
-                  Open record
+                  View details
                 </a>
               )}
               {(listRow || (mobileRecord && !imported && !archived)) && (
@@ -571,9 +586,12 @@ export function ProposalMenu({
               {!listRow && (
                 <button
                   disabled={busy || imported}
-                  onClick={() => void act("duplicate")}
+                  onClick={() => {
+                    setOpen(false);
+                    setDuplicating(true);
+                  }}
                 >
-                  Duplicate
+                  Duplicate…
                 </button>
               )}
               <a href={`/api/proposals/${p.id}/download`}>Download PDF</a>
@@ -2217,7 +2235,10 @@ export function RecordV4({
     [p.id, p.automatic_reminders, p.delivery_method],
   );
   const [share, setShare] = useState(false),
-    [reminderBusy, setReminderBusy] = useState(false);
+    [reminderBusy, setReminderBusy] = useState(false),
+    [clientDialog, setClientDialog] = useState<"duplicate" | "change" | null>(
+      null,
+    );
   useEffect(() => {
     setShare(
       new URLSearchParams(window.location.search).get("delivery") ===
@@ -2545,7 +2566,7 @@ export function RecordV4({
   const outcomeNote = outcome?.metadata.note ?? outcome?.metadata.reason;
   const declineReason = typeof outcomeNote === "string" ? outcomeNote : "";
   const duplicate = (label: string) => (
-    <Button busy={recordBusy} onClick={() => void runAction("duplicate")}>
+    <Button busy={recordBusy} onClick={() => setClientDialog("duplicate")}>
       {label}
     </Button>
   );
@@ -2911,6 +2932,14 @@ export function RecordV4({
             {p.client.email && (
               <a href={`mailto:${p.client.email}`}>{p.client.email}</a>
             )}
+            {canChangeClient(p) && (
+              <Button
+                className="record-change-client"
+                onClick={() => setClientDialog("change")}
+              >
+                Change client
+              </Button>
+            )}
           </dd>
         </div>
         {p.sent_at && (
@@ -3075,6 +3104,19 @@ export function RecordV4({
       data-client-signed={actualSigned || undefined}
       data-awaiting-countersign={signature || undefined}
     >
+      {clientDialog && (
+        <ProposalClientDialog
+          proposal={p}
+          mode={clientDialog}
+          onClose={() => setClientDialog(null)}
+          onDone={(next) => {
+            setClientDialog(null);
+            if (clientDialog === "duplicate")
+              router.push(`/proposals/${next.id}`);
+            else onChanged(next);
+          }}
+        />
+      )}
       {linkingStripe && (
         <StripeSubscriptionLinkSheet
           p={p}

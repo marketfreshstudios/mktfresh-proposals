@@ -2473,6 +2473,8 @@ async function handleRoute(
             revision: z.number().int(),
             action: z.enum(proposalActions),
             note: z.string().max(4000).default(""),
+            client_id: z.uuid().optional(),
+            title: z.string().max(300).optional(),
           })
           .parse(await body(req));
         return json(
@@ -2485,6 +2487,7 @@ async function handleRoute(
             input.note,
             new Date(),
             rt.service,
+            { client_id: input.client_id, title: input.title },
           ),
         );
       }

@@ -10092,3 +10092,75 @@ dialog.foundation-sheet.block-style-sheet {
     opacity: 1;
   }
 }
+
+/* The proposal's client beside the editor title; a button until first sent. */
+.editor-v2-header .editor-header-for-client {
+  order: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 220px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--chrome-line);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--chrome-muted);
+  font: 500 12px/1 var(--font-ui);
+  white-space: nowrap;
+}
+.editor-v2-header .editor-header-for-client > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.editor-v2-header .editor-header-for-client > svg {
+  flex: none;
+}
+.editor-v2-header span.editor-header-for-client {
+  border-color: transparent;
+  padding-inline: 0;
+}
+@media (hover: hover) {
+  .editor-v2-header button.editor-header-for-client:hover {
+    background: var(--chrome-raised);
+    color: var(--chrome-ink);
+  }
+}
+.editor-v2-header button.editor-header-for-client:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: 2px;
+}
+@media (max-width: 899px) {
+  .editor-v2-header .editor-header-for-client {
+    display: none;
+  }
+}
+/* Change client sits under To as a quiet text link with room on both sides. */
+.editor-v2-panel .send-change-client.text-link,
+.send-change-client.text-link {
+  display: block;
+  width: fit-content;
+  min-height: 0;
+  height: auto;
+  margin: 8px 0 16px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--ink-title);
+  font: 600 13px/18px var(--font-ui);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .send-change-client.text-link:hover {
+    color: var(--action);
+  }
+}
+.send-change-client.text-link:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: 2px;
+}

@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { Icon } from "./ui";
-import { ChevronLeft } from "lucide-react";
+import { Building2, ChevronDown, ChevronLeft } from "lucide-react";
 import { chromeIcons } from "./staff-icons";
 import { useHistoryStatus } from "./editor-history";
 import { PhoneEditorHeader } from "./editor/phone-header";
@@ -78,6 +78,8 @@ export function EditorHeader({
   primaryLabel,
   onPrimary,
   onReassign,
+  onChangeClient,
+  client,
   onReplaceBlock,
   titleEditor,
   externalHeading = false,
@@ -127,6 +129,9 @@ export function EditorHeader({
   primaryLabel?: string;
   onPrimary?: () => void;
   onReassign?: () => void;
+  onChangeClient?: () => void;
+  /** The proposal's client, shown beside the title. */
+  client?: string;
   onReplaceBlock?: () => void;
 }) {
   const [moreOpen, setMoreOpen] = useState(false);
@@ -232,6 +237,7 @@ export function EditorHeader({
         }
         onPrimary={onPrimary}
         onReassign={onReassign}
+        onChangeClient={onChangeClient}
         onReplaceBlock={onReplaceBlock}
       />
     );
@@ -325,6 +331,28 @@ export function EditorHeader({
             <span>{tablet ? shortText : text}</span>
           )}
         </div>
+        {client &&
+          (onChangeClient ? (
+            <button
+              type="button"
+              className="editor-header-for-client"
+              onClick={onChangeClient}
+              aria-label={`Client: ${client}. Change client`}
+              title="Change client"
+            >
+              <Building2 size={14} aria-hidden="true" />
+              <span>{client}</span>
+              <ChevronDown size={14} aria-hidden="true" />
+            </button>
+          ) : (
+            <span
+              className="editor-header-for-client"
+              title={`Client: ${client}`}
+            >
+              <Building2 size={14} aria-hidden="true" />
+              <span>{client}</span>
+            </span>
+          ))}
         <span className="editor-header-spacer" />
         {!tablet && (
           <div className="editor-header-history">
@@ -392,7 +420,7 @@ export function EditorHeader({
           {primaryLabel ??
             (locked ? "Duplicate as new draft" : "Review & send")}
         </EditorButton>
-        {(onReassign || onReplaceBlock) && (
+        {(onReassign || onReplaceBlock || onChangeClient) && (
           <>
             <button
               ref={moreTrigger}
@@ -421,6 +449,18 @@ export function EditorHeader({
                       }}
                     >
                       Replace with latest block
+                    </button>
+                  )}
+                  {onChangeClient && (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setMoreOpen(false);
+                        onChangeClient();
+                      }}
+                    >
+                      Change client…
                     </button>
                   )}
                   {onReassign && (
