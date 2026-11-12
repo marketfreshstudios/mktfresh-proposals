@@ -99,7 +99,7 @@ test("final PDF failure highlights its Retry row; one clear editable staff alert
     row.getByText("Signed PDF and certificate", { exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByText("Signed PDF failed · Retry available", { exact: true }),
+    page.getByText("Signed PDF failed | Retry available", { exact: true }),
   ).toBeVisible();
   await expect(
     row.getByRole("button", { name: "Retry", exact: true }),

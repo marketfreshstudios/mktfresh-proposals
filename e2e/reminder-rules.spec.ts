@@ -163,7 +163,7 @@ test("Workspace reminder rules autosave; staff email is read-only and tests only
   );
   await page.goto(`/proposals/${p.id}?view=record`);
   await expect(
-    page.getByText("Automatic reminder emailed · unopened", { exact: true }),
+    page.getByText("Automatic reminder emailed | not opened yet", { exact: true }),
   ).toHaveCount(2);
   await page.locator(".timeline").scrollIntoViewIfNeeded();
   await shot(page, "automatic-reminders-timeline-1440", false);

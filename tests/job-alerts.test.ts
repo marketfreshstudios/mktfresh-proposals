@@ -165,7 +165,7 @@ it("all job subjects use their own names and unknown errors stay in a small Deta
       actor: "system",
       metadata: { job: `${p.id}:pdf:company`, terminal: true },
     }),
-  ).toBe("Signed PDF failed · Retry available");
+  ).toBe("Signed PDF failed | Retry available");
 });
 it("the alert template is editable; only unchanged stored defaults migrate", async () => {
   const { repo } = await setup();
