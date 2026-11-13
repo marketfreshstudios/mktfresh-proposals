@@ -38,6 +38,11 @@ import "./staff-account.css";
 import "./staff-headings.css";
 import "./toast.css";
 
+// iPhone and iPad zoom into any field whose text is under 16px when it is
+// focused. maximum-scale=1 stops that on iOS, which still allows pinch zoom.
+// Android honors maximum-scale for pinch zoom too, so it is added on iOS only.
+const IOS_NO_FOCUS_ZOOM = `(function(){var n=navigator,d=document;if(!/iPhone|iPad|iPod/.test(n.userAgent)&&!(n.platform==="MacIntel"&&n.maxTouchPoints>1))return;function f(){d.querySelectorAll('meta[name="viewport"]').forEach(function(m){if(!/maximum-scale/.test(m.content))m.content+=", maximum-scale=1"})}f();new MutationObserver(f).observe(d.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:["content"]})})()`;
+
 export default function RootLayout({
   children,
 }: {
@@ -46,6 +51,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <script dangerouslySetInnerHTML={{ __html: IOS_NO_FOCUS_ZOOM }} />
         <style>
           {coverBrandCss +
             coverLayoutCss +
