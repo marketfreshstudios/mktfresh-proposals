@@ -13,7 +13,7 @@ async function quote() {
     name,
     optional,
     selected,
-    choice_group_id: undefined,
+    choice_group_id: null,
     sublines: base.sublines.map((l) => ({ ...l, id: crypto.randomUUID() })),
   });
   return [
