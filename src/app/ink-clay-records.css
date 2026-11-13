@@ -980,7 +980,7 @@
   border-radius: var(--radius-card);
   padding: var(--space-5);
 }
-.ink-clay .client-record-side :is(.client-contact-card, .client-notes) h2 {
+.ink-clay .client-record-side :is(.client-contact-card, .client-notes) > h2 {
   margin: 0;
 }
 .ink-clay .client-contact-card dl {
@@ -1060,16 +1060,16 @@
   .client-record-columns > div {
     display: contents;
   }
-  .client-contact-card {
+  .client-side-section:has(> .client-contact-card) {
     order: 0;
   }
   .client-proposals {
     order: 1;
   }
-  .client-billing {
+  .client-side-section:has(> .client-billing) {
     order: 2;
   }
-  .client-notes {
+  .client-side-section:has(> .client-notes) {
     order: 3;
   }
   .client-activity {

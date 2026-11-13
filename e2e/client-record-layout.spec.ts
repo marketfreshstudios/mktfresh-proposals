@@ -152,7 +152,7 @@ test("client records put contact first on narrow screens and keep billing histor
       page.getByRole("link", { name: `Open ${client.company}: ${sent.title}` }),
     ).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "How they’re billed" }),
+      page.getByRole("heading", { name: "Billing" }),
     ).toBeVisible();
     await expect(page.locator(".client-detail-header .action")).toHaveCount(1);
     const [contact, proposals, billing, notes, activity] = await Promise.all(

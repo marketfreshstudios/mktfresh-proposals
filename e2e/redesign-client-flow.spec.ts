@@ -527,7 +527,7 @@ test("client redesign: every responsive state, safe preview and signature retrie
       await page.keyboard.press("Escape");
       await page.goto(`/clients/${sent.client.id}`);
       await expect(
-        page.getByRole("heading", { name: "How they’re billed", exact: true }),
+        page.getByRole("heading", { name: "Billing", exact: true }),
       ).toBeVisible();
       await capture("client", width, theme, "6d/6e/6f");
     }

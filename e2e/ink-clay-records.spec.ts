@@ -633,7 +633,7 @@ for (const width of [1440, 768, 375]) {
             .getByRole("heading", { name: "Activity", exact: true })
             .boundingBox();
           const billing = await page
-            .getByRole("heading", { name: "How they’re billed" })
+            .getByRole("heading", { name: "Billing" })
             .boundingBox();
           expect(proposals!.y).toBeLessThan(activity!.y);
           expect(contact!.y).toBeLessThan(billing!.y);
