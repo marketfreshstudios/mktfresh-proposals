@@ -479,7 +479,7 @@ test("record toolbar and next step select one primary action without widening si
     [f.countersign, "Edit", "record-signed"],
     [f.completed, "Download sealed PDF", "record-completed"],
     [f.billing, "Download sealed PDF", "record-billing"],
-    [f.manual, "Download sealed PDF", ""],
+    [f.manual, "", ""],
     [f.archived, "Unarchive", ""],
     [f.imported, "Download PDF", ""],
   ] as const) {
@@ -488,7 +488,8 @@ test("record toolbar and next step select one primary action without widening si
     const toolbarAction = toolbar
       .getByRole("button", { name: label, exact: true })
       .or(toolbar.getByRole("link", { name: label, exact: true }));
-    await expect(toolbarAction).toBeVisible();
+    // Marked won by staff has no PDF and so no main button.
+    if (label) await expect(toolbarAction).toBeVisible();
     if (p === f.countersign) {
       await expect(toolbarAction).toBeDisabled();
       await expect(toolbarAction).toHaveAttribute(
