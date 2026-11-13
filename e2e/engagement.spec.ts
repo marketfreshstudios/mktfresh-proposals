@@ -355,22 +355,15 @@ test("record/list summaries match the retained sessions, with empty and responsi
       .filter({ has: page.getByText("Devices", { exact: true }) })
       .locator("dd"),
   ).toHaveText("2");
-  await expect(
-    panel
-      .locator(".engagement-stats > div")
-      .filter({ has: page.getByText("Total time", { exact: true }) })
-      .locator("dd"),
-  ).toHaveText("6m 0s");
+  await expect(panel.locator(".engagement-headline strong")).toHaveText(
+    "6m 0s",
+  );
+  await expect(panel.locator(".engagement-visits li")).toHaveCount(3);
   await expect(panel.locator(".engagement-sessions>li")).toHaveCount(3);
-  // Most read starts collapsed; there is no separate Time by page list or
-  // summary beside the heading.
-  await expect(panel.getByText("First section", { exact: true })).toBeHidden();
-  await expect(panel.getByText("Time by page")).toHaveCount(0);
-  await expect(
-    page.locator("#engagement-heading").locator("xpath=../.."),
-  ).not.toContainText("reading");
-  await panel.getByText("Most read", { exact: true }).click();
+  // Most read shows the top sections as bars; there is no separate Time by
+  // page list.
   await expect(panel.getByText("First section", { exact: true })).toBeVisible();
+  await expect(panel.getByText("Time by page")).toHaveCount(0);
   expect(
     (await new AxeBuilder({ page }).include(".engagement-panel").analyze())
       .violations,
