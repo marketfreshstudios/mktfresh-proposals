@@ -14,7 +14,7 @@ describe("Studio email editor presentation", () => {
   it("filters only the picker; the global validator and saved content remain compatible", () => {
     for (const [key, prefixes] of [
       ["team_invite", ["team.", "sender.", "workspace."]],
-      ["staff_billing_failed", ["job.", "proposal."]],
+      ["staff_billing_failed", ["job.", "client.", "proposal."]],
       [
         "proposal_sent",
         ["client.", "proposal.", "quote.", "sender.", "workspace."],

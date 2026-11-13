@@ -240,9 +240,9 @@ test("per-email pickers and read-only notifications follow existing permissions 
           fields.every((path) => /{{(?:team|sender|workspace)\./.test(path)),
         ).toBe(true);
       else if (t.key === "staff_billing_failed")
-        expect(fields.every((path) => /{{(?:job|proposal)\./.test(path))).toBe(
-          true,
-        );
+        expect(
+          fields.every((path) => /{{(?:job|client|proposal)\./.test(path)),
+        ).toBe(true);
       else
         expect(fields.every((path) => !/team\.|job\./.test(path))).toBe(true);
       await expect(page.locator(".email-button-caption")).toHaveText(

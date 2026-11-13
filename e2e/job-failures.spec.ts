@@ -56,7 +56,7 @@ test("final PDF failure highlights its Retry row; one clear editable staff alert
     },
   });
   expect(mail.subject).toBe(
-    `Signed PDF and certificate needs attention: ${p.title}`,
+    `Signed PDF and certificate needs attention: ${p.client.company || `${p.client.first_name} ${p.client.last_name}`.trim()}`,
   );
   expect(mail.html).not.toContain("Billing");
   await page.setContent(mail.html);
