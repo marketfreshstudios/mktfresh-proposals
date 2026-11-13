@@ -3689,7 +3689,8 @@ export function RecordV4({
                     : "Monthly"
                 }
                 end={
-                  !needsLink && (
+                  // Needs linking shows its chip by the Link button instead.
+                  (!needsLink || !resend || !p.token) && (
                     <span className={`pill ${stripeChip.tone}`}>
                       {stripeChip.text}
                     </span>

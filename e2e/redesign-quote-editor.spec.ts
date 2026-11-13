@@ -332,7 +332,7 @@ test("Quote model editor: responsive sections, prices, alternatives, keyboard, r
   // before opening the client link, so two navigations cannot race on CI.
   await expect(page.locator(".quote-workspace")).toHaveCount(0);
   await expect(
-    page.getByRole("link", { name: "Preview as client", exact: true }),
+    page.getByRole("link", { name: "View proposal", exact: true }),
   ).toBeVisible();
   expect(
     active.jobs.some((j) =>
