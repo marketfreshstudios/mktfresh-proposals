@@ -31,12 +31,15 @@ export function QuickBooksBilling({
   onRefresh,
   amount,
   manualAction,
+  items,
 }: {
   proposal: Proposal;
   link: BillingLink;
   onRefresh: () => Promise<void>;
   amount: string;
   manualAction?: ReactNode;
+  /** The chosen one-time lines, listed inside the invoice disclosure. */
+  items?: ReactNode;
 }) {
   const [details, setDetails] = useState<Details>();
   const [error, setError] = useState("");
@@ -123,7 +126,8 @@ export function QuickBooksBilling({
             ? `QuickBooks invoice ${invoice.number}`
             : "QuickBooks invoice"}
         </Disclosure>
-        <div className="quickbooks-billing">
+        <div className="quickbooks-billing record-billing-detail">
+          {items}
           <p>
             Proposal reference{" "}
             {details?.reference ?? proposalInvoiceRef(proposal.id)}
@@ -154,9 +158,7 @@ export function QuickBooksBilling({
       </details>
       {draft && (
         <>
-          <p>
-            Created after both signed. Review it, then send from QuickBooks.
-          </p>
+          <p>Review it, then send from QuickBooks.</p>
           {invoiceUrl && (
             <a
               className="record-billing-external"

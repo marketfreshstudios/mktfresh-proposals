@@ -3662,6 +3662,68 @@ export function RecordV4({
       </dl>
     </section>
   );
+  // The chosen lines behind each billing total, as the quote shows them.
+  const billingItems = (kind: "one_time" | "recurring") => {
+    const rows = orderedItems(
+      (v?.quote ?? p.quote).filter((item) => !item.choice_group_placeholder),
+    )
+      .filter((item) => selected(item))
+      .flatMap((item) =>
+        item.sublines
+          .filter((line) =>
+            kind === "one_time"
+              ? line.interval === "one_time"
+              : line.interval !== "one_time",
+          )
+          .map((line) => ({
+            key: `${item.id}:${line.id}`,
+            name: line.label ? `${item.name} | ${line.label}` : item.name,
+            qty: line.qty,
+            amount: `${money(line.amount * line.qty, p.currency)}${
+              line.interval === "month"
+                ? "/mo"
+                : line.interval === "year"
+                  ? "/yr"
+                  : ""
+            }`,
+          })),
+      );
+    return rows.length ? (
+      <ul className="record-billing-items">
+        {rows.map((row) => (
+          <li key={row.key}>
+            <span>
+              {row.name}
+              {row.qty !== 1 && <small> {row.qty} ×</small>}
+            </span>
+            <span>{row.amount}</span>
+          </li>
+        ))}
+      </ul>
+    ) : null;
+  };
+  const oneTimeItems = billingItems("one_time");
+  const recurringItems = billingItems("recurring");
+  // Monthly opens to its lines, the plan terms and Stripe detail.
+  const monthlyDisclosure = (extra?: ReactNode) => (
+    <details className="record-provider-details">
+      <Disclosure>{recurringDescription}</Disclosure>
+      <div className="record-billing-detail">
+        {recurringItems}
+        {oiotTerms}
+        {extra}
+      </div>
+    </details>
+  );
+  const oneTimeDisclosure = (summary: ReactNode) =>
+    oneTimeItems ? (
+      <details className="record-provider-details">
+        <Disclosure>{summary}</Disclosure>
+        <div className="record-billing-detail">{oneTimeItems}</div>
+      </details>
+    ) : (
+      summary
+    );
   const billingSection = showBilling && stage !== "closed" && (
     <section className="record-billing record-section">
       <StaffSectionHeading
@@ -3722,18 +3784,19 @@ export function RecordV4({
                 ) : stripe &&
                   (stripeStatus?.labels.length ||
                     stripeStatus?.subscriptions.length) ? (
-                  <details className="record-provider-details">
-                    <Disclosure>{recurringDescription}</Disclosure>
+                  monthlyDisclosure(
                     <StripeBillingDetails
                       link={stripe}
                       dashboardUrl={
                         data.connections?.stripe_connect?.dashboardUrl
                       }
-                    />
-                  </details>
+                    />,
+                  )
                 ) : (
                   <>
-                    {recurringDescription}
+                    {recurringItems || oiotTerms
+                      ? monthlyDisclosure()
+                      : recurringDescription}
                     {!actualSigned && (
                       <p>Set up by {firstName} right after signing.</p>
                     )}
@@ -3765,7 +3828,7 @@ export function RecordV4({
                   <span className="pill neutral">After you countersign</span>
                 }
               >
-                {oneTimeAmount} | QuickBooks
+                {oneTimeDisclosure(<>{oneTimeAmount} | QuickBooks</>)}
                 <p>The invoice is created as a draft once you countersign.</p>
               </RecordBillingRow>
             ) : qbo &&
@@ -3777,6 +3840,7 @@ export function RecordV4({
                 onRefresh={onRefresh}
                 amount={oneTimeAmount}
                 manualAction={markAsInvoiced}
+                items={oneTimeItems}
               />
             ) : qboIntegrated || qbo?.metadata?.manual_invoice ? (
               <RecordBillingRow
@@ -3793,17 +3857,20 @@ export function RecordV4({
                   </span>
                 }
               >
-                {oneTimeAmount} |{" "}
-                {qbo?.metadata?.manual_invoice
-                  ? "Manual invoice"
-                  : "QuickBooks"}
+                {oneTimeDisclosure(
+                  <>
+                    {oneTimeAmount} |{" "}
+                    {qbo?.metadata?.manual_invoice
+                      ? "Manual invoice"
+                      : "QuickBooks"}
+                  </>,
+                )}
                 {!qbo?.metadata?.manual_invoice && !actualSigned && (
                   <p>Draft invoice once you countersign.</p>
                 )}
               </RecordBillingRow>
             ) : null}
           </dl>
-          {oiotTerms}
         </div>
       )}
       {recordJobs.length > 0 && (

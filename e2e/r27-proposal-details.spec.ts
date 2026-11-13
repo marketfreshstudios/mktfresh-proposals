@@ -547,6 +547,38 @@ test("R27 proposal details: every state at 1440 and the phone frames at 375", as
           page.getByRole("textbox", { name: "Your reply" }),
         ).toBeFocused();
       }
+      // Beside Engagement, the Timeline matches its height and scrolls.
+      const activity = page.locator(".record-row:has(.engagement-panel)");
+      if (
+        fixture.frame !== "4a" &&
+        fixture.frame !== "4b" &&
+        (await activity.count())
+      ) {
+        const [engagement, timeline] = await Promise.all(
+          [".engagement-panel", ".timeline"].map((selector) =>
+            activity
+              .locator(selector)
+              .first()
+              .evaluate((el) =>
+                (el.closest(".record-section") ?? el).getBoundingClientRect(),
+              ),
+          ),
+        );
+        expect(Math.abs(engagement.height - timeline.height)).toBeLessThan(2);
+        await expect(activity.locator(".record-timeline-list")).toHaveCSS(
+          "overflow-y",
+          "auto",
+        );
+      }
+      // Details dividers run the full height of the bar.
+      if (fixture.frame !== "4a" && fixture.frame !== "4b") {
+        const heights = await page
+          .locator(".record-details-values > .record-fact")
+          .evaluateAll((els) =>
+            els.map((el) => el.getBoundingClientRect().height),
+          );
+        expect(new Set(heights.map(Math.round)).size).toBe(1);
+      }
       // Billing fits its content.
       const billing = page.locator(".record-billing-card");
       if (["2c", "2e"].includes(fixture.frame)) {
@@ -562,6 +594,24 @@ test("R27 proposal details: every state at 1440 and the phone frames at 375", as
       }
       if (fixture.frame === "2c") {
         await expect(billing.getByText("Draft invoice")).toBeVisible();
+        await expect(
+          billing.getByText("Created after both signed"),
+        ).toHaveCount(0);
+        // Each billing disclosure lists the chosen lines behind its total.
+        await billing.getByText("$25/mo through Stripe").click();
+        await expect(
+          billing.locator(".record-billing-items li", {
+            hasText: "Hosting + Essentials",
+          }),
+        ).toBeVisible();
+        await billing.getByText(/QuickBooks invoice/).click();
+        await expect(
+          billing.locator(".record-billing-items li", {
+            hasText: "Website Build",
+          }),
+        ).toBeVisible();
+        if (capture)
+          await billing.screenshot({ path: `${capture}/2c-billing-open.png` });
         await expect(
           billing.getByRole("link", { name: "Open in QuickBooks" }),
         ).toBeVisible();
