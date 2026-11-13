@@ -154,9 +154,9 @@ test("workspace icon uploads, replaces, removes and follows responsive marks wit
   await expect(
     page.locator(".workspace-section-card").getByRole("alert"),
   ).toHaveCount(0);
-  await expect(
-    page.locator(".workspace-section [role=status]"),
-  ).toHaveText("Saved");
+  await expect(page.locator(".workspace-section [role=status]")).toHaveText(
+    "Saved",
+  );
   await capture(page, "brand-icon-1440");
   await page
     .getByLabel("Logo | used on covers, client pages, emails and PDFs", {
@@ -176,9 +176,9 @@ test("workspace icon uploads, replaces, removes and follows responsive marks wit
   await expect(
     page.getByAltText("Workspace logo", { exact: true }),
   ).toBeVisible();
-  await expect(
-    page.locator(".workspace-section [role=status]"),
-  ).toHaveText("Saved");
+  await expect(page.locator(".workspace-section [role=status]")).toHaveText(
+    "Saved",
+  );
   const assets = page.locator(".workspace-brand-assets .workspace-logo-row");
   const boxes = await assets.evaluateAll((nodes) =>
     nodes.map((el) => {
