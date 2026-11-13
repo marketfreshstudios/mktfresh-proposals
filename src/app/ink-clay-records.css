@@ -474,6 +474,12 @@
 .ink-clay .client-detail-v4 > .client-detail-header {
   display: grid;
   gap: var(--space-4);
+  /* The toolbar spans the page, never the width of the client name. */
+  grid-template-columns: minmax(0, 1fr);
+  inline-size: 100%;
+}
+.ink-clay .client-side-section > .staff-section-heading {
+  align-items: center;
 }
 .client-identity > .client-initials {
   width: 48px;
@@ -669,9 +675,10 @@
   margin-top: var(--space-3);
 }
 .ink-clay .clients-directory-v4 :is(.client-table-head, .client-table-row) {
-  grid-template-columns:
-    minmax(0, 2fr) minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 0.8fr)
-    minmax(0, 1.15fr);
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1.3fr) minmax(
+      0,
+      1.2fr
+    ) minmax(0, 1.15fr);
 }
 @media (min-width: 1100px) {
   .ink-clay
@@ -987,7 +994,15 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 0;
-  margin: 12px 0 0;
+  margin: 0;
+}
+/* The title sits outside the card, so the first row needs no rule. */
+.ink-clay .client-contact-card dl > div:first-child {
+  padding-block-start: 0;
+  border-top: 0;
+}
+.ink-clay .client-contact-card dl > div:last-child {
+  padding-block-end: 0;
 }
 .ink-clay .client-contact-card dl > div {
   display: grid;

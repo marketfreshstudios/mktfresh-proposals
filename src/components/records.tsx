@@ -4815,16 +4815,9 @@ export function ClientsV4({
         ) : (
           <StaffTable className="client-directory client-table">
             <StaffTableHead className="client-table-head">
-              {["Client", "Contact", "Proposals", "Monthly now", "Billing"].map(
-                (label) => (
-                  <span
-                    key={label}
-                    className={label === "Monthly now" ? "num-col" : undefined}
-                  >
-                    {label}
-                  </span>
-                ),
-              )}
+              {["Client", "Contact", "Proposals", "Billing"].map((label) => (
+                <span key={label}>{label}</span>
+              ))}
             </StaffTableHead>
             {!data && <Skeleton kind="table" label="Loading clients…" />}
             {visibleClients.map((c) => {
@@ -4836,6 +4829,13 @@ export function ClientsV4({
               const drafts = proposals.filter(
                 (p) => p.status === "draft",
               ).length;
+              const won = proposals.filter((p) => inView(p, "won")).length;
+              const closed = proposals.filter((p) =>
+                ["declined", "expired"].includes(p.status),
+              ).length;
+              const archived = (data?.proposals ?? []).filter(
+                (p) => p.client.id === c.id && inView(p, "archived"),
+              ).length;
               const proposalStatus = awaiting
                 ? `${awaiting} to countersign`
                 : proposals.some(billingIssues)
@@ -4844,7 +4844,13 @@ export function ClientsV4({
                     ? `${open} open`
                     : drafts
                       ? `${drafts} ${drafts === 1 ? "draft" : "drafts"}`
-                      : "—";
+                      : won
+                        ? `${won} won`
+                        : closed
+                          ? `${closed} closed`
+                          : archived
+                            ? `${archived} archived`
+                            : "None yet";
               return (
                 <article
                   key={c.id}
@@ -4863,20 +4869,6 @@ export function ClientsV4({
                     {c.first_name} {c.last_name}
                   </span>
                   <span data-label="Proposals">{proposalStatus}</span>
-                  <span className="num-col" data-label="Monthly now">
-                    {c.stripe_customer_id ? (
-                      <a
-                        className="inner-action"
-                        href={`/clients/${c.id}`}
-                        title="Open the client to see live billing"
-                        aria-label="Open the client to see live billing"
-                      >
-                        —
-                      </a>
-                    ) : (
-                      "—"
-                    )}
-                  </span>
                   <span data-label="Billing">
                     <span
                       className={`pill ${c.stripe_customer_id ? "info" : "neutral"}`}

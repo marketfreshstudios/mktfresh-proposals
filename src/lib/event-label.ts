@@ -18,6 +18,7 @@ export function eventLabel(
       ? "Email template reset"
       : "Email template updated",
     client_stripe_linked: "Stripe customer linked",
+    client_qbo_linked: "QuickBooks customer linked",
     client_stripe_unlinked: "Stripe customer unlinked",
     recipient_email_changed: `Recipient email changed from ${e.metadata.previous_email} to ${e.metadata.email}`,
     client_changed: `Client changed from ${e.metadata.previous_company} to ${e.metadata.company}`,

@@ -487,6 +487,22 @@ export class Worker {
             );
         });
         if (link.status === "failed") failures.push(provider);
+        // The customer this billing used becomes the client's linked customer
+        // when the client has none. Best effort: it never fails billing.
+        if (
+          (provider === "stripe" || provider === "qbo") &&
+          link.status === "succeeded" &&
+          link.external_customer_id
+        )
+          await this.repo
+            .linkClientBillingCustomer(
+              fresh.client.id,
+              provider,
+              link.external_customer_id,
+              fresh.client.email,
+              fresh.id,
+            )
+            .catch(() => false);
       }
       if (
         (await this.repo.get(p.id))!.billing_links.some(
