@@ -691,8 +691,8 @@
 /* One row of figures: label above value, every column the same width. */
 .engagement-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
-  gap: 12px 16px;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
   margin: 0;
 }
 .engagement-stats > div {
@@ -700,11 +700,14 @@
   gap: 4px;
   align-content: start;
   min-width: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-md, 10px);
+  background: var(--surface-preview, var(--surface));
 }
 .engagement-stats dt {
   color: var(--ink-muted, var(--muted));
-  font: 600 11px/14px var(--font-ui);
-  letter-spacing: 0.06em;
+  font: 600 12px/16px var(--font-ui);
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   white-space: nowrap;
   overflow: hidden;
@@ -750,12 +753,128 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
-.engagement-sections meter {
+.engagement-bar {
   display: block;
-  width: 100%;
-  height: 6px;
+  height: 8px;
   margin-top: 6px;
-  accent-color: var(--accent);
+  border-radius: 4px;
+  background: var(--surface-preview, var(--surface));
+}
+.engagement-bar > span {
+  display: block;
+  height: 100%;
+  min-inline-size: 4px;
+  border-radius: 4px;
+  background: var(--action, var(--accent));
+}
+.engagement-headline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+.engagement-headline > div {
+  display: grid;
+  gap: 2px;
+}
+.engagement-headline strong {
+  color: var(--action, var(--accent));
+  font: 400 40px/1.05 var(--font-display, Georgia, serif);
+  font-variant-numeric: tabular-nums;
+}
+.engagement-eyebrow,
+.engagement-visits figcaption {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: var(--ink-muted, var(--muted));
+  font: 600 12px/16px var(--font-ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.engagement-headline .engagement-last {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.engagement-last[data-live] {
+  color: var(--success, #2f7a4f);
+  font-weight: 600;
+}
+.engagement-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 0 currentColor;
+  animation: engagement-pulse 1.6s ease-out infinite;
+}
+@keyframes engagement-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 45%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 8px transparent;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .engagement-live-dot {
+    animation: none;
+  }
+}
+.engagement-stats dt {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.engagement-stats dt > svg {
+  flex: none;
+}
+.engagement-visits {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+.engagement-visits ol {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 56px;
+  margin: 0;
+  padding: 0 0 0;
+  list-style: none;
+  border-block-end: 1px solid var(--border);
+}
+.engagement-visits li {
+  display: flex;
+  flex: 1 1 0;
+  align-items: flex-end;
+  max-inline-size: 28px;
+  height: 100%;
+  cursor: default;
+}
+.engagement-visits li > span {
+  display: block;
+  inline-size: 100%;
+  border-radius: 4px 4px 0 0;
+  background: var(--action, var(--accent));
+  transition: opacity 120ms;
+}
+.engagement-visits ol:hover li:not(:hover) > span {
+  opacity: 0.45;
+}
+.engagement-visits-axis {
+  display: flex;
+  justify-content: space-between;
+  color: var(--ink-muted, var(--muted));
+  font-size: 12px;
+}
+.engagement-most-read {
+  display: grid;
+  gap: 10px;
 }
 .engagement-more {
   border-top: 1px solid var(--border);
@@ -823,19 +942,6 @@
   .engagement-panel {
     padding: 16px;
   }
-}
-.engagement-sections meter::-webkit-meter-bar {
-  background: var(--surface);
-  border: 0;
-  border-radius: 4px;
-}
-.engagement-sections meter::-webkit-meter-optimum-value {
-  background: var(--accent);
-  border-radius: 4px;
-}
-.engagement-sections meter::-moz-meter-bar {
-  background: var(--accent);
-  border-radius: 4px;
 }
 .engagement-panel .disclosure-marker {
   margin-right: 8px;
