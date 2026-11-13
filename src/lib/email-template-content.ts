@@ -131,7 +131,7 @@ export const emailDefaults = [
     "staff_viewed",
     "Client opened proposal",
     "👀 {{client.name}} is reading your proposal",
-    "{{client.full_name}} just opened {{proposal.title}}. They're reading it now, so it's a good moment to be ready if they reach out.",
+    "{{client.full_name}} just opened {{proposal.title}}. Fingers crossed!",
     "See the proposal",
     true,
   ),
