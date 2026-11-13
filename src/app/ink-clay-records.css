@@ -2533,7 +2533,7 @@
   justify-self: start;
 }
 /* One label style for every field on the record: Details, Quote totals,
-   Signatures, Billing, Own It Over Time and Engagement all match the hero's labels. */
+   Signatures, Billing and Engagement all match the hero labels. */
 .ink-clay
   .record-v4
   :is(
