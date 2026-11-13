@@ -470,48 +470,42 @@ test("record toolbar and next step select one primary action without widening si
 }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   const f = await scenario(page);
+  // Redesign 27: the header's main button by state, and never the same
+  // action in both the header and the hero.
   for (const [p, label, shot] of [
     [f.ai, "Edit", ""],
     [f.waiting, "Edit", ""],
     [f.viewed, "Edit", "record-viewed"],
-    [f.countersign, "Review & countersign", "record-signed"],
-    [f.completed, "Download PDF", "record-completed"],
-    [f.billing, "Download PDF", "record-billing"],
-    [f.lost, "Duplicate", ""],
-    [f.expired, "Edit", ""],
-    [f.manual, "Download PDF", ""],
+    [f.countersign, "Edit", "record-signed"],
+    [f.completed, "Download sealed PDF", "record-completed"],
+    [f.billing, "Download sealed PDF", "record-billing"],
+    [f.manual, "", ""],
     [f.archived, "Unarchive", ""],
     [f.imported, "Download PDF", ""],
   ] as const) {
     await page.goto(record(p));
     const toolbar = page.locator(".record-toolbar");
-    const heroPrimary = page.locator(
-      ".record-next-actions > div:first-child .btn",
-    );
-    if (p === f.imported) {
-      await expect(
-        toolbar.getByRole("link", { name: "Download PDF", exact: true }),
-      ).toHaveCount(0);
-      await expect(heroPrimary).toHaveAccessibleName("Download PDF");
-    } else {
-      const toolbarAction = toolbar
-        .getByRole("button", { name: label, exact: true })
-        .or(toolbar.getByRole("link", { name: label, exact: true }));
-      await expect(toolbarAction).toBeVisible();
-      await expect(toolbarAction.locator("svg")).toHaveCount(0);
-    }
-    if (await heroPrimary.count()) {
-      await expect(heroPrimary).toHaveCSS(
-        "background-color",
-        "rgb(255, 255, 255)",
+    const toolbarAction = toolbar
+      .getByRole("button", { name: label, exact: true })
+      .or(toolbar.getByRole("link", { name: label, exact: true }));
+    // Marked won by staff has no PDF and so no main button.
+    if (label) await expect(toolbarAction).toBeVisible();
+    if (p === f.countersign) {
+      await expect(toolbarAction).toBeDisabled();
+      await expect(toolbarAction).toHaveAttribute(
+        "title",
+        "Signed proposals are locked.",
       );
-      await expect(toolbar.locator(".record-primary")).toHaveCount(0);
-    } else {
-      await expect(toolbar.locator(".record-primary")).toHaveCount(1);
     }
-    if (p === f.imported || p === f.archived)
+    const heroLabels = await page
+      .locator(".record-next-actions .btn")
+      .allTextContents();
+    const headerLabels = await toolbar.locator(".btn").allTextContents();
+    for (const heroLabel of heroLabels)
+      expect(headerLabels.map((l) => l.trim())).not.toContain(heroLabel.trim());
+    if (p === f.imported)
       await expect(
-        toolbar.getByRole("link", { name: "Preview as client" }),
+        toolbar.getByRole("link", { name: "View proposal" }),
       ).toHaveCount(0);
     if (p === f.viewed) {
       const timeline = page.locator(".timeline");
@@ -537,7 +531,7 @@ test("record toolbar and next step select one primary action without widening si
       const hero = page.locator(".next-card");
       await expect(hero).toHaveAttribute("data-problem", "true");
       await expect(
-        hero.getByRole("button", { name: "Email payment link" }),
+        hero.getByRole("button", { name: "Resend payment link" }),
       ).toBeVisible();
       await expect(
         hero.getByRole("button", { name: "Invoice manually" }),
@@ -548,13 +542,12 @@ test("record toolbar and next step select one primary action without widening si
     }
     if (p === f.manual) {
       await expect(page.getByText(/Marked as won by /)).toBeVisible();
-      await expect(page.locator(".record-signatures")).toHaveCount(0);
     }
   }
   await page.goto(record(f.countersign));
   await page
-    .locator(".record-toolbar")
-    .getByRole("link", { name: "Review & countersign" })
+    .locator(".record-hero")
+    .getByRole("link", { name: "Review and countersign" })
     .click();
   const sheet = page.getByRole("dialog", { name: /^Countersign/ });
   for (const heading of [

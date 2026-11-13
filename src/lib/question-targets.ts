@@ -1,5 +1,4 @@
 import type { Block, Quote } from "./model";
-import { blockText } from "./editor-document";
 import { resolve } from "./presentation";
 import { visibleQuote } from "./quote-options";
 import { selectedContent } from "./quote-model";
@@ -26,12 +25,39 @@ function containsList(node?: Block["content"]): boolean {
       !!node.content?.some(containsList))
   );
 }
+/** Keeps the block's own line breaks (list items, paragraphs) so excerpts read as written. */
 export function questionExcerpt(text: string) {
   return text
-    .replace(/[\u0000-\u001f\u007f-\u009f\u202a-\u202e\u2066-\u2069]/g, " ")
-    .replace(/\s+/g, " ")
+    .replace(/\r\n?/g, "\n")
+    .replace(
+      /[\u0000-\u0009\u000b-\u001f\u007f-\u009f\u202a-\u202e\u2066-\u2069]/g,
+      " ",
+    )
+    .replace(/[^\S\n]+/g, " ")
+    .replace(/ *\n[\s]*/g, "\n")
     .trim()
     .slice(0, 200);
+}
+const textBlocks = new Set([
+  "paragraph",
+  "heading",
+  "listItem",
+  "bulletList",
+  "orderedList",
+  "blockquote",
+]);
+/** Like blockText, but each paragraph and list item starts a new line. */
+function excerptText(block: Block): string {
+  const walk = (node: NonNullable<Block["content"]>): string =>
+    node.type === "variable"
+      ? `{{${node.attrs?.path ?? ""}}}`
+      : (node.text ??
+        (node.content ?? [])
+          .map(walk)
+          .join(
+            node.type === "doc" || textBlocks.has(node.type ?? "") ? "\n" : "",
+          ));
+  return block.content ? walk(block.content) : (block.text ?? "");
 }
 
 /** Client and server resolve the same text from the currently published content. */
@@ -50,7 +76,7 @@ export function questionTargets(
       if (!id) continue;
       const excerpt = questionExcerpt(
         resolve(
-          block.type === "image" ? (block.alt ?? "") : blockText(block),
+          block.type === "image" ? (block.alt ?? "") : excerptText(block),
           variables,
         ),
       );

@@ -227,6 +227,10 @@ test("billing card links a client's subscription and shows progress or recorded 
   await billing.scrollIntoViewIfNeeded();
   await shot("stripe-schedule-1440");
   await page.setViewportSize({ width: 375, height: 812 });
+  // The phone layout re-orders the sections, which re-renders Billing closed.
+  await expect(page.locator(".record-phone-actions")).toBeVisible();
+  if (!(await billing.getByText("Phase 2", { exact: true }).isVisible()))
+    await billing.getByText("Stripe schedule", { exact: true }).click();
   await billing.scrollIntoViewIfNeeded();
   await expect(billing.getByText("Phase 2", { exact: true })).toBeVisible();
   await shot("stripe-schedule-375");

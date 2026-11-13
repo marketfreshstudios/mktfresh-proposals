@@ -426,7 +426,7 @@ test("QuickBooks connection states, invoice defaults, product mapping and record
     .locator("summary")
     .filter({ hasText: `QuickBooks invoice ${f.reference}` });
   await expect(invoice).toBeVisible();
-  await expect(row.getByText("Draft", { exact: true })).toBeVisible();
+  await expect(row.getByText("Draft invoice", { exact: true })).toBeVisible();
   const invoiceLabel = row.getByText("One-time", { exact: true });
   const labelBox = (await invoiceLabel.boundingBox())!;
   const invoiceBox = (await invoice.boundingBox())!;
@@ -547,11 +547,11 @@ test("The signed proposal record shows the invoice waiting for the company witho
   await page.goto(`/proposals/${f.proposal.id}`);
   const billing = page.locator(".record-billing");
   await expect(
-    billing.getByText("Waiting for countersignature", { exact: true }),
+    billing.getByText("After you countersign", { exact: true }),
   ).toBeVisible();
   await expect(
     billing.getByText(
-      "After both sides sign, one-time fees are invoiced from QuickBooks.",
+      "The invoice is created as a draft once you countersign.",
     ),
   ).toBeVisible();
   await expect(

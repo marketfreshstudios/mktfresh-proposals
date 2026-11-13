@@ -345,7 +345,8 @@ test("record/list summaries match the retained sessions, with empty and responsi
     ip: "",
     user_agent: "",
   });
-  await page.getByRole("button", { name: "Refresh", exact: true }).click();
+  // The panel has no Refresh button (Redesign 27); reload picks up the data.
+  await page.reload();
   const panel = page.locator(".engagement-panel");
   await expect(panel.locator("dd").nth(0)).toHaveText("3");
   await expect(panel.locator("dd").nth(1)).toHaveText("2");
@@ -362,7 +363,11 @@ test("record/list summaries match the retained sessions, with empty and responsi
   await expect(panel.locator(".engagement-sessions>li")).toHaveCount(3);
   // Most read shows the top sections as bars; there is no separate Time by
   // page list.
-  await expect(panel.getByText("First section", { exact: true })).toBeVisible();
+  await expect(
+    panel
+      .getByRole("region", { name: "Most read" })
+      .getByText("First section", { exact: true }),
+  ).toBeVisible();
   await expect(panel.getByText("Time by page")).toHaveCount(0);
   expect(
     (await new AxeBuilder({ page }).include(".engagement-panel").analyze())

@@ -30,16 +30,18 @@ it("shows what the client chose and tucks the rest into a closed section", async
   const [shown, hidden] = html.split('<details class="record-quote-others">');
   expect(shown).toContain("Website build");
   expect(shown).not.toContain("Local visibility");
-  expect(hidden).toContain("Options not selected (2)");
+  expect(hidden).toContain("Options not chosen (2)");
   expect(hidden).toContain("Local visibility");
   expect(hidden).toContain("Care plan");
 });
 
-it("before signing it calls them options not included by default", async () => {
+it("before signing it lists every line with how it works", async () => {
   const html = renderToStaticMarkup(
     <RecordQuote quote={await quote()} currency="USD" signed={false} />,
   );
-  expect(html).toContain("Not included by default (2)");
+  expect(html).not.toContain("record-quote-others");
+  expect(html).toContain("Local visibility");
+  expect(html).toContain("Optional | Not ticked");
 });
 
 it("has no section when everything was chosen", async () => {

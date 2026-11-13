@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore, type ReactNode } from "react";
-import { ChevronDown } from "lucide-react";
+import { DisclosureChevron } from "./disclosure-chevron";
 
 const phoneWidth = "(max-width: 699px)";
 function subscribe(listener: () => void) {
@@ -30,14 +30,12 @@ export function RecordDisclosure({
   return (
     <details className="card record-disclosure">
       <summary>
-        <span className="record-disclosure-title">{title}</span>
-        {summary && (
-          <span className="record-disclosure-caption">{summary}</span>
-        )}
-        <span className="record-disclosure-toggle">
-          <span className="record-disclosure-show">Show</span>
-          <span className="record-disclosure-hide">Hide</span>
-          <ChevronDown size={16} aria-hidden="true" />
+        <DisclosureChevron />
+        <span className="record-disclosure-text">
+          <span className="record-disclosure-title">{title}</span>
+          {summary && (
+            <span className="record-disclosure-caption">{summary}</span>
+          )}
         </span>
       </summary>
       {children}

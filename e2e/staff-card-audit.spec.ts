@@ -199,7 +199,7 @@ test.describe("Staff content surfaces", () => {
     for (const selector of [
       ".record-details-values",
       ".record-quote-card",
-      ".record-signature-card",
+      ".record-ready-list",
       ".record-timeline-list",
     ])
       await surface(page.locator(selector));
@@ -839,7 +839,12 @@ test("staff pages and account states have one title and a sequential heading out
         .toBe(true);
       expect
         .soft(heading.type, `${label}: ${heading.name} matches Home`)
-        .toEqual(homeType);
+        .toEqual(
+          // Redesign 27: proposal details section titles are DM Serif 22/28.
+          label.includes("view=record")
+            ? [homeType?.[0], "22px", homeType?.[2]]
+            : homeType,
+        );
     }
     for (const heading of headings.filter((h) => !h.onCanvas))
       expect
