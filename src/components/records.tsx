@@ -3766,10 +3766,12 @@ export function RecordV4({
                       subscription={adopted}
                       date={dateOnly}
                     />
+                    {oiotTerms}
                   </>
                 ) : needsLink ? (
                   <div className="stripe-link-notice">
                     <p>{recurringDescription}</p>
+                    {oiotTerms}
                     {linkBlocked ? (
                       <p className="muted">{linkBlocked}</p>
                     ) : (
@@ -3871,6 +3873,8 @@ export function RecordV4({
               </RecordBillingRow>
             ) : null}
           </dl>
+          {/* Without a Monthly row, the plan terms still show on the card. */}
+          {!(stripeIntegrated || needsLink) && oiotTerms}
         </div>
       )}
       {recordJobs.length > 0 && (
