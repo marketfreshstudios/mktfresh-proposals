@@ -330,7 +330,7 @@ test("proposal and template headers share save states and centred fixed-size pan
       });
       await name.fill("A changed template");
       await expect(page.locator(".editor-save-status")).toHaveText(
-        "Edited · not saved",
+        "Edited | not saved",
       );
       // The fixture owns this write too; page plans never write a template alone.
       await page.route("**/api/templates", async (route) => {
@@ -339,9 +339,9 @@ test("proposal and template headers share save states and centred fixed-size pan
       });
       await expect(
         page.locator(".template-editor-header .editor-save-status"),
-      ).toHaveText("Saved · changes apply to new proposals");
+      ).toHaveText("Saved | changes apply to new proposals");
       await expect(page.locator(".editor-save-status")).toHaveText(
-        "Saved · changes apply to new proposals",
+        "Saved | changes apply to new proposals",
       );
       await expect(page.locator(".editor-save-status")).toHaveAttribute(
         "title",

@@ -135,14 +135,14 @@ export async function activity(repo: Repository): Promise<Activity[]> {
     metadata: e.metadata ?? {},
     detail:
       e.type === "document_version"
-        ? `Pricing reference · ${e.version ?? ""}`
+        ? `Pricing reference | ${e.version ?? ""}`
         : String(e.metadata?.name ?? e.metadata?.company ?? "Workspace"),
   }));
   const proposal = (await repo.list()).flatMap((p) =>
     p.events.map((e) => ({
       ...e,
       proposal_id: p.id,
-      detail: `${p.client.company} · ${p.title}${e.metadata.application_statement ? ` · ${e.metadata.application_statement}` : ""}`,
+      detail: `${p.client.company} | ${p.title}${e.metadata.application_statement ? ` | ${e.metadata.application_statement}` : ""}`,
     })),
   );
   return [...workspace, ...proposal].sort((a, b) =>

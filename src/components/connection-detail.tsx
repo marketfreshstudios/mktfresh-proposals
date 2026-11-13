@@ -278,7 +278,7 @@ const queueTitles: Record<Queue, string> = {
   stripe: "Proposals with Stripe billing to finish",
 };
 const proposalLink = (p: Proposal) => `/proposals/${p.id}`;
-const proposalLabel = (p: Proposal) => `${p.client.company} · ${p.title}`;
+const proposalLabel = (p: Proposal) => `${p.client.company} | ${p.title}`;
 
 export function BillingConnectionDetail({
   provider,
@@ -320,9 +320,9 @@ export function BillingConnectionDetail({
   const status = stripeDisconnecting
     ? "Disconnecting"
     : stripeSetup
-      ? "Setting up · test mode"
+      ? "Setting up | test mode"
       : connected
-        ? `Connected · ${qbo ? "sandbox" : mode + " mode"}`
+        ? `Connected | ${qbo ? "sandbox" : mode + " mode"}`
         : reconnect
           ? "Reconnect needed"
           : health
@@ -880,7 +880,7 @@ export function BillingConnectionDetail({
                       )}{" "}
                       one-time
                       {p.client_signed_at &&
-                        ` · signed ${format(p.client_signed_at)}`}
+                        ` | signed ${format(p.client_signed_at)}`}
                     </small>
                   )}
                 </span>
@@ -1022,7 +1022,7 @@ export function BillingConnectionDetail({
                       title: "Account connected",
                       icon: CircleCheck,
                       detail: stripe.accountSuffix
-                        ? `Ending in ${stripe.accountSuffix} · test mode`
+                        ? `Ending in ${stripe.accountSuffix} | test mode`
                         : "Test mode",
                     },
                     {
@@ -1040,7 +1040,7 @@ export function BillingConnectionDetail({
                       title: "Matching customers by email",
                       icon: stripe.customers ? CircleCheck : UsersRound,
                       detail: stripe.customers
-                        ? `${stripe.customers.linked} linked · ${stripe.customers.review} to review`
+                        ? `${stripe.customers.linked} linked | ${stripe.customers.review} to review`
                         : "Only an exact, unique email match is linked.",
                     },
                     {
@@ -1268,8 +1268,8 @@ export function BillingConnectionDetail({
                           {withCount(totalProducts, "product", "products")}
                         </strong>
                         <p>
-                          {recurring} recurring · {totalProducts - recurring}{" "}
-                          one-time{lastSync && ` · synced ${format(lastSync)}`}.
+                          {recurring} recurring | {totalProducts - recurring}{" "}
+                          one-time{lastSync && ` | synced ${format(lastSync)}`}.
                         </p>
                         {syncedCount !== undefined && (
                           <p>
@@ -1313,12 +1313,12 @@ export function BillingConnectionDetail({
                           `ending in ${stripe.accountSuffix}`,
                         ]
                           .filter(Boolean)
-                          .join(" · ")}
+                          .join(" | ")}
                       </ConnectionFact>
                     )}
                     {stripe?.connectedAt && stripe.actorName && (
                       <ConnectionFact label="Connected by">
-                        {stripe.actorName} ·{" "}
+                        {stripe.actorName} |{" "}
                         <time dateTime={stripe.connectedAt}>
                           {format(stripe.connectedAt)}
                         </time>
@@ -1338,7 +1338,7 @@ export function BillingConnectionDetail({
                     </ConnectionFact>
                     {connectedBy && (
                       <ConnectionFact label="Connected by">
-                        {staffName} ·{" "}
+                        {staffName} |{" "}
                         <time dateTime={connectedBy.created_at}>
                           {format(connectedBy.created_at)}
                         </time>
@@ -1363,7 +1363,7 @@ export function BillingConnectionDetail({
                         {activity?.lastBillingEvent && (
                           <>
                             {" "}
-                            · last received{" "}
+                            | last received{" "}
                             <time dateTime={activity.lastBillingEvent}>
                               {time(activity.lastBillingEvent)}
                             </time>

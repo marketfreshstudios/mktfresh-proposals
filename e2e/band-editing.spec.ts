@@ -212,7 +212,7 @@ test("band menus are accessible, controls keep 44px hit areas, and bars stay att
   await tablet.scrollIntoViewIfNeeded();
   await tablet.click();
   await expect(page.locator(".band-phone-header")).toContainText(
-    "Header · Shared",
+    "Header | Shared",
   );
   await expect(page.locator(".band-edit-bar")).toHaveAttribute(
     "data-band-dock",
@@ -420,7 +420,7 @@ test("Studio edits shared template bands with history, and proposals inherit the
   await expect(bands(page).last()).toContainText("Template shared note");
   await expect(
     page.locator(".template-editor-header .editor-save-status"),
-  ).toHaveText("Saved · changes apply to new proposals");
+  ).toHaveText("Saved | changes apply to new proposals");
   await expect
     .poll(
       () =>

@@ -19,7 +19,7 @@ export function ContrastNote({
       role="status"
     >
       {against
-        ? `${ratio >= 4.5 ? "✓ " : ""}${ratio.toFixed(1)}:1 with block text${ratio < 4.5 ? " · below 4.5:1. Text may be hard to read." : ""}`
+        ? `${ratio >= 4.5 ? "✓ " : ""}${ratio.toFixed(1)}:1 with block text${ratio < 4.5 ? " | below 4.5:1. Text may be hard to read." : ""}`
         : ratio >= 4.5
           ? `✓ ${ratio.toFixed(1)}:1 on white`
           : `${ratio.toFixed(1)}:1 on white — fine for backgrounds and large text; small text in this color may be hard to read.`}
@@ -137,7 +137,7 @@ export function ColorPicker({
         )}
         {!triggerText && variant === "compact" && (
           <span>
-            {label} · {value.toUpperCase()}
+            {label} | {value.toUpperCase()}
           </span>
         )}
       </button>

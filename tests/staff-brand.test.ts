@@ -16,7 +16,7 @@ function contrast(a: string, b: string) {
 }
 describe("Yeswell staff identity", () => {
   it("has staff-only metadata and complete install assets", () => {
-    expect(staffMetadata("Sign in").title).toBe("Sign in · Yeswell");
+    expect(staffMetadata("Sign in").title).toBe("Sign in | Yeswell");
     expect(staffPageName(["studio", "emails"])).toBe("Emails");
     const m = manifest();
     expect(m).toMatchObject({

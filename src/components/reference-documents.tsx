@@ -16,7 +16,7 @@ function ReferenceStatus({ documents }: { documents: ReferenceDocument[] }) {
       {documents.map((d) => (
         <div key={d.id}>
           <strong>
-            {d.name} · {d.version || "No successful version yet"}
+            {d.name} | {d.version || "No successful version yet"}
           </strong>
           {d.source_type === "linked" && (
             <p>
@@ -56,7 +56,7 @@ export function ReferenceDocuments({
           <div key={d.id} className="stack">
             <details>
               <Disclosure>
-                {d.name} · {d.version || "Awaiting first fetch"}
+                {d.name} | {d.version || "Awaiting first fetch"}
               </Disclosure>
               <p>SHA-256: {d.content_hash || "Unavailable"}</p>
               <pre>{d.content}</pre>

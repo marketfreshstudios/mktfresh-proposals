@@ -105,7 +105,7 @@ export function nextAction(p: Proposal) {
   if (billingIssues(p)) return "You review billing";
   if (p.status === "draft")
     return p.ai_unreviewed ? "You review the AI draft" : "You finish and send";
-  if (p.status === "viewed") return "Client decides · link opened";
+  if (p.status === "viewed") return "Client decides | link opened";
   if (p.status === "sent") return "Client opens the link";
   if (p.status === "declined" || p.status === "expired")
     return "Duplicate to try again";

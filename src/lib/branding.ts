@@ -26,7 +26,7 @@ export function emailHtml(
     button: { label: "View proposal", url },
     workspace: s?.company_name ?? "Proposal",
     sender: p.sender?.display_name ?? s?.owner ?? "Staff",
-    contact: [s?.email, s?.phone, s?.address].filter(Boolean).join(" · "),
+    contact: [s?.email, s?.phone, s?.address].filter(Boolean).join(" | "),
     accent: s?.accent_colour ?? "#365c4a",
     fonts: s?.proposal_fonts,
     logo:

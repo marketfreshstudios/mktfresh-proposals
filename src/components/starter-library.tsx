@@ -155,7 +155,7 @@ export function useStarterActions(
         )}
         {undo && (
           <ToastSurface onDismiss={() => setUndo(null)}>
-            Starter reset ·{" "}
+            Starter reset |{" "}
             <button
               onClick={() =>
                 void safe(async () => {

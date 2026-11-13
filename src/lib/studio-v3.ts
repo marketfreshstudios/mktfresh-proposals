@@ -38,7 +38,7 @@ export const emailStages = [
   },
   { name: "Billing", keys: ["staff_billing_complete"] },
   {
-    name: "Team and jobs · editable",
+    name: "Team and jobs | editable",
     keys: ["staff_billing_failed", "team_invite", "team_password_reset"],
   },
 ];
@@ -79,7 +79,7 @@ export function stripeStatus(
   health?: { stripe: boolean; mock: boolean; mode?: string } | null,
 ) {
   return health?.stripe
-    ? `Connected · ${health.mode === "live" ? "live" : "test"} mode`
+    ? `Connected | ${health.mode === "live" ? "live" : "test"} mode`
     : health?.mock
       ? "Mock mode"
       : health

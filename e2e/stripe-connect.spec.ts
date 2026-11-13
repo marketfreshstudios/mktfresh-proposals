@@ -102,10 +102,10 @@ test("another workspace connects in test mode, sees progress and can disconnect"
     .getByRole("link", { name: "Open Stripe", exact: true })
     .first();
   await expect(
-    page.getByText("Connected · test mode", { exact: true }),
+    page.getByText("Connected | test mode", { exact: true }),
   ).toBeVisible();
   await expect(open).toHaveAttribute("href", completed.dashboardUrl);
-  await expect(page.getByText("Harbor Studio · ending in bor1")).toBeVisible();
+  await expect(page.getByText("Harbor Studio | ending in bor1")).toBeVisible();
   if (capture)
     await page.screenshot({ path: directory + "/3a-connected-1440.png" });
   await page.getByRole("button", { name: "Stripe actions" }).click();

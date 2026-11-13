@@ -662,7 +662,7 @@ test("Live review: customer, contacts, setup, shared controls, products and font
       ).toBe(true);
       await licence.check();
       await expect(
-        page.getByLabel("Upload a font file · WOFF2 or TTF, under 1 MB"),
+        page.getByLabel("Upload a font file | WOFF2 or TTF, under 1 MB"),
       ).toBeEnabled();
       await capture("font-upload-license", "7d", width, theme);
       await page.goto(`/proposals/${editing.id}`);

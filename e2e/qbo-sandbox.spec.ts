@@ -586,7 +586,7 @@ test("R21 desktop connection states use actual actions and link to affected prop
   f.state("connected");
   f.overviewReview(true);
   await page.goto("/studio/connections?view=qbo");
-  await expect(headerChip).toHaveText("Connected · sandbox");
+  await expect(headerChip).toHaveText("Connected | sandbox");
   await expect(detail.locator(".connection-tile")).toHaveCount(3);
   await expect(detail.getByText("2 drafts to review")).toBeVisible();
   await expect(detail.getByText("1 to choose")).toBeVisible();
@@ -602,11 +602,11 @@ test("R21 desktop connection states use actual actions and link to affected prop
   await capture(page, "3e-quickbooks-connected");
   await detail.getByRole("link", { name: "Choose customer" }).click();
   await expect(
-    detail.getByRole("link", { name: "Cedar Law · Website build" }),
+    detail.getByRole("link", { name: "Cedar Law | Website build" }),
   ).toBeVisible();
   await detail.getByRole("link", { name: "Review drafts" }).click();
   await expect(
-    detail.getByRole("link", { name: "Harbor Dental · Website and care" }),
+    detail.getByRole("link", { name: "Harbor Dental | Website and care" }),
   ).toBeVisible();
 
   f.overviewReview(false);
@@ -632,7 +632,7 @@ test("R21 desktop connection states use actual actions and link to affected prop
     detail.getByRole("heading", { name: "Waiting on QuickBooks" }),
   ).toBeVisible();
   await expect(
-    detail.getByRole("link", { name: "Lumen Yoga · Local visibility" }),
+    detail.getByRole("link", { name: "Lumen Yoga | Local visibility" }),
   ).toBeVisible();
   await capture(page, "3h-quickbooks-reconnect");
   await detail.getByRole("button", { name: "QuickBooks actions" }).click();
@@ -653,7 +653,7 @@ test("R21 desktop connection states use actual actions and link to affected prop
 
   await page.goto("/studio/connections?view=stripe");
   await expect(page).toHaveURL(/\/studio\/connections\/stripe$/);
-  await expect(headerChip).toHaveText("Connected · test mode");
+  await expect(headerChip).toHaveText("Connected | test mode");
   await expect(detail.getByText("Receiving", { exact: true })).toBeVisible();
   await expect(
     detail.getByRole("link", { name: "Edit in Billing defaults" }),
@@ -756,7 +756,7 @@ for (const width of [1440, 375]) {
     f.state("connected");
     await page.goto("/studio/connections");
     await expect(
-      page.getByText("Connected to Example Sandbox Company · sandbox"),
+      page.getByText("Connected to Example Sandbox Company | sandbox"),
     ).toBeVisible();
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
     f.staffView();

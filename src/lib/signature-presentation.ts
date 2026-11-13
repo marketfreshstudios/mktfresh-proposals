@@ -36,7 +36,7 @@ export type SignaturePresentation = {
   separator?: " | ";
 };
 export function signatureHtml(s: SignaturePresentation) {
-  return `<section class="document-signature" aria-label="${s.role === "client" ? "Client" : "Company"} signature"><div class="signature-role">${s.role === "client" ? "CLIENT" : "COMPANY"}</div><div class="signature-area">${s.image ? `<img src="${esc(s.image)}" alt="${esc(s.name)}’s signature">` : s.typedName ? `<span class="typed-signature">${esc(s.typedName)}</span>` : ""}</div><strong class="signature-name">${esc(s.name)}</strong>${s.title ? `<div class="signature-title">${esc(s.title)}</div>` : ""}<div class="signature-date">${esc(s.company)}${s.company ? (s.separator ?? " · ") : ""}${esc(s.date || "Date signed")}</div></section>`;
+  return `<section class="document-signature" aria-label="${s.role === "client" ? "Client" : "Company"} signature"><div class="signature-role">${s.role === "client" ? "CLIENT" : "COMPANY"}</div><div class="signature-area">${s.image ? `<img src="${esc(s.image)}" alt="${esc(s.name)}’s signature">` : s.typedName ? `<span class="typed-signature">${esc(s.typedName)}</span>` : ""}</div><strong class="signature-name">${esc(s.name)}</strong>${s.title ? `<div class="signature-title">${esc(s.title)}</div>` : ""}<div class="signature-date">${esc(s.company)}${s.company ? (s.separator ?? " | ") : ""}${esc(s.date || "Date signed")}</div></section>`;
 }
 export const signatureCss = `
 .proposal-typography.proposal-typography .signature-pair{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;break-inside:avoid;page-break-inside:avoid;margin-top:var(--block-space-before,16px)}

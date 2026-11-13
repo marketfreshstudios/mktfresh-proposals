@@ -151,7 +151,7 @@ export function blockOptions({
         name: s.name,
         description:
           s.type === "group"
-            ? `Group · ${withCount(savedBlocks(s).length, "block")}`
+            ? `Group | ${withCount(savedBlocks(s).length, "block")}`
             : "Saved block",
         icon: "bookmark" as const,
         block: blocks[0],

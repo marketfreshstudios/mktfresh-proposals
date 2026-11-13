@@ -44,19 +44,19 @@ export function StudioHome({ data }: { data: Data }) {
       : "",
   ].filter(Boolean);
   const statuses = [
-    `${withCount(data.templates.length, "template")} · ${withCount(data.library.length, "saved block")}`,
+    `${withCount(data.templates.length, "template")} | ${withCount(data.library.length, "saved block")}`,
     clientEmails
-      ? `${withCount(clientEmails.length, "client email")} · ${clientEmails.filter((e) => e.updated_at).length} edited`
+      ? `${withCount(clientEmails.length, "client email")} | ${clientEmails.filter((e) => e.updated_at).length} edited`
       : "Loading email status…",
-    `${withCount(data.catalog.filter((i) => i.active && !i.legacy).length, "product")} · ${sync ? `synced ${relativeTime(sync.created_at)}` : "not synced yet"}`,
-    problems.join(" · ") ||
+    `${withCount(data.catalog.filter((i) => i.active && !i.legacy).length, "product")} | ${sync ? `synced ${relativeTime(sync.created_at)}` : "not synced yet"}`,
+    problems.join(" | ") ||
       (data.connections
         ? "Connections configured"
         : "Connection status unavailable"),
     "Brand, team and signatory",
     events
       ? events[0]
-        ? `Last: ${eventLabel(events[0])} · ${events[0].detail}`
+        ? `Last: ${eventLabel(events[0])} | ${events[0].detail}`
         : "No activity yet"
       : "Loading latest activity…",
   ];

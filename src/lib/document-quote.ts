@@ -80,7 +80,7 @@ export function quoteTotalText(
         .filter((l) => l.interval === interval && (!l.optional || l.selected))
         .reduce((n, l) => n + l.amount * l.qty, 0),
     fmt = (n: number) => formatMoney(n, currency, cents);
-  return `One-time: ${fmt(sum("one_time"))} · Monthly: ${fmt(sum("month"))}/mo${lines.some((l) => l.interval === "year") ? ` · Yearly: ${fmt(sum("year"))}/yr` : ""}`;
+  return `One-time: ${fmt(sum("one_time"))} | Monthly: ${fmt(sum("month"))}/mo${lines.some((l) => l.interval === "year") ? ` | Yearly: ${fmt(sum("year"))}/yr` : ""}`;
 }
 export const documentQuoteCss = `
 .proposal-typography.proposal-typography .flow-quote-line{display:grid;grid-template-columns:20px minmax(0,1fr);align-items:start;gap:12px;padding:12px 4px;margin:0;border:0;border-bottom:1px solid #e4eaed;border-radius:0;min-height:48px;font:400 14px/1.5 var(--font-ui,"Instrument Sans",sans-serif);box-sizing:border-box;background:transparent}

@@ -241,7 +241,7 @@ test.describe("Staff content surfaces", () => {
       name: "Studio navigation",
     });
     await expect(
-      studioNav.getByText("1 template · 1 saved block"),
+      studioNav.getByText("1 template | 1 saved block"),
     ).toBeVisible();
     await page.setViewportSize({ width: 1440, height: 960 });
 

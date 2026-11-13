@@ -302,7 +302,7 @@ function StaffAppContent({
   }
   useEffect(() => {
     if (section !== "billing")
-      document.title = `${p?.title ?? staffPageName(path)} · Yeswell`;
+      document.title = `${p?.title ?? staffPageName(path)} | Yeswell`;
   }, [section, p?.title, path.join("/")]);
   useEffect(() => {
     if (section !== "login" && section !== "billing") void load();
@@ -530,8 +530,8 @@ function StaffAppContent({
             : p.title;
       subtitle =
         p.client.company +
-        (p.sender ? ` · Sent by ${p.sender.display_name}` : "") +
-        (p.valid_until ? " · " + date(p.valid_until) : "");
+        (p.sender ? ` | Sent by ${p.sender.display_name}` : "") +
+        (p.valid_until ? " | " + date(p.valid_until) : "");
       headerAction = null;
       // Remember which view this proposal opens in, so a reload shows the
       // matching placeholder (details for sent proposals, editor for drafts).
@@ -1178,13 +1178,13 @@ function Audit({ p }: { p: Proposal }) {
         {p.signers.map((s) => (
           <div key={s.role}>
             <strong>
-              {s.name} · {s.role}
+              {s.name} | {s.role}
             </strong>
             {s.application_statement && <p>{s.application_statement}</p>}
             {s.authorization_text && <p>{s.authorization_text}</p>}
             <p>{s.consent_text}</p>
             <small>
-              {date(s.consent_at)} · IP {s.ip || "Not available"}
+              {date(s.consent_at)} | IP {s.ip || "Not available"}
             </small>
           </div>
         ))}

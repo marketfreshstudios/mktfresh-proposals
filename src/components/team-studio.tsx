@@ -103,7 +103,7 @@ export function TeamStudio({
   return (
     <div className="team-studio stack">
       {!embedded && (
-        <title>{`Team · ${data.settings?.company_name ?? "Workspace"}`}</title>
+        <title>{`Team | ${data.settings?.company_name ?? "Workspace"}`}</title>
       )}
       <header className="team-heading">
         <p className="muted">
@@ -205,10 +205,10 @@ export function TeamStudio({
                 ) : person.status === "invited" && person.invited_at ? (
                   <>
                     <span
-                      title={`Invited ${personal ? staffDate(person.invited_at) : date(person.invited_at)} · Not accepted yet`}
+                      title={`Invited ${personal ? staffDate(person.invited_at) : date(person.invited_at)} | Not accepted yet`}
                     >
                       Invite sent
-                      <span className="sr-only"> · Not accepted yet</span>
+                      <span className="sr-only"> | Not accepted yet</span>
                     </span>
                   </>
                 ) : (
@@ -311,7 +311,7 @@ export function TeamStudio({
         AI assistants like Claude are managed in{" "}
         <a href="/studio/connections?view=assistants">Connections</a>, not here.
       </p>
-      <a href="/studio/activity?view=team">Recent changes · Team activity</a>
+      <a href="/studio/activity?view=team">Recent changes | Team activity</a>
       {reassign && (
         <ReassignDialog
           from={reassign}
@@ -332,7 +332,7 @@ export function TeamStudio({
         <Sheet
           title={
             dialog.action === "menu"
-              ? `${dialog.person!.display_name} · actions`
+              ? `${dialog.person!.display_name} | actions`
               : dialog.action === "invite"
                 ? "Invite user"
                 : dialog.action === "password_set"
@@ -718,7 +718,7 @@ function auditText(e: TeamAudit) {
     case "password_set":
       return `Password set by ${by} for ${e.target_name}`;
     case "password_reset_requested":
-      return `Password reset requested · ${e.target_name}`;
+      return `Password reset requested | ${e.target_name}`;
     case "password_changed":
       return `${e.target_name} changed their password`;
     case "name":

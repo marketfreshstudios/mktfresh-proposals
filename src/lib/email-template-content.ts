@@ -72,14 +72,14 @@ export const emailDefaults = [
   ),
   def(
     "reminder_unopened",
-    "Reminder · unopened",
+    "Reminder | unopened",
     "Reminder: {{proposal.title}}",
     "Hi {{client.first_name}},\n\nHere’s a reminder that your proposal is ready whenever you are.\n\n{{proposal.validity}}\n\nPlease reply if you have any questions.",
     "View proposal",
   ),
   def(
     "reminder_viewed",
-    "Reminder · viewed, not signed",
+    "Reminder | viewed, not signed",
     "Any questions about {{proposal.title}}?",
     "Hi {{client.first_name}},\n\nI’m following up on the proposal you viewed. If anything needs clarification, just reply to this email.\n\n{{proposal.validity}}",
     "View proposal",

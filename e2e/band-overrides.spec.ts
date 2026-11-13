@@ -80,7 +80,7 @@ test("touch band selection, keyboard docking and the native phone actions sheet 
   await band.scrollIntoViewIfNeeded();
   await band.click();
   await expect(page.locator(".band-phone-header")).toContainText(
-    "Header · Shared",
+    "Header | Shared",
   );
   await expect(page.locator(".band-phone-header")).toContainText(
     "Changes show on this page only",
@@ -288,7 +288,7 @@ test("per-page menus preserve geometry, confirm and Undo restore unique edits, P
   await page.getByRole("menuitem", { name: /Hide on this page/ }).click();
   await expect(
     page.getByRole("img", {
-      name: "Unique header · Footer hidden",
+      name: "Unique header | Footer hidden",
       exact: true,
     }),
   ).toHaveCount(1);

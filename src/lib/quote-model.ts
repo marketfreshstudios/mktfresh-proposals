@@ -131,7 +131,7 @@ export function quoteSublines(
       i.sublines.map((s) => ({
         id: s.id,
         name: i.name,
-        description: [i.description, s.label].filter(Boolean).join(" · "),
+        description: [i.description, s.label].filter(Boolean).join(" | "),
         amount: s.amount,
         list_amount: s.list_amount,
         qty: s.qty,

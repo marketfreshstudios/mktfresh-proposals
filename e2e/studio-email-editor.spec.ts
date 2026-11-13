@@ -246,7 +246,7 @@ test("per-email pickers and read-only notifications follow existing permissions 
       else
         expect(fields.every((path) => !/team\.|job\./.test(path))).toBe(true);
       await expect(page.locator(".email-button-caption")).toHaveText(
-        `Button label · opens ${t.key.startsWith("team_") ? "the set-password page" : t.staff ? "the proposal record" : "the secure proposal"}`,
+        `Button label | opens ${t.key.startsWith("team_") ? "the set-password page" : t.staff ? "the proposal record" : "the secure proposal"}`,
       );
     }
   }

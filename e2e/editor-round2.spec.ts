@@ -584,7 +584,7 @@ test("Workspace and templates save style overrides and show responsive live samp
     .fill("23");
   await expect(
     page.locator(".template-editor-header .editor-save-status"),
-  ).toHaveText("Saved · changes apply to new proposals");
+  ).toHaveText("Saved | changes apply to new proposals");
   await expect
     .poll(
       async () =>
@@ -609,7 +609,7 @@ test("Workspace and templates save style overrides and show responsive live samp
   ).toHaveText("Heading 3");
   await expect(
     page.locator(".template-editor-header .editor-save-status"),
-  ).toHaveText("Saved · changes apply to new proposals");
+  ).toHaveText("Saved | changes apply to new proposals");
   await expect
     .poll(
       async () =>

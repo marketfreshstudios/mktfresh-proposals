@@ -390,7 +390,7 @@ test("saved group mini document shows Used in and save scope; phone select mode 
   const groupRow = page
     .locator(".saved-block-table .studio-table-row")
     .filter({ hasText: "Shared story" });
-  await expect(groupRow).toContainText("Group · 2 blocks");
+  await expect(groupRow).toContainText("Group | 2 blocks");
   await expect(groupRow).toContainText("In 1 template");
   await shot(page, "group-list-1440");
   await page.goto(`/proposals/${f.draft.id}`);

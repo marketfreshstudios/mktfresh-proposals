@@ -682,11 +682,11 @@ export function PagedPaper({
                 width: metrics.width,
                 height: metrics.height,
               }}
-              aria-label={`Page ${n + 1}${n === 0 ? " · Cover" : ""}`}
+              aria-label={`Page ${n + 1}${n === 0 ? " | Cover" : ""}`}
             >
               <small>
                 Page {n + 1}
-                {n === 0 ? " · Cover" : ""}
+                {n === 0 ? " | Cover" : ""}
               </small>
             </section>
           ))}

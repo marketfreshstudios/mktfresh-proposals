@@ -31,7 +31,7 @@ export function LinkedBlockNote({
       data-preserve-block-selection
       className="linked-block-note"
     >
-      <span>{instance.edited ? "Edited here" : `Linked · ${row.name}`}</span>
+      <span>{instance.edited ? "Edited here" : `Linked | ${row.name}`}</span>
       {error && (
         <span role="alert" className="danger">
           {error}

@@ -114,7 +114,7 @@ export const quoteTableCss = `
 .client-flow .flow-document .quote-table th[scope=row],.client-flow .flow-document .quote-table .quote-table-description{grid-column:1/-1}
 .client-flow .flow-document .quote-table .quote-table-description{margin-top:8px}
 .client-flow .flow-document .quote-table .quote-table-numeric{position:relative;margin-top:10px}
-.client-flow .flow-document .quote-table .quote-table-numeric+.quote-table-numeric .quote-table-entry::before{content:"·";position:absolute;left:-7px;color:#56646a}
+.client-flow .flow-document .quote-table .quote-table-numeric+.quote-table-numeric .quote-table-entry::before{content:"|";position:absolute;left:-7px;color:#56646a}
 .client-flow .flow-document .quote-table .quote-table-item{align-items:baseline}.client-flow .flow-document .quote-table .quote-table-item strong{min-width:0}
 .client-flow .flow-document .quote-table .quote-table-mobile-label{display:inline;font-size:12px;color:#56646a}
 .client-flow .flow-document .quote-table .quote-table-hit{align-items:center}

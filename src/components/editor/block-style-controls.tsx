@@ -29,9 +29,9 @@ function spaceOptions(withDefault = false) {
     <>
       {withDefault && <option value="">Default</option>}
       <option value="none">None</option>
-      <option value="s">Small · {blockSpacing.s}px</option>
-      <option value="m">Medium · {blockSpacing.m}px</option>
-      <option value="l">Large · {blockSpacing.l}px</option>
+      <option value="s">Small | {blockSpacing.s}px</option>
+      <option value="m">Medium | {blockSpacing.m}px</option>
+      <option value="l">Large | {blockSpacing.l}px</option>
     </>
   );
 }
@@ -120,7 +120,7 @@ export function BlockStyleControls({
               <option value="neutral">Light neutral</option>
               {palette.map((color, n) => (
                 <option key={color} value={color}>
-                  {n === 0 ? "Primary" : `Color ${n + 1}`} · {color}
+                  {n === 0 ? "Primary" : `Color ${n + 1}`} | {color}
                 </option>
               ))}
               <option value="custom">Custom hex</option>
@@ -187,8 +187,8 @@ export function BlockStyleControls({
               }
             >
               <option value="">None</option>
-              <option value="thin">Thin · 1px</option>
-              <option value="medium">Medium · 2px</option>
+              <option value="thin">Thin | 1px</option>
+              <option value="medium">Medium | 2px</option>
             </Select>
           </Field>
           {value.border && (
@@ -238,8 +238,8 @@ export function BlockStyleControls({
                 }
               >
                 <option value="">None</option>
-                <option value="s">Small · 4px</option>
-                <option value="m">Medium · 8px</option>
+                <option value="s">Small | 4px</option>
+                <option value="m">Medium | 8px</option>
               </Select>
             </Field>
           )}

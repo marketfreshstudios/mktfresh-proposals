@@ -279,7 +279,7 @@ function InlineEmailEditor({
         : "Staff"),
     status = !editable
       ? template.key.startsWith("team_")
-        ? "Super admin only · read-only"
+        ? "Super admin only | read-only"
         : "Staff notification | read-only"
       : emailIsDefault({ ...template, ...baseline })
         ? "Workspace default"
@@ -323,11 +323,11 @@ function InlineEmailEditor({
                   preview?.context?.client_email || selected?.client.email,
                 ]
                   .filter(Boolean)
-                  .join(" · ")}
+                  .join(" | ")}
         </dd>
         <dt>From</dt>
         <dd>
-          {sender} · {workspace}
+          {sender} | {workspace}
         </dd>
         <dt>Button opens</dt>
         <dd>
@@ -401,7 +401,7 @@ function InlineEmailEditor({
         backHref="/studio/emails"
         save={save}
         dirty={dirty}
-        dirtyLabel="Edited · not saved"
+        dirtyLabel="Edited | not saved"
         saving={busy}
         error={error}
         offline={false}
@@ -454,14 +454,14 @@ function InlineEmailEditor({
                 value={proposal}
                 onChange={(e) => setProposal(e.target.value)}
               >
-                <option value="">Sample client · no prices</option>
+                <option value="">Sample client | no prices</option>
                 {[...data.proposals]
                   .filter((p) => p.source === "native")
                   .sort((a, b) => b.updated_at.localeCompare(a.updated_at))
                   .slice(0, 20)
                   .map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.title} · {p.client.company}
+                      {p.title} | {p.client.company}
                     </option>
                   ))}
               </Select>
@@ -507,7 +507,7 @@ function InlineEmailEditor({
             data-values={valuesOn}
           >
             <p className="email-from-line">
-              From <strong>{sender}</strong> · {workspace}
+              From <strong>{sender}</strong> | {workspace}
             </p>
             <div
               className="email-subject block-frame"
@@ -640,7 +640,7 @@ function InlineEmailEditor({
           {undoReset && (
             <>
               {" "}
-              ·{" "}
+              |{" "}
               <button
                 type="button"
                 onClick={async () => {

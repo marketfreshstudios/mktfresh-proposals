@@ -332,7 +332,7 @@ test("exact inline sizes, Default, Mixed, shortcuts, heading/band limits and PDF
   await expect(page.locator(`${h} [data-inline-size="30"]`)).toHaveText("O");
   await page.keyboard.press("Escape");
   await page
-    .getByRole("group", { name: "Header · Shared", exact: true })
+    .getByRole("group", { name: "Header | Shared", exact: true })
     .first()
     .click();
   await page.getByRole("textbox", { name: "header column 1" }).click();

@@ -445,7 +445,7 @@ function BlockScopeContent({ children }: { children: ReactNode }) {
                           >
                             {notices.map((notice) => (
                               <div key={notice.key} className="band-notice-row">
-                                <span>{notice.text} · </span>
+                                <span>{notice.text} | </span>
                                 <button
                                   type="button"
                                   onClick={() => undo(notice)}
@@ -1336,13 +1336,13 @@ export function useBlockFeedback() {
                   {toast.view && (
                     <>
                       {" "}
-                      · <a href="/studio/templates?view=blocks">View</a>
+                      | <a href="/studio/templates?view=blocks">View</a>
                     </>
                   )}
                   {toast.undo && (
                     <>
                       {" "}
-                      ·{" "}
+                      |{" "}
                       <button
                         onClick={() => {
                           toast.undo?.();

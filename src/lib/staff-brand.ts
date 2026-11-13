@@ -5,7 +5,7 @@ export function staffMetadata(page: string): Metadata {
     ...(process.env.APP_URL
       ? { metadataBase: new URL(process.env.APP_URL) }
       : {}),
-    title: `${page} · Yeswell`,
+    title: `${page} | Yeswell`,
     description:
       "Yeswell — proposals, signatures and client approvals for your workspace.",
     icons: {
@@ -18,7 +18,7 @@ export function staffMetadata(page: string): Metadata {
     },
     manifest: "/manifest.webmanifest",
     openGraph: {
-      title: `${page} · Yeswell`,
+      title: `${page} | Yeswell`,
       images: [
         { url: "/yeswell-social-1200x630.png", width: 1200, height: 630 },
       ],

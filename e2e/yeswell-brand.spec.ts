@@ -96,7 +96,7 @@ test("Yeswell staff branding and install metadata stay separate from workspace c
     await expect(
       page.getByRole("img", { name: "Yeswell", exact: true }),
     ).toBeVisible();
-    await expect(page).toHaveTitle("Sign in · Yeswell");
+    await expect(page).toHaveTitle("Sign in | Yeswell");
     await expect(
       page.locator('link[rel="icon"][type="image/svg+xml"]'),
     ).toHaveAttribute("href", "/favicon.svg");

@@ -46,7 +46,7 @@ export function QuoteTable({
         <input
           type={item.choice_group_id ? "radio" : "checkbox"}
           name={`${defaults ? "document-" : ""}${item.choice_group_id ?? item.id}`}
-          aria-label={`${defaults ? "Default selection for " : ""}${item.name}${clientReading ? " | " : " · "}${selected(item) ? "included" : "not included"}`}
+          aria-label={`${defaults ? "Default selection for " : ""}${item.name}${clientReading ? " | " : " | "}${selected(item) ? "included" : "not included"}`}
           checked={selected(item)}
           aria-description={
             !defaults && item.choice_group_id && !choiceRequired(item)

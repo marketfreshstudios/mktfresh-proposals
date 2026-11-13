@@ -155,9 +155,9 @@ export function ActivityStudio({
           <section key={date} className="activity-day">
             <StaffSectionHeading>
               {date === today
-                ? "Today · "
+                ? "Today | "
                 : date === yesterday
-                  ? "Yesterday · "
+                  ? "Yesterday | "
                   : ""}
               {formatDate(events[0].created_at, {
                 month: "long",

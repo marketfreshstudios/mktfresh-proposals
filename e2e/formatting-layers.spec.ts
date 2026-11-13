@@ -325,7 +325,7 @@ test("formatting rows stay above content and every button is reachable in all ed
     );
     await expect(
       page.locator(".template-editor-header .editor-save-status"),
-    ).toHaveText("Saved · changes apply to new proposals");
+    ).toHaveText("Saved | changes apply to new proposals");
   }
   expect(errors).toEqual([]);
 });
