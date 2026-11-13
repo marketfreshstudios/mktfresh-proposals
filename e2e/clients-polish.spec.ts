@@ -319,7 +319,7 @@ test("Clients polish: structured contacts, explicit billing choices, row focus a
         .getByRole("button", { name: "Confirm link", exact: true })
         .click();
       await expect(page.getByRole("dialog")).toHaveCount(0);
-      await expect(page.locator(".stripe-customer-chooser")).toContainText(
+      await expect(page.locator(".client-billing-customer")).toContainText(
         "Linked",
       );
       billingUnavailable = true;
@@ -350,12 +350,18 @@ test("Clients polish: structured contacts, explicit billing choices, row focus a
       await page.keyboard.press("Escape");
       await page.goto(`/clients/${single.id}`);
       await expect(page.locator(".stripe-candidate")).toHaveCount(1);
+      // A single match opens on its own so it can be confirmed and linked.
+      await expect(
+        page.getByRole("button", { name: "Link this customer", exact: true }),
+      ).toBeVisible();
+      await expect(page.getByText("1 match", { exact: true })).toBeVisible();
       await capture("one-match", "6f", width, theme, true);
       await page.goto(`/clients/${empty.id}`);
       await expect(
-        page.getByText("No Stripe customer yet; one is created at checkout", {
-          exact: true,
-        }),
+        page.getByText(
+          "Created at checkout when a client signs for monthly services.",
+          { exact: true },
+        ),
       ).toBeVisible();
       await capture("no-match", "6f", width, theme, true);
       await page.getByRole("button", { name: "Client actions" }).click();
