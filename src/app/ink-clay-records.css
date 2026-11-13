@@ -1796,6 +1796,47 @@
 .record-billing-problem {
   color: var(--st-lost-ink);
 }
+.record-provider-details > summary {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr);
+  column-gap: 8px;
+  align-items: center;
+  cursor: pointer;
+}
+.record-provider-details > summary > .disclosure-marker {
+  margin: 0;
+}
+.record-provider-details > summary > .record-billing-next {
+  grid-column: 2;
+}
+.record-billing-next {
+  display: block;
+  margin-block-start: 2px;
+  color: var(--ink-muted);
+  font-size: 13px;
+}
+.record-oiot dl {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0 0;
+}
+.record-oiot dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+.record-oiot dt {
+  color: var(--ink-muted);
+}
+.record-oiot dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+.record-oiot h3 {
+  margin: 0;
+}
 .record-provider-details[open] > :not(summary) {
   margin-block-start: 8px;
 }
