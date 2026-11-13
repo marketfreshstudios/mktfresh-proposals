@@ -204,7 +204,7 @@ test("verified billing: mode-specific Checkout, immediate receipt, bounded retur
         await record(`record-confirmed-${mode}`, width, theme);
         const subscription = page
           .locator(".record-billing-row")
-          .filter({ hasText: "Stripe subscription" });
+          .filter({ hasText: "Monthly" });
         await expect(subscription.locator(".record-billing-end")).toContainText(
           "Active",
         );

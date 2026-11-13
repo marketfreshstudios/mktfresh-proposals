@@ -307,14 +307,11 @@ test("staff enters both amounts, client chooses the plan and the full bold terms
   });
   for (const label of runIns) expect(xml).toContain(`<b>${label}</b>`);
   await page.goto(`/proposals/${draft.id}`);
-  await expect(
-    page.getByText("Website purchase price $3,750 | Kickoff $1,500"),
-  ).toBeVisible();
-  await expect(
-    page.getByText(
-      "Early buyout or add-on credits are handled manually — the automatic step-down happens after 30 paid monthly payments.",
-    ),
-  ).toBeVisible();
+  const oiotBox = page.locator(".record-oiot");
+  await expect(oiotBox).toContainText("Purchase price$3,750");
+  await expect(oiotBox).toContainText("Kickoff$1,500");
+  await expect(oiotBox).toContainText("Steps downAfter 30 payments");
+  await expect(oiotBox).not.toContainText("Early buyout");
   if (capture)
     execFileSync("pdftoppm", [
       "-f",

@@ -31,6 +31,7 @@ import {
   oiotPlan,
   oiotKickoffField,
   oiotPurchasePriceField,
+  oiotStepDownField,
 } from "../lib/oiot";
 import { ProposalQuestions, useProposalQuestions } from "./proposal-questions";
 import type { QuestionSummary } from "../lib/proposal-questions";
@@ -2563,7 +2564,7 @@ export function RecordV4({
             )
             .sort()[0]
         : undefined;
-  const recurringDescription = [
+  const recurringSummary = [
     adopted
       ? adopted.prices.map(stripeLinkedAmount).join(" | ")
       : recurringAmount,
@@ -2571,15 +2572,29 @@ export function RecordV4({
       ? adopted.prices[0].name
       : null,
     adopted || stripeActive
-      ? "Stripe subscription"
+      ? "Stripe"
       : needsLink && !resend
         ? "No linked subscription"
         : "Stripe Checkout",
-    nextCharge &&
-      `next charge ${new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: timezone }).format(new Date(nextCharge))}`,
   ]
     .filter(Boolean)
     .join(" | ");
+  const recurringDescription = nextCharge ? (
+    <>
+      {recurringSummary}
+      <span className="record-billing-next">
+        Next charge{" "}
+        {new Intl.DateTimeFormat("en-US", {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+          timeZone: timezone,
+        }).format(new Date(nextCharge))}
+      </span>
+    </>
+  ) : (
+    recurringSummary
+  );
   const stripeChip = adopted
     ? { text: "Linked", tone: "success" }
     : needsLink
@@ -3697,13 +3712,26 @@ export function RecordV4({
                 </dl>
               )}
               {signedOiot && (
-                <section className="card record-billing-note">
+                <section className="card record-billing-note record-oiot">
                   <h3>{oiotPlan.name}</h3>
-                  <p>
-                    Website purchase price {signedOiot[oiotPurchasePriceField]}{" "}
-                    | Kickoff {signedOiot[oiotKickoffField]}
-                  </p>
-                  <p>{oiotPlan.billingNote}</p>
+                  <dl>
+                    <div>
+                      <dt>Purchase price</dt>
+                      <dd>{signedOiot[oiotPurchasePriceField]}</dd>
+                    </div>
+                    <div>
+                      <dt>Kickoff</dt>
+                      <dd>{signedOiot[oiotKickoffField]}</dd>
+                    </div>
+                    <div>
+                      <dt>Steps down</dt>
+                      <dd>
+                        After {oiotPlan.paidPayments} payments
+                        {signedOiot[oiotStepDownField] &&
+                          ` to ${signedOiot[oiotStepDownField]}/mo`}
+                      </dd>
+                    </div>
+                  </dl>
                 </section>
               )}
               {recordJobs.length > 0 && (

@@ -576,8 +576,9 @@ test("R24 record states use saved proposal, publication, and signing data at all
       if (fixture.frame === "4f") {
         const billing = page.locator(".record-billing-card");
         await expect(billing.locator(".record-billing-row")).toHaveCount(2);
-        await expect(billing).toContainText(
-          "Stripe subscription | next charge",
+        await expect(billing).toContainText("| Stripe");
+        await expect(billing.locator(".record-billing-next")).toHaveText(
+          /^Next charge \w{3}, \w{3} \d{1,2}$/,
         );
         await expect(billing).toContainText("QuickBooks invoice 1042");
         await expect(
