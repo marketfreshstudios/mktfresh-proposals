@@ -65,7 +65,7 @@ export function BandMenu({
           )}
         </>
       )}
-      <p>↑ ↓ move · Enter pick · Esc close</p>
+      <p>↑ ↓ move | Enter pick | Esc close</p>
     </div>
   );
 }

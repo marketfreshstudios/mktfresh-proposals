@@ -133,7 +133,7 @@ export function BlocksEditor({
             ) : b.type === "variable" ? (
               <>
                 <p>
-                  {`{{${b.path}}}`} · {map[b.path ?? ""] || "—"}
+                  {`{{${b.path}}}`} | {map[b.path ?? ""] || "—"}
                 </p>
                 <FieldOptions
                   map={map}

@@ -117,7 +117,7 @@ export function AccountPage({
                         ? account.theme[0].toUpperCase() +
                           account.theme.slice(1)
                         : "System"}{" "}
-                      ·{" "}
+                      |{" "}
                       {(account.timezone ?? settings?.timezone ?? "UTC")
                         .split("/")
                         .at(-1)
@@ -179,7 +179,7 @@ export function AccountPage({
               <p>
                 {[workspaceBusinessName(settings), businessState(settings)]
                   .filter(Boolean)
-                  .join(" · ")}
+                  .join(" | ")}
               </p>
               {data?.user.staff_role === "owner" && (
                 <a href={businessDetailsUrl}>Edit business details</a>
@@ -321,7 +321,7 @@ function Profile({
         <div>
           <strong>Email</strong>
           <p>
-            {email} ·{" "}
+            {email} |{" "}
             {workspaceReplyTo &&
             (!verifiedFrom ||
               email.split("@").at(-1)?.toLowerCase() ===
@@ -584,7 +584,7 @@ function AccountSignature({ data }: { data: Data }) {
       <>
         <CurrentSignature image={signature.image} />
         <p>
-          <strong>{signature.name}</strong> · Company signature
+          <strong>{signature.name}</strong> | Company signature
         </p>
         <p>
           {signature.authorized_user_ids.includes(user)
@@ -766,7 +766,7 @@ function SignatureEditor({
       <p className="muted">
         Printed under it:{" "}
         <strong>
-          {signature.name} · {signature.title ? `${signature.title}, ` : ""}
+          {signature.name} | {signature.title ? `${signature.title}, ` : ""}
           {workspace}
         </strong>
         . Changing it only affects future signatures. Sealed PDFs keep the

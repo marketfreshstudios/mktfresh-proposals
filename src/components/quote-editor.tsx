@@ -1907,7 +1907,7 @@ function QuoteEditorContent({
                     <ColumnActionBar
                       owner={owner}
                       itemKey={`block-${b.id}`}
-                      label={`Columns · ${b.columns!.items.length}`}
+                      label={`Columns | ${b.columns!.items.length}`}
                       onStyle={() => selection.selectStyle(`block-${b.id}`)}
                       onUnwrap={unwrap}
                       onDelete={removeColumns}
@@ -2710,7 +2710,7 @@ function QuoteEditorContent({
         <span className="quote-control-slot">
           {i.optional ? (
             <input
-              aria-label={`Default selection for ${i.name} · ${active ? "included" : "not included"}`}
+              aria-label={`Default selection for ${i.name} | ${active ? "included" : "not included"}`}
               type={i.choice_group_id ? "radio" : "checkbox"}
               name={`document-${i.choice_group_id ?? i.id}`}
               checked={active}
@@ -3021,7 +3021,7 @@ function QuoteEditorContent({
                 <p key={n}>
                   {blockText(b) ||
                     (b.type === "contract" &&
-                      b.clauses?.map((c) => c.heading).join(" · ")) ||
+                      b.clauses?.map((c) => c.heading).join(" | ")) ||
                     "Document section"}
                 </p>
               ))}
@@ -3299,7 +3299,7 @@ function QuoteEditorContent({
                           p.valid_until,
                           p.workspace_settings?.timezone,
                         )}{" "}
-                        ·{" "}
+                        |{" "}
                       </>
                     )}
                     From {settings?.company_name}

@@ -1105,7 +1105,7 @@
     font-size: 12px;
   }
   .row-amount.one-time:after {
-    content: " ·";
+    content: " |";
     color: var(--ink-muted);
     padding-left: 8px;
   }

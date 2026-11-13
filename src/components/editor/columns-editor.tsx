@@ -398,12 +398,12 @@ function EditorColumn({
           <button
             type="button"
             className="column-canvas-label"
-            aria-label={`Select ${label}${copied ? " · style copied" : ""}`}
+            aria-label={`Select ${label}${copied ? " | style copied" : ""}`}
             aria-pressed={selected}
             onClick={choose}
           >
             {label}
-            {copied && " · style copied"}
+            {copied && " | style copied"}
           </button>
           {pasteTarget && !selectedChild && (
             <button

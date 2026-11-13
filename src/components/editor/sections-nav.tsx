@@ -581,7 +581,7 @@ function BandPageMarker({
         ? `${kind === "header" ? "Header" : "Footer"} hidden`
         : `Unique ${kind}`,
     )
-    .join(" · ");
+    .join(" | ");
   return (
     <span
       className="band-page-marker"

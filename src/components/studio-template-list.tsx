@@ -136,7 +136,7 @@ export function StudioTemplateList({
     );
   const editLabel = (e: Activity | undefined) =>
     e
-      ? `Edited ${personal ? staffDate(e.created_at) : studioDate(e.created_at)} · ${data?.staff.find((m) => e.actor === `staff:${m.user_id}`)?.display_name ?? "Staff"}`
+      ? `Edited ${personal ? staffDate(e.created_at) : studioDate(e.created_at)} | ${data?.staff.find((m) => e.actor === `staff:${m.user_id}`)?.display_name ?? "Staff"}`
       : "Default";
   const lastEdit = (id: string) => editLabel(edited(id));
   const library = data?.library ?? [];
@@ -350,12 +350,12 @@ export function StudioTemplateList({
                       ).length === 1
                         ? "section"
                         : "sections"}{" "}
-                      ·{" "}
+                      |{" "}
                       {templateUsage(
                         data.proposals.filter((p) => p.template_id === t.id)
                           .length,
                       ).toLowerCase()}{" "}
-                      ·{" "}
+                      |{" "}
                       {t.starter_key
                         ? t.starter_edited
                           ? templateEdit(t.id)
@@ -448,7 +448,7 @@ export function StudioTemplateList({
               "Group",
             ].map((t) => ({
               value: t,
-              label: `${t} · ${data.library.filter((b) => t === "All" || (b.type === "group" ? "Group" : blockType(b.block)) === t).length}`,
+              label: `${t} | ${data.library.filter((b) => t === "All" || (b.type === "group" ? "Group" : blockType(b.block)) === t).length}`,
             }))}
           />
           <StaffTable className="studio-data-table saved-block-table">
@@ -469,10 +469,10 @@ export function StudioTemplateList({
                   <span>
                     <strong>{b.name}</strong>
                     <small>
-                      {type} · {summary(b.block) || "Empty block"}
+                      {type} | {summary(b.block) || "Empty block"}
                     </small>
                     <small className="saved-block-phone-summary">
-                      {b.type === "group" ? savedBlockLabel(b) : type} · {use}
+                      {b.type === "group" ? savedBlockLabel(b) : type} | {use}
                     </small>
                   </span>
                   <span

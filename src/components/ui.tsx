@@ -260,7 +260,7 @@ export function Signatures({
             <strong>{s ? "Signed" : "Awaiting signature"}</strong>
             <small>
               {s
-                ? `${s.name} · ${date(s.signed_at)}`
+                ? `${s.name} | ${date(s.signed_at)}`
                 : role === "company"
                   ? "Your counter-signature is required"
                   : "Client signs first"}
@@ -376,7 +376,7 @@ export function JobState({
         {error && (
           <div className="ps-job__error">
             {error}
-            {attempts ? ` · attempt ${attempts}` : ""}
+            {attempts ? ` | attempt ${attempts}` : ""}
           </div>
         )}
       </div>

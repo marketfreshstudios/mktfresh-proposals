@@ -152,7 +152,7 @@ export function HomeSetup({
               Set up {workspace}
             </h2>
             <p className="muted">
-              {done} of {setup.required.length} needed steps done · About 10
+              {done} of {setup.required.length} needed steps done | About 10
               minutes
             </p>
           </div>

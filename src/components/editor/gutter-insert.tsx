@@ -120,7 +120,7 @@ export function AiReviewCheck({
           {onUndo && (
             <>
               {" "}
-              ·{" "}
+              |{" "}
               <button
                 onClick={() => {
                   onUndo();

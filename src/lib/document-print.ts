@@ -90,7 +90,7 @@ export function printContent(input: {
   };
   const src =
     presentation.logo === null ? undefined : presentation.logo || input.logo;
-  const oldCover = `<header class="print-cover" data-print-block="cover">${input.logo ? `<img src="${escape(input.logo)}" alt="Company logo" style="max-height:60px;max-width:180px">` : ""}${input.workspace ? `<p class="print-workspace">${escape(input.workspace)}</p>` : ""}<p class="eyebrow">Proposal for ${escape(input.company)}</p><h1>${escape(input.title)}</h1><p class="byline">From ${escape(input.sender)}${input.validity ? ` · Valid until ${escape(input.validity)}` : ""}</p></header>`;
+  const oldCover = `<header class="print-cover" data-print-block="cover">${input.logo ? `<img src="${escape(input.logo)}" alt="Company logo" style="max-height:60px;max-width:180px">` : ""}${input.workspace ? `<p class="print-workspace">${escape(input.workspace)}</p>` : ""}<p class="eyebrow">Proposal for ${escape(input.company)}</p><h1>${escape(input.title)}</h1><p class="byline">From ${escape(input.sender)}${input.validity ? ` | Valid until ${escape(input.validity)}` : ""}</p></header>`;
   const cover = input.legacyCover
     ? oldCover
     : presentation.elements || presentation.logo_mode === "brand"

@@ -783,7 +783,7 @@ export function ProposalRows({
                   {!!p.question_summary?.open && (
                     <small className="question-badge open">
                       {p.question_summary.notified > 0
-                        ? "New client question · "
+                        ? "New client question | "
                         : ""}
                       {p.question_summary.open} open{" "}
                       {p.question_summary.open === 1 ? "question" : "questions"}
@@ -1518,7 +1518,7 @@ export function HomeV4({
                 kind === "review"
                   ? `Drafted by ${p.ai_connector || "an AI assistant"}`
                   : kind === "signature" && client
-                    ? `Signed by ${client.name} · ${shortDate.format(new Date(client.signed_at))}`
+                    ? `Signed by ${client.name} | ${shortDate.format(new Date(client.signed_at))}`
                     : kind === "viewed" && p.first_viewed_at
                       ? `Opened ${shortDate.format(new Date(p.first_viewed_at))}`
                       : kind === "billing"
@@ -1537,7 +1537,7 @@ export function HomeV4({
                   : "",
               ]
                 .filter(Boolean)
-                .join(" · ");
+                .join(" | ");
               return (
                 <article
                   className="home-attention-row"
@@ -4295,7 +4295,7 @@ export function ClientsV4({
                   ? "No default card recorded"
                   : "Unavailable")}
               {billing.next_invoice &&
-                ` · Next period ends ${readableDate(billing.next_invoice)}`}
+                ` | Next period ends ${readableDate(billing.next_invoice)}`}
             </small>
           </div>
           {(billing.linked_id || !!billing.candidates?.length) && (
@@ -4346,7 +4346,7 @@ export function ClientsV4({
                                   .map(
                                     (t) => `${money(t.amount, t.currency)}/mo`,
                                   )
-                                  .join(" · ")
+                                  .join(" | ")
                               : money(0) + "/mo"}
                           </dd>
                         </div>
@@ -4552,7 +4552,7 @@ export function ClientsV4({
       </div>
       {menu && (
         <Sheet
-          title={`Actions · ${client.company}`}
+          title={`Actions | ${client.company}`}
           menu
           anchor={clientActions.current}
           onClose={() => setMenu(false)}

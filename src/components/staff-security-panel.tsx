@@ -325,7 +325,7 @@ export function StaffSecurityPanel() {
       Math.floor((Date.now() - Date.parse(value)) / 60_000),
     );
     if (minutes >= 24 * 60)
-      return dates.date(value) + " · " + dates.time(value);
+      return dates.date(value) + " | " + dates.time(value);
     if (minutes < 1) return "Just now";
     return new Intl.RelativeTimeFormat("en-US").format(
       minutes >= 60 ? -Math.floor(minutes / 60) : -minutes,
@@ -430,7 +430,7 @@ export function StaffSecurityPanel() {
                     <span className="pill success">This device</span>
                   )}
                   <p>
-                    {device.location && device.location + " · "}
+                    {device.location && device.location + " | "}
                     {device.current ? "Now" : lastActive(device.last_active)}
                   </p>
                 </div>

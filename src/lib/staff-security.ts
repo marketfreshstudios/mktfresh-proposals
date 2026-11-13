@@ -84,7 +84,7 @@ function deviceLabel(agent: string) {
         : /Safari\//.test(agent)
           ? "Safari"
           : "";
-  return browser ? `${device} · ${browser}` : device;
+  return browser ? `${device} | ${browser}` : device;
 }
 
 function sessionLocation(headers: Headers) {

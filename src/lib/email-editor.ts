@@ -20,7 +20,7 @@ export function emailPickerFields(key: string) {
   );
 }
 export function emailButtonCaption(key: string, staff: boolean) {
-  return `Button label · opens ${key.startsWith("team_") ? "the set-password page" : staff ? "the proposal record" : "the secure proposal"}`;
+  return `Button label | opens ${key.startsWith("team_") ? "the set-password page" : staff ? "the proposal record" : "the secure proposal"}`;
 }
 export const emailAttachments = (key: string) =>
   ["signed_copy", "completed", "staff_copy"].includes(key)

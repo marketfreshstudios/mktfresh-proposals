@@ -158,7 +158,7 @@ export function ReassignDialog({
                   .filter((p) => p.user_id !== from?.user_id)
                   .map((p) => (
                     <option value={p.user_id} key={p.user_id}>
-                      {p.display_name} · {p.email}
+                      {p.display_name} | {p.email}
                     </option>
                   ))}
               </Select>

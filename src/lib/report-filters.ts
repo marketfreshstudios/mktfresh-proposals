@@ -205,11 +205,11 @@ export function reportMetricLabel(drill: ReportDrill) {
     case "sent":
       return "Proposals sent";
     case "trend-sent":
-      return `Proposals sent · ${drill.month}`;
+      return `Proposals sent | ${drill.month}`;
     case "signed":
       return "Signed proposals";
     case "trend-signed":
-      return `Client signatures · ${drill.month}`;
+      return `Client signatures | ${drill.month}`;
     case "viewed":
       return "Viewed proposals";
     case "outcomes":
@@ -221,7 +221,7 @@ export function reportMetricLabel(drill: ReportDrill) {
     case "open":
       return "Proposals open now";
     case "section":
-      return `Time spent · ${drill.section}`;
+      return `Time spent | ${drill.section}`;
     case "questions":
       return "Proposals with questions";
     case "questions-open":
@@ -231,6 +231,6 @@ export function reportMetricLabel(drill: ReportDrill) {
     case "questions-closed":
       return "Proposals with questions resolved without reply";
     case "value":
-      return `Signed value · ${drill.currency}`;
+      return `Signed value | ${drill.currency}`;
   }
 }

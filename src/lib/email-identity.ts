@@ -33,7 +33,7 @@ export function emailIdentity(p: Proposal) {
   const name = sender
     ? sender.from_email
       ? sender.display_name
-      : `${sender.display_name} · ${sender.company_name}`
+      : `${sender.display_name} | ${sender.company_name}`
     : undefined;
   const email = sender?.email;
   if (!name || !email)

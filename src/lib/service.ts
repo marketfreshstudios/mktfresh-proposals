@@ -223,7 +223,7 @@ export class ProposalService {
         if (!skipPrint) {
           for (const page of layout?.overflow_pages ?? [])
             ready.warnings.push(
-              `Page ${page} overflows in the PDF · Preview PDF`,
+              `Page ${page} overflows in the PDF | Preview PDF`,
             );
           if ((layout?.pricing_pages ?? 0) > 1)
             ready.warnings.push(

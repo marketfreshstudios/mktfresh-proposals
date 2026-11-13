@@ -445,14 +445,14 @@ export function WorkspaceStudio({
               <span className="workspace-logo-file">
                 {draft.logo
                   ? logoMeta
-                    ? `${logoMeta.name} · ${Math.max(1, Math.round(logoMeta.size / 1024))} KB`
+                    ? `${logoMeta.name} | ${Math.max(1, Math.round(logoMeta.size / 1024))} KB`
                     : "Workspace logo.png"
                   : "No logo uploaded"}
               </span>
               <input
                 type="file"
                 id="workspace-logo-upload"
-                aria-label="Logo · used on covers, client pages, emails and PDFs"
+                aria-label="Logo | used on covers, client pages, emails and PDFs"
                 ref={logoFile}
                 className="sr-only"
                 tabIndex={-1}
@@ -509,12 +509,12 @@ export function WorkspaceStudio({
             <div className="workspace-logo-label">
               <span className="workspace-logo-file">
                 {draft.logo_icon
-                  ? `${draft.logo_icon.name} · ${Math.max(1, Math.round(draft.logo_icon.size / 1024))} KB`
+                  ? `${draft.logo_icon.name} | ${Math.max(1, Math.round(draft.logo_icon.size / 1024))} KB`
                   : "No logo icon uploaded"}
               </span>
               <input
                 id="workspace-icon-upload"
-                aria-label="Logo icon · square, shown next to your workspace name and as the browser-tab icon on client pages"
+                aria-label="Logo icon | square, shown next to your workspace name and as the browser-tab icon on client pages"
                 type="file"
                 ref={iconFile}
                 className="sr-only"
@@ -779,10 +779,10 @@ export function WorkspaceStudio({
           {fontSelect("Body text", "body")}
         </div>
         <div className="field">
-          <span>Upload a font file · WOFF2 or TTF, under 1 MB</span>
+          <span>Upload a font file | WOFF2 or TTF, under 1 MB</span>
           <input
             ref={fontInput}
-            aria-label="Upload a font file · WOFF2 or TTF, under 1 MB"
+            aria-label="Upload a font file | WOFF2 or TTF, under 1 MB"
             type="file"
             accept=".woff2,.ttf"
             hidden
@@ -879,7 +879,7 @@ export function WorkspaceStudio({
             <span className={data.connections?.stripe ? "success" : "warning"}>
               ● {stripeStatus(data.connections)}
             </span>{" "}
-            · Manage
+            | Manage
           </a>
         </div>
         <div className="workspace-setting-row">
@@ -898,7 +898,7 @@ export function WorkspaceStudio({
             <span className={data.connections?.qbo ? "success" : "warning"}>
               ● {data.connections?.qbo ? "Sandbox configured" : "Not connected"}
             </span>{" "}
-            · {data.connections?.qbo ? "Manage" : "Connect"}
+            | {data.connections?.qbo ? "Manage" : "Connect"}
           </a>
         </div>
         <div className="workspace-setting-row workspace-payment-methods workspace-billing-control">
@@ -1059,7 +1059,7 @@ export function WorkspaceStudio({
               <option value="">Choose a staff account</option>
               {data.staff.map((m) => (
                 <option key={m.user_id} value={m.user_id}>
-                  {m.display_name} · {m.email}
+                  {m.display_name} | {m.email}
                 </option>
               ))}
             </Select>
@@ -1097,7 +1097,7 @@ export function WorkspaceStudio({
                   )
                 }
               />
-              {m.display_name} · {m.email}
+              {m.display_name} | {m.email}
             </label>
           ))}
         </fieldset>
@@ -1232,12 +1232,12 @@ export function WorkspaceStudio({
           [
             [
               "in_app",
-              "First client view · in-app note",
+              "First client view | in-app note",
               "Show a note on the proposal record after its first qualified client view.",
             ],
             [
               "email",
-              "First client view · staff email",
+              "First client view | staff email",
               "Email staff once when a client first views a sent proposal.",
             ],
           ] as const
@@ -1273,7 +1273,7 @@ export function WorkspaceStudio({
         ))}
         <div className="workspace-setting-row workspace-reminder-row">
           <div>
-            <h3>Client questions · notify super admins</h3>
+            <h3>Client questions | notify super admins</h3>
             <p>
               The proposal owner is notified when a client asks a question. Turn
               this on to notify super admins too.
@@ -1389,7 +1389,7 @@ export function WorkspaceStudio({
         ))}
       </fieldset>
       <p className="workspace-sample">
-        {draft.money?.cents === "always" ? "$500.00 · $49.50" : "$500 · $49.50"}
+        {draft.money?.cents === "always" ? "$500.00 | $49.50" : "$500 | $49.50"}
       </p>
     </>
   );

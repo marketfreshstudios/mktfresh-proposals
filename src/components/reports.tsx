@@ -271,7 +271,7 @@ export function ReportsPage({ query }: { query: StaffQuery }) {
         <div>
           <p className="t-eyebrow">
             {report
-              ? `${dateCaption(report.range)} · ${count.format(proposalCount)} ${proposalCount === 1 ? "proposal" : "proposals"}`
+              ? `${dateCaption(report.range)} | ${count.format(proposalCount)} ${proposalCount === 1 ? "proposal" : "proposals"}`
               : reportRanges.find(([value]) => value === filters.range)?.[1]}
           </p>
           <h1 className="t-page-title">Reports</h1>
@@ -291,7 +291,7 @@ export function ReportsPage({ query }: { query: StaffQuery }) {
           disabled={empty}
           onClick={() => openFilters()}
         >
-          {scoped ? `Filters · ${scoped}` : "Filters"}
+          {scoped ? `Filters | ${scoped}` : "Filters"}
         </Button>
         <div className="report-export">
           {empty || !report ? (
@@ -498,7 +498,7 @@ function Headline({
       "open",
       "Open now",
       count.format(report.open),
-      `${report.openSent} sent · ${report.openViewed} viewed`,
+      `${report.openSent} sent | ${report.openViewed} viewed`,
     ],
   ];
   return (
@@ -641,14 +641,14 @@ function Pipeline({ report, link }: { report: Report; link: Link }) {
         <h2 className="t-card-title" id="report-pipeline">
           Pipeline by stage
         </h2>
-        <span>Where each proposal is now · click a stage to open it</span>
+        <span>Where each proposal is now | click a stage to open it</span>
       </div>
       <div className="report-pipeline">
         {[report.pipeline.slice(0, 6), report.pipeline.slice(6)].map(
           (stages, i) => (
             <div className={i ? "pipeline-exited" : ""} key={i}>
               <h3 className="t-col-head">
-                {i ? "Exited" : "In progress and won"} ·{" "}
+                {i ? "Exited" : "In progress and won"} |{" "}
                 {stages.reduce((n, s) => n + s.count, 0)}
               </h3>
               <div className="pipeline-track">
@@ -657,7 +657,7 @@ function Pipeline({ report, link }: { report: Report; link: Link }) {
                     stage.count > 0 && (
                       <a
                         href={link({ report: "stage", stage: stage.id })}
-                        aria-label={`${stage.count} · ${stage.label}`}
+                        aria-label={`${stage.count} | ${stage.label}`}
                         key={stage.id}
                         data-stage={stage.id}
                         style={{ flex: stage.count }}

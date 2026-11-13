@@ -300,14 +300,14 @@ export function CatalogStudio({
           ●
         </span>{" "}
         {data?.connections?.stripe
-          ? `Synced with Stripe · ${data.connections.mode === "live" ? "live" : "test"} mode`
+          ? `Synced with Stripe | ${data.connections.mode === "live" ? "live" : "test"} mode`
           : data
             ? stripeStatus(data.connections)
             : "Loading connection status…"}{" "}
-        {data && ` · ${synced ? relativeTime(synced) : "No recorded sync yet"}`}
+        {data && ` | ${synced ? relativeTime(synced) : "No recorded sync yet"}`}
         {data && !beforeStripe && (
           <>
-            {" · "}
+            {" | "}
             <Button
               onClick={() =>
                 run(async () => {
@@ -332,7 +332,7 @@ export function CatalogStudio({
               aria-pressed={filter === c}
               onClick={() => setFilter(c)}
             >
-              {c} ·{" "}
+              {c} |{" "}
               {!data
                 ? "–"
                 : c === "Billing categories"
@@ -516,8 +516,8 @@ export function CatalogStudio({
                             ),
                         )
                         .map((t) => t.name)
-                        .join(" · ") || "No templates"}{" "}
-                      ·{" "}
+                        .join(" | ") || "No templates"}{" "}
+                      |{" "}
                       {
                         data.proposals.filter(
                           (p) =>
@@ -782,7 +782,7 @@ function CatalogItem({
               name="legacy"
               defaultChecked={i?.legacy ?? false}
             />
-            Legacy · hidden from new quotes
+            Legacy | hidden from new quotes
           </label>
           <Field label="Show on quotes only when">
             <Select
@@ -840,7 +840,7 @@ function CatalogItem({
                       .filter((i) => i.interval !== "one_time")
                       .map((i) => (
                         <option value={i.stripe_lookup_key ?? ""} key={i.id}>
-                          {itemDisplayName(i)} · {i.stripe_lookup_key}
+                          {itemDisplayName(i)} | {i.stripe_lookup_key}
                         </option>
                       ))}
                   </Select>
@@ -1981,10 +1981,10 @@ function TemplatesStudioContent({
           }
           savedLabel={
             mode === "templates"
-              ? "Saved · changes apply to new proposals"
+              ? "Saved | changes apply to new proposals"
               : "Saved"
           }
-          dirtyLabel="Edited · not saved"
+          dirtyLabel="Edited | not saved"
           titleEditor={
             <>
               <input
@@ -2169,7 +2169,7 @@ function TemplatesStudioContent({
                 onClick={() => openTab("Used in")}
               >
                 In {usage.templates.length}{" "}
-                {usage.templates.length === 1 ? "template" : "templates"} ·{" "}
+                {usage.templates.length === 1 ? "template" : "templates"} |{" "}
                 {usage.drafts.length}{" "}
                 {usage.drafts.length === 1 ? "draft" : "drafts"} with a copy
               </button>
@@ -2374,7 +2374,7 @@ function TemplatesStudioContent({
                                       <ColumnActionBar
                                         owner={owner}
                                         itemKey={`template-${b.id}`}
-                                        label={`Columns · ${b.columns!.items.length}`}
+                                        label={`Columns | ${b.columns!.items.length}`}
                                         onStyle={() =>
                                           selection.selectStyle(
                                             `template-${b.id}`,
@@ -3063,7 +3063,7 @@ function TemplatesStudioContent({
                                           </h3>
                                           {c.show_when && (
                                             <small>
-                                              Shown when ·{" "}
+                                              Shown when |{" "}
                                               {c.show_when.kind ===
                                               "oiot_plan_selected"
                                                 ? `${oiotPlan.name} care plan`
@@ -3514,7 +3514,7 @@ function BlockPanel({
               checked={c.draft ?? false}
               onChange={(e) => update({ draft: e.target.checked })}
             />
-            Draft wording · warn before sending
+            Draft wording | warn before sending
           </label>
           <DialogActions>
             <Button
@@ -3607,7 +3607,7 @@ export function ConnectionsStudio({
       name: "Stripe",
       state:
         health?.stripe_connect?.state === "setting_up"
-          ? "Setting up · test mode"
+          ? "Setting up | test mode"
           : health?.stripe_connect?.state === "disconnecting"
             ? "Disconnecting"
             : stripeStatus(health),
@@ -3630,7 +3630,7 @@ export function ConnectionsStudio({
         qbo?.state === "reconnect"
           ? "Reconnect needed"
           : qbo?.state === "connected"
-            ? `Connected to ${qbo.company ?? "QuickBooks"} · sandbox`
+            ? `Connected to ${qbo.company ?? "QuickBooks"} | sandbox`
             : health?.qbo
               ? "Sandbox configured"
               : "Setup needed",
@@ -3652,7 +3652,7 @@ export function ConnectionsStudio({
           : "Setup needed",
       line: "Proposals send from the selected staff member. Replies go to that person.",
       detail: data.settings?.sending_domain
-        ? `${data.settings.sending_domain} · verify SPF and DKIM with your provider`
+        ? `${data.settings.sending_domain} | verify SPF and DKIM with your provider`
         : "Add your verified sending domain in Workspace.",
       action: "Settings",
     },
@@ -3678,7 +3678,7 @@ export function ConnectionsStudio({
           ? "Imported"
           : "Not imported",
       line: "Past proposals are kept as read-only PDFs linked to their clients.",
-      detail: `${imports.length} imported · ${missing.length} missing PDFs`,
+      detail: `${imports.length} imported | ${missing.length} missing PDFs`,
       action: "Import details",
     },
   ];
@@ -4073,7 +4073,7 @@ function ProductMappingDetails({
             <strong className={state.warning ? "mapping-warning" : ""}>
               {state.label}
             </strong>{" "}
-            · {state.detail}
+            | {state.detail}
           </p>
         ))
       ) : (

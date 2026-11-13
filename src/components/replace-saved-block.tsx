@@ -77,7 +77,7 @@ export function ReplaceSavedBlockDialog({
           >
             {rows.map((r) => (
               <option key={r.id} value={r.id}>
-                {r.name} · version {r.version ?? 1}
+                {r.name} | version {r.version ?? 1}
               </option>
             ))}
           </Select>

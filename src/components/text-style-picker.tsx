@@ -61,7 +61,7 @@ export function TextStylePicker({
         aria-haspopup={edit ? "menu" : "listbox"}
         aria-controls={open ? id : undefined}
         aria-expanded={open}
-        title={`Text style · ${styles[value?.value ?? 0]}`}
+        title={`Text style | ${styles[value?.value ?? 0]}`}
         disabled={!value}
         onMouseDown={edit ? (e) => e.preventDefault() : undefined}
         onClick={() => (open ? setOpen(false) : show())}

@@ -23,7 +23,7 @@ export function StaffAuthFrame({
         <div className="card stack">{children}</div>
         <p className="account-workspace">
           {workspace ?? "Yeswell workspace"}
-          {host ? ` · ${host}` : ""}
+          {host ? ` | ${host}` : ""}
         </p>
       </div>
     </main>

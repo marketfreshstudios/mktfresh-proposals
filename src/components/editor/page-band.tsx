@@ -208,7 +208,7 @@ export function PageBand(props: Props) {
     control?.announce(`Page ${page} now uses the shared ${kind}`);
     done(true);
   };
-  const label = `${kind === "header" ? "Header" : "Footer"} · ${source === "shared" ? "Shared" : source === "hidden" ? "Hidden" : `Unique to page ${page}`}`;
+  const label = `${kind === "header" ? "Header" : "Footer"} | ${source === "shared" ? "Shared" : source === "hidden" ? "Hidden" : `Unique to page ${page}`}`;
   const scopeLabel =
     source === "shared"
       ? sharedPagesLabel(sharedCount)
@@ -344,7 +344,7 @@ export function PageBand(props: Props) {
       className="page-band-frame"
       role="group"
       tabIndex={editable ? 0 : undefined}
-      aria-label={`${kind === "header" ? "Header" : "Footer"} · ${source === "shared" ? "Shared" : source === "unique" ? `Unique to page ${page}` : "Hidden"}`}
+      aria-label={`${kind === "header" ? "Header" : "Footer"} | ${source === "shared" ? "Shared" : source === "unique" ? `Unique to page ${page}` : "Hidden"}`}
       style={
         {
           left: `var(--editor-sheet-left,${geometry.margins.left}px)`,
