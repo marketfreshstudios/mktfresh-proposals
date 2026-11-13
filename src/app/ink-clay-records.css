@@ -2550,7 +2550,7 @@
 /* Redesign 27: Engagement on the record. Ink marks, wide layout beside the
    Timeline before signing, two-by-two tiles in the narrow column. */
 .record-v4 .engagement-panel {
-  --engagement-ink: var(--ink-strong, #13303a);
+  --engagement-ink: var(--ink-title);
   gap: 16px;
 }
 .record-v4 .engagement-bar > span,
@@ -2818,7 +2818,7 @@
   flex-wrap: nowrap;
   gap: 0;
   padding: 0;
-  border: 1px solid #c2cdd2;
+  border: 1px solid var(--border-strong);
   border-radius: 18px;
   box-shadow: 0 1px 2px rgb(19 48 58 / 0.06);
 }
@@ -2829,7 +2829,7 @@
   padding: 16px 22px;
 }
 .ink-clay .record-v4 .record-details-values > .record-fact + .record-fact {
-  border-inline-start: 1px solid #dce3e6;
+  border-inline-start: 1px solid var(--border);
 }
 .ink-clay .record-v4 .record-details-values > .record-details-client {
   flex-grow: 1.4;
@@ -2838,7 +2838,7 @@
   flex: 1.9 1 0;
 }
 .ink-clay .record-v4 .record-fact dt {
-  color: #56646a;
+  color: var(--ink-muted);
 }
 .ink-clay .record-v4 .record-fact dd {
   display: grid;
@@ -2886,15 +2886,15 @@
   inline-size: 100%;
   min-block-size: 36px;
   padding: 2px 3px 2px 12px;
-  border: 1px solid #dce3e6;
+  border: 1px solid var(--border);
   border-radius: 10px;
-  background: #f4f7f7;
+  background: var(--surface-preview);
   font: 500 13px/18px var(--font-ui);
 }
 .record-link-field[data-empty],
 .record-link-field[data-closed] {
   border-style: dashed;
-  border-color: #b9c6cb;
+  border-color: var(--border-strong);
   color: var(--ink-muted);
 }
 .record-link-field .record-link-url {
@@ -2977,7 +2977,7 @@
   inline-size: 28px;
   block-size: 28px;
   border-radius: 50%;
-  background: #f4f7f7;
+  background: var(--surface-preview);
   color: var(--ink-muted);
 }
 .ink-clay .record-v4 .record-timeline-list strong {
@@ -2988,7 +2988,7 @@
 }
 .record-timeline-list [data-unpublished] .timeline-icon {
   background: var(--st-lost-soft);
-  color: #c2412f;
+  color: var(--st-lost-ink, #c2412f);
 }
 
 /* Quote. */
@@ -3012,7 +3012,7 @@
   margin: 0 20px 20px;
   padding: 12px 14px;
   border-radius: 12px;
-  background: #f4f7f7;
+  background: var(--surface-preview);
 }
 .record-oiot h3 {
   font: 600 14px/20px var(--font-ui);
@@ -3039,7 +3039,7 @@
   padding: 12px 0;
 }
 .record-ready-list > li + li {
-  border-block-start: 1px solid #dce3e6;
+  border-block-start: 1px solid var(--border);
 }
 .record-ready-list strong {
   display: block;
@@ -3092,7 +3092,7 @@
 }
 .record-questions[data-collapsed] .record-questions-heading {
   padding-block-end: 12px;
-  border-block-end: 1px solid #dce3e6;
+  border-block-end: 1px solid var(--border);
 }
 .record-questions-empty {
   display: flex;
@@ -3135,7 +3135,7 @@
   padding: 18px 0;
 }
 .record-questions-body > * + * {
-  border-block-start: 1px solid #dce3e6;
+  border-block-start: 1px solid var(--border);
 }
 .record-question-thread {
   display: grid;
@@ -3148,7 +3148,7 @@
   gap: 12px;
 }
 .record-question-about {
-  color: #56646a;
+  color: var(--ink-muted);
   font: 600 12px/16px var(--font-ui);
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -3158,7 +3158,7 @@
   margin: 0;
   padding: 10px 12px;
   border-radius: 8px;
-  background: #f4f7f7;
+  background: var(--surface-preview);
   color: var(--ink-muted);
   font:
     400 14px/20px "Source Serif 4",
@@ -3176,7 +3176,7 @@
 }
 .record-question-message {
   padding-inline-start: 14px;
-  border-inline-start: 3px solid #c2cdd2;
+  border-inline-start: 3px solid var(--border-strong);
 }
 .record-question-message[data-from="staff"] {
   border-color: var(--ink);
@@ -3236,7 +3236,7 @@
     border-inline-start: 0;
   }
   .ink-clay .record-v4 .record-details-values > .record-fact {
-    border-block-start: 1px solid #dce3e6;
+    border-block-start: 1px solid var(--border);
   }
   .ink-clay .record-v4 .record-details-values > .record-fact:nth-child(-n + 3) {
     border-block-start: 0;
@@ -3245,7 +3245,7 @@
     .record-v4
     .record-details-values
     > .record-fact:not(:nth-child(3n + 1)) {
-    border-inline-start: 1px solid #dce3e6;
+    border-inline-start: 1px solid var(--border);
   }
 }
 @media (width < 960px) {
@@ -3369,7 +3369,7 @@
   grid-area: auto;
 }
 .ink-clay .record-v4 .engagement-panel .engagement-headline strong {
-  color: var(--ink-strong, #13303a);
+  color: var(--ink-title);
   font: 400 32px/38px var(--font-title);
 }
 .record-v4 .engagement-charts {
@@ -3418,7 +3418,7 @@
 }
 .ink-clay .record-v4 .record-quote-totals h3 {
   display: block;
-  color: #56646a;
+  color: var(--ink-muted);
   font: 600 12px/16px var(--font-ui);
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -3449,7 +3449,7 @@
   h3,
 .staff-foundation.ink-clay .record-v4 .record-oiot h3 {
   margin: 0;
-  color: #56646a;
+  color: var(--ink-muted);
   font: 600 12px/16px var(--font-ui);
   letter-spacing: 0.08em;
   text-transform: uppercase;

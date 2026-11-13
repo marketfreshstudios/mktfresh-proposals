@@ -3116,17 +3116,19 @@ export function RecordV4({
       <FileText size={16} aria-hidden="true" /> Download sealed PDF
     </a>
   ) : lockedEdit ? (
-    <Button
-      className="record-edit"
-      disabled
-      title="Signed proposals are locked."
-      aria-describedby="record-edit-locked"
-    >
-      Edit
+    <>
+      <Button
+        className="record-edit"
+        disabled
+        title="Signed proposals are locked."
+        aria-describedby="record-edit-locked"
+      >
+        Edit
+      </Button>
       <span id="record-edit-locked" className="sr-only">
         Signed proposals are locked.
       </span>
-    </Button>
+    </>
   ) : editable ? (
     <a className="btn record-edit record-primary" href={editUrl}>
       Edit
