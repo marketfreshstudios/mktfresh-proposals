@@ -293,7 +293,7 @@ test("account security dialogs, off-domain email, backup codes and sessions at d
   await capture(page, "1d2-confirmed-1440");
   await page.getByRole("link", { name: "Done" }).click();
   await expect(
-    page.getByText(/alex@other.test | used to sign in/),
+    page.getByText(/alex@other.test \| used to sign in/),
   ).toBeVisible();
 });
 
