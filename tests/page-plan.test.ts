@@ -121,7 +121,7 @@ it("readiness names overflowing PDF pages without dropping the safe send warning
     printLayout: async () => ({ overflow_pages: [3], pricing_pages: 2 }),
   });
   const ready = await f.service.checkReady(f.draft);
-  expect(ready.warnings).toContain("Page 3 overflows in the PDF · Preview PDF");
+  expect(ready.warnings).toContain("Page 3 overflows in the PDF | Preview PDF");
   expect(
     ready.warnings.some((s) => s.startsWith("Pricing table spans 2 pages")),
   ).toBe(true);

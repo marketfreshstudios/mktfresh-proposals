@@ -24,21 +24,21 @@ test("account security dialogs, off-domain email, backup codes and sessions at d
     {
       id: "00000000-0000-4000-8000-000000000010",
       current: true,
-      device: "Mac · Chrome",
+      device: "Mac | Chrome",
       location: "Miami, FL",
       last_active: "2026-11-09T18:00:00Z",
     },
     {
       id: "00000000-0000-4000-8000-000000000011",
       current: false,
-      device: "iPhone · Safari",
+      device: "iPhone | Safari",
       location: "Miami, FL",
       last_active: "2026-11-09T15:00:00Z",
     },
     {
       id: "00000000-0000-4000-8000-000000000012",
       current: false,
-      device: "iPad · Safari",
+      device: "iPad | Safari",
       location: null,
       last_active: "2026-11-02T16:00:00Z",
     },
@@ -153,7 +153,7 @@ test("account security dialogs, off-domain email, backup codes and sessions at d
 
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/account/security");
-  await expect(page.getByText("Mac · Chrome", { exact: true })).toBeVisible();
+  await expect(page.getByText("Mac | Chrome", { exact: true })).toBeVisible();
   expect(
     (await new AxeBuilder({ page }).include(".staff-account-page").analyze())
       .violations,
@@ -192,19 +192,19 @@ test("account security dialogs, off-domain email, backup codes and sessions at d
   await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
 
   await page
-    .getByRole("button", { name: "Sign out iPhone · Safari", exact: true })
+    .getByRole("button", { name: "Sign out iPhone | Safari", exact: true })
     .click();
   await expect(
-    dialog.getByRole("heading", { name: "Sign out iPhone · Safari?" }),
+    dialog.getByRole("heading", { name: "Sign out iPhone | Safari?" }),
   ).toBeVisible();
   await capture(page, "1a2-sign-out-device-1440");
   await dialog.getByRole("button", { name: "Sign out", exact: true }).click();
-  await expect(page.getByText("iPhone · Safari")).toHaveCount(0);
+  await expect(page.getByText("iPhone | Safari")).toHaveCount(0);
   await page
     .getByRole("button", { name: "Sign out everywhere else", exact: true })
     .click();
   await dialog.getByRole("button", { name: "Sign out", exact: true }).click();
-  await expect(page.getByText("iPad · Safari")).toHaveCount(0);
+  await expect(page.getByText("iPad | Safari")).toHaveCount(0);
   await expect(page.getByText("This device")).toBeVisible();
 
   await page.getByRole("button", { name: "Turn on", exact: true }).click();
@@ -293,7 +293,7 @@ test("account security dialogs, off-domain email, backup codes and sessions at d
   await capture(page, "1d2-confirmed-1440");
   await page.getByRole("link", { name: "Done" }).click();
   await expect(
-    page.getByText(/alex@other.test · used to sign in/),
+    page.getByText(/alex@other.test | used to sign in/),
   ).toBeVisible();
 });
 

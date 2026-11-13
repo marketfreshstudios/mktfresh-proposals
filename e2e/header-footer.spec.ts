@@ -339,7 +339,7 @@ test("new Studio templates start with shared bands and save template switches wi
     .check();
   await expect(
     page.locator(".template-editor-header .editor-save-status"),
-  ).toHaveText("Saved · changes apply to new proposals");
+  ).toHaveText("Saved | changes apply to new proposals");
   await expect
     .poll(() => saved?.header_footer?.headerSpacing.showOnCover)
     .toBe(true);

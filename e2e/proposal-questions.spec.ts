@@ -243,7 +243,7 @@ test("client question reaches staff, receives a plain-text reply on the same lin
   ).toBe("staff@example.test");
   await page.goto("/proposals");
   await expect(
-    page.getByText("New client question · 1 open question", { exact: true }),
+    page.getByText("New client question | 1 open question", { exact: true }),
   ).toBeVisible();
   await capture(page, "proposals-badge-1440");
   // Keep the client page open while staff replies: the reply arrives in place.

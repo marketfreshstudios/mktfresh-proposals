@@ -150,7 +150,7 @@ test("workspace icon uploads, replaces, removes and follows responsive marks wit
   const mark = page.locator(".workspace-label img.workspace-mark");
   await expect(mark).toBeVisible();
   const oldSrc = await mark.getAttribute("src");
-  await expect(page.getByText(/Studio icon.png · \d+ KB/)).toBeVisible();
+  await expect(page.getByText(/Studio icon.png | \d+ KB/)).toBeVisible();
   await expect(
     page.locator(".workspace-section-card").getByRole("alert"),
   ).toHaveCount(0);
@@ -159,7 +159,7 @@ test("workspace icon uploads, replaces, removes and follows responsive marks wit
   ).toHaveText("Saved");
   await capture(page, "brand-icon-1440");
   await page
-    .getByLabel("Logo · used on covers, client pages, emails and PDFs", {
+    .getByLabel("Logo | used on covers, client pages, emails and PDFs", {
       exact: true,
     })
     .setInputFiles({
@@ -272,7 +272,7 @@ test("workspace icon uploads, replaces, removes and follows responsive marks wit
   });
   await expect(mark).toHaveAttribute("src", /workspace-icon/);
   await expect.poll(() => mark.getAttribute("src")).not.toBe(oldSrc);
-  await expect(page.getByText(/Replacement.png ·/)).toBeVisible();
+  await expect(page.getByText(/Replacement.png |/)).toBeVisible();
   await page
     .locator(".workspace-icon-row")
     .getByRole("button", { name: "Remove", exact: true })

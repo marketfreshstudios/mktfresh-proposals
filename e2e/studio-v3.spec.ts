@@ -408,7 +408,7 @@ test("Studio v3 route lists, eleven staff emails and Workspace autosave keep val
     "Client activity",
     "Signatures",
     "Billing",
-    "Team and jobs · editable",
+    "Team and jobs | editable",
   ])
     await expect(
       list.getByRole("heading", { name: label, exact: true }),
@@ -447,7 +447,7 @@ test("Studio v3 route lists, eleven staff emails and Workspace autosave keep val
     .click();
   await expect(
     page.getByRole("link", {
-      name: "● Connected · test mode · Manage",
+      name: "● Connected | test mode | Manage",
       exact: true,
     }),
   ).toBeVisible();
@@ -574,7 +574,7 @@ test("Studio v3 responsive list pages and ten Workspace sections", async ({
         .poll(async () => {
           const bar = await footer.boundingBox(),
             last = await page
-              .getByRole("link", { name: "Recent changes · Team activity" })
+              .getByRole("link", { name: "Recent changes | Team activity" })
               .boundingBox();
           return (bar?.y ?? 1000) - last!.y - last!.height;
         })
@@ -623,16 +623,16 @@ test("Studio v3 responsive list pages and ten Workspace sections", async ({
       await page.goto("/studio");
       await expect(page.locator(".studio-home-list>a")).toHaveCount(6);
       await expect(
-        page.getByText("3 templates · 9 saved blocks", { exact: true }),
+        page.getByText("3 templates | 9 saved blocks", { exact: true }),
       ).toBeVisible();
       await expect(
-        page.getByText("9 client emails · 0 edited", { exact: true }),
+        page.getByText("9 client emails | 0 edited", { exact: true }),
       ).toBeVisible();
       for (const status of await page.locator(".studio-home-list small").all())
         await expect(status).toHaveCSS("white-space", "nowrap");
       const latest = (await activity(f.repo))[0];
       await expect(
-        page.getByText(`Last: ${eventLabel(latest)} · ${latest.detail}`, {
+        page.getByText(`Last: ${eventLabel(latest)} | ${latest.detail}`, {
           exact: true,
         }),
       ).toBeVisible();
@@ -758,7 +758,7 @@ test("owner review Studio presentation keeps semantic statuses, controls and mob
   expect(status!.x + status!.width).toBeLessThan(role!.x);
   await page.goto("/studio/products");
   await expect(page.locator(".studio-sync-meta")).toContainText(
-    "Synced with Stripe · test mode",
+    "Synced with Stripe | test mode",
   );
   const catalog = await f.repo.entities<any>("pricing_items");
   const stripe = catalog.find((i) => i.stripe_lookup_key);
@@ -918,8 +918,8 @@ test("all existing Workspace sections and settings stay reachable after the rest
       /Website/,
     ],
     brand: [
-      /Logo · used/,
-      /Logo icon · square/,
+      /Logo | used/,
+      /Logo icon | square/,
       /Brand colors/,
       /Manage proposal fonts/,
     ],
@@ -967,8 +967,8 @@ test("all existing Workspace sections and settings stay reachable after the rest
       /Owner contact name/,
       /Contact email/,
       /Reply-to/,
-      /First client view · in-app note/,
-      /First client view · staff email/,
+      /First client view | in-app note/,
+      /First client view | staff email/,
       /Notify super admins about client questions/,
       /Remind staff to countersign/,
       /Automatic client reminders/,

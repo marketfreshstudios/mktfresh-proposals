@@ -52,7 +52,7 @@ test("Studio template shell autosaves and reuses Quote, Fields, Blocks and Style
     .poll(async () => (await f.repo.entities<any>("templates"))[0].name)
     .toBe("New template name");
   await expect(page.locator(".template-editor-header")).toContainText(
-    "Saved · changes apply to new proposals",
+    "Saved | changes apply to new proposals",
   );
   for (const tab of ["Fields", "Blocks", "Styles"]) {
     await page.getByRole("tab", { name: tab, exact: true }).click();

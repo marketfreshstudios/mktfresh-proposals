@@ -55,7 +55,7 @@ it("defaults to the logged-in staff, supports re-send and freezes every client a
   expect(p.notification_emails).toEqual([franz.email, staff.staff_email]);
   franz.display_name = "Changed later";
   const expected = {
-    from: '"Franz · Example Studio" <franz@example.test>',
+    from: '"Franz | Example Studio" <franz@example.test>',
     reply_to: franz.email,
   };
   expect(emailIdentity(p)).toEqual(expected);

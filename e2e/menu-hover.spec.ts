@@ -124,7 +124,7 @@ for (const width of [1440, 375])
       await page.keyboard.press("ArrowDown");
       await page.keyboard.press("Enter");
       await expect(trigger).toBeFocused();
-      await expect(trigger).toHaveAttribute("title", "Text style · Heading 2");
+      await expect(trigger).toHaveAttribute("title", "Text style | Heading 2");
       await trigger.press("ArrowDown");
       await expect(
         menu.getByRole("menuitemradio", { name: "Heading 2", exact: true }),
@@ -137,7 +137,7 @@ for (const width of [1440, 375])
 
       await page.keyboard.press("ArrowUp");
       await page.keyboard.press("Enter");
-      await expect(trigger).toHaveAttribute("title", "Text style · Heading 1");
+      await expect(trigger).toHaveAttribute("title", "Text style | Heading 1");
       await expect(trigger).toBeFocused();
       await trigger.click();
       await page.keyboard.press("Escape");

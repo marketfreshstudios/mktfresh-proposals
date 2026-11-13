@@ -214,7 +214,7 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
     })
     .check();
   await page
-    .getByLabel("Upload a font file · WOFF2 or TTF, under 1 MB")
+    .getByLabel("Upload a font file | WOFF2 or TTF, under 1 MB")
     .setInputFiles({
       name: "Studio Sans.woff2",
       mimeType: "font/woff2",
@@ -288,7 +288,7 @@ test("Phase 5 Studio, stored signature, fonts, defaults, recovery and state scre
     .fill("Keep this template selected");
   await expect(
     page.locator(".template-editor-header .editor-save-status"),
-  ).toHaveText("Saved · changes apply to new proposals");
+  ).toHaveText("Saved | changes apply to new proposals");
   await expect(page.getByText("Template saved", { exact: true })).toBeVisible();
   await expect(page.getByLabel("Template name", { exact: true })).toHaveValue(
     "Keep this template selected",

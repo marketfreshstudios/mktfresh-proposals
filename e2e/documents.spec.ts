@@ -80,7 +80,7 @@ test("linked reference save, refresh failure, workspace status and hidden saved 
   await expect(
     page.getByRole("alert").filter({ hasText: "HTTP 503" }),
   ).toContainText("last good version");
-  await page.getByText("Linked pricing · v7", { exact: true }).last().click();
+  await page.getByText("Linked pricing | v7", { exact: true }).last().click();
   await expect(page.locator("pre")).toContainText("<script>");
   expect(await page.evaluate(() => "referenceExecuted" in window)).toBe(false);
   await page.goto(settingsUrl);

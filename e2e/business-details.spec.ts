@@ -184,14 +184,14 @@ for (const width of [1440, 768, 375]) {
     await capture(page, "brand");
     await page.goto(width < 700 ? "/account?view=profile" : "/account");
     const card = page.getByRole("region", { name: "Your business" });
-    await expect(card).toContainText("Example Studio LLC · North Carolina");
+    await expect(card).toContainText("Example Studio LLC | North Carolina");
     await expect(
       card.getByRole("link", { name: "Edit business details" }),
     ).toHaveAttribute("href", businessDetailsUrl);
     await capture(page, "profile-super-admin");
     owner = false;
     await page.reload();
-    await expect(card).toContainText("Example Studio LLC · North Carolina");
+    await expect(card).toContainText("Example Studio LLC | North Carolina");
     await expect(card.getByRole("link")).toHaveCount(0);
     await capture(page, "profile-staff");
     await page.goto(businessStateUrl);

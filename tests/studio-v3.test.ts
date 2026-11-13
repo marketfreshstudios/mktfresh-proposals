@@ -79,7 +79,7 @@ describe("Studio v3 existing data and routes", () => {
       ],
       ["Billing", ["staff_billing_complete"]],
       [
-        "Team and jobs · editable",
+        "Team and jobs | editable",
         ["staff_billing_failed", "team_invite", "team_password_reset"],
       ],
     ]);
@@ -90,10 +90,10 @@ describe("Studio v3 existing data and routes", () => {
   });
   it("never labels a test connection as live", () => {
     expect(stripeStatus({ stripe: true, mock: false, mode: "test" })).toBe(
-      "Connected · test mode",
+      "Connected | test mode",
     );
     expect(stripeStatus({ stripe: true, mock: false, mode: "live" })).toBe(
-      "Connected · live mode",
+      "Connected | live mode",
     );
     expect(stripeStatus({ stripe: false, mock: true, mode: "mock" })).toBe(
       "Mock mode",
