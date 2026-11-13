@@ -9,6 +9,7 @@ import { StaffTable, StaffTableHead, StaffTableEmpty } from "./staff-table";
 import {
   Check,
   ChevronDown,
+  CircleCheck,
   CircleX,
   CreditCard,
   EyeOff,
@@ -1701,7 +1702,7 @@ function QuoteSummary({
     </>
   );
 }
-function RecordQuote({
+export function RecordQuote({
   quote,
   currency,
   signed,
@@ -1715,45 +1716,37 @@ function RecordQuote({
   const pricedItems = orderedItems(
     quote.filter((item) => !item.choice_group_placeholder),
   );
-  return (
-    <>
-      <div className="record-quote-lines">
-        {pricedItems.map((item) => (
-          <div
-            key={item.id}
-            className="record-quote-line"
-            data-chosen={selected(item)}
-          >
-            <div>
-              <strong>{item.name}</strong>
-              {(item.optional || item.choice_group_id) && (
-                <small>
-                  {[
-                    item.optional ? "Optional" : "",
-                    selected(item) ? (signed ? "Selected" : "Default") : "",
-                  ]
-                    .filter(Boolean)
-                    .join(" | ")}
-                </small>
-              )}
-            </div>
-            <div className="record-quote-line-amounts">
-              {item.sublines.map((line) => (
-                <span key={line.id}>
-                  {line.label && <small>{line.label} </small>}
-                  {line.qty !== 1 && <small>{line.qty} × </small>}
-                  {money(line.amount * line.qty, currency)}
-                  {line.interval === "month"
-                    ? "/mo"
-                    : line.interval === "year"
-                      ? "/yr"
-                      : ""}
-                </span>
-              ))}
-            </div>
-          </div>
+  const chosen = pricedItems.filter((item) => selected(item));
+  const others = pricedItems.filter((item) => !selected(item));
+  const line = (item: (typeof pricedItems)[number]) => (
+    <div
+      key={item.id}
+      className="record-quote-line"
+      data-chosen={selected(item)}
+    >
+      <div>
+        <strong>{item.name}</strong>
+        {item.optional && selected(item) && <small>Optional</small>}
+      </div>
+      <div className="record-quote-line-amounts">
+        {item.sublines.map((line) => (
+          <span key={line.id}>
+            {line.label && <small>{line.label} </small>}
+            {line.qty !== 1 && <small>{line.qty} × </small>}
+            {money(line.amount * line.qty, currency)}
+            {line.interval === "month"
+              ? "/mo"
+              : line.interval === "year"
+                ? "/yr"
+                : ""}
+          </span>
         ))}
       </div>
+    </div>
+  );
+  return (
+    <>
+      <div className="record-quote-lines">{chosen.map(line)}</div>
       <div className="record-quote-totals">
         <h3>{signed ? "Accepted totals" : "Client sees by default"}</h3>
         <dl>
@@ -1773,7 +1766,65 @@ function RecordQuote({
           )}
         </dl>
       </div>
+      {others.length > 0 && (
+        <details className="record-quote-others">
+          <Disclosure>
+            {`${signed ? "Options not selected" : "Not included by default"} (${others.length})`}
+          </Disclosure>
+          <div className="record-quote-lines">{others.map(line)}</div>
+        </details>
+      )}
     </>
+  );
+}
+
+const CONFETTI_COLORS = ["#e07a4a", "#e9b48f", "#6f97a3", "#7fd3a0", "#ffffff"];
+/** A short burst inside the hero each time a client-signed record opens. */
+function HeroConfetti() {
+  const [pieces, setPieces] = useState<
+    {
+      left: number;
+      delay: number;
+      drift: number;
+      spin: number;
+      color: string;
+      wide: boolean;
+    }[]
+  >([]);
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    setPieces(
+      Array.from({ length: 70 }, (_, i) => ({
+        left: Math.random() * 100,
+        delay: Math.random() * 0.6,
+        drift: (Math.random() - 0.5) * 120,
+        spin: (Math.random() - 0.5) * 1080,
+        color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+        wide: Math.random() > 0.5,
+      })),
+    );
+    const done = window.setTimeout(() => setPieces([]), 3600);
+    return () => window.clearTimeout(done);
+  }, []);
+  if (!pieces.length) return null;
+  return (
+    <div className="record-hero-confetti" aria-hidden="true">
+      {pieces.map((piece, i) => (
+        <i
+          key={i}
+          data-wide={piece.wide}
+          style={
+            {
+              left: `${piece.left}%`,
+              background: piece.color,
+              animationDelay: `${piece.delay}s`,
+              "--drift": `${piece.drift}px`,
+              "--spin": `${piece.spin}deg`,
+            } as React.CSSProperties
+          }
+        />
+      ))}
+    </div>
   );
 }
 
@@ -3301,6 +3352,7 @@ export function RecordV4({
         </div>
       )}
       <header className="record-hero">
+        {actualSigned && !p.marked_won_by && <HeroConfetti />}
         {phone && toolbar}
         <div className="record-hero-intro">
           <div className="record-hero-client">
@@ -3347,6 +3399,14 @@ export function RecordV4({
                   Billing<span className="record-billing-colon">:</span>
                 </span>
                 <strong>
+                  {(billingStatus === "Set up" ||
+                    billingStatus === "Linked") && (
+                    <CircleCheck
+                      className="record-hero-billing-done"
+                      size={16}
+                      aria-hidden="true"
+                    />
+                  )}
                   {phone && billingStatus === "Starts after you countersign"
                     ? "After you countersign"
                     : billingStatus}
