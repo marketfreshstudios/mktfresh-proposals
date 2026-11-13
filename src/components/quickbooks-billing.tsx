@@ -95,15 +95,23 @@ export function QuickBooksBilling({
       : link.metadata?.action === "Invoice manually"
         ? "Invoice manually"
         : "Billing to finish");
+  // A draft invoice waits on a person to review and send it.
+  const draft = invoice?.status === "Draft";
+  const invoiceUrl = invoice?.url?.replace(
+    // Older invoices stored a host that redirects to live QuickBooks;
+    // sandbox invoices live on app.sandbox.
+    "https://sandbox.qbo.intuit.com/",
+    "https://app.sandbox.qbo.intuit.com/",
+  );
   return (
     <RecordBillingRow
       label="One-time"
       end={
         manualAction ?? (
           <span
-            className={`pill ${link.status === "succeeded" ? "success" : "warning"}`}
+            className={`pill ${draft ? "amber" : link.status === "succeeded" ? "success" : "warning"}`}
           >
-            {status}
+            {draft ? "Draft invoice" : status}
           </span>
         )
       }
@@ -135,22 +143,32 @@ export function QuickBooksBilling({
                   {money(invoice.amount, invoice.currency ?? proposal.currency)}
                 </p>
               )}
-              <a
-                href={// Older invoices stored a host that redirects to live
-                // QuickBooks; sandbox invoices live on app.sandbox.
-                invoice.url?.replace(
-                  "https://sandbox.qbo.intuit.com/",
-                  "https://app.sandbox.qbo.intuit.com/",
-                )}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Open in QuickBooks
-              </a>
+              {!draft && (
+                <a href={invoiceUrl} target="_blank" rel="noreferrer">
+                  Open in QuickBooks
+                </a>
+              )}
             </div>
           )}
         </div>
       </details>
+      {draft && (
+        <>
+          <p>
+            Created after both signed. Review it, then send from QuickBooks.
+          </p>
+          {invoiceUrl && (
+            <a
+              className="record-billing-external"
+              href={invoiceUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Open in QuickBooks
+            </a>
+          )}
+        </>
+      )}
       {link.last_error && (
         <p className="record-billing-problem">{link.last_error}</p>
       )}

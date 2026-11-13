@@ -295,7 +295,9 @@ test("Phase 4: records, guarded countersign, list actions, clients, indefinite d
         }
         if (name === "record") {
           await expect(
-            page.getByText("Waiting for countersignature", { exact: true }),
+            page
+              .locator(".record-hero")
+              .getByRole("link", { name: "Review and countersign" }),
           ).toBeVisible();
           await expect(
             page.getByRole("button", { name: "Mark as invoiced", exact: true }),

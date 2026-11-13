@@ -470,6 +470,23 @@
   margin-block: 12px;
 }
 
+/* The fixed sidebar is one viewport tall. This backing strip runs the full
+   page height, so long pages (and full-page captures) never show the ink
+   column stopping partway down. */
+@media (min-width: 1100px) {
+  .staff-foundation.ink-clay.shell:not(:has(.quote-workspace)) {
+    position: relative;
+    min-block-size: 100dvh;
+  }
+  .staff-foundation.ink-clay.shell:not(:has(.quote-workspace))::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    inline-size: var(--sidebar);
+    background: var(--chrome);
+    pointer-events: none;
+  }
+}
 @media (max-width: 1099px) {
   .staff-foundation.ink-clay .sidebar {
     display: none;

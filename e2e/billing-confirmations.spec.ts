@@ -155,7 +155,7 @@ test("verified billing: mode-specific Checkout, immediate receipt, bounded retur
         await expect(
           page
             .locator(".record-billing-row")
-            .getByRole("button", { name: "Email payment link", exact: true }),
+            .getByRole("button", { name: "Resend payment link", exact: true }),
         ).toBeVisible();
         await page.goto(`/p/${f.p.token}?billing=returned&session_id=${f.id}`);
         await expect(

@@ -199,7 +199,7 @@ test.describe("Staff content surfaces", () => {
     for (const selector of [
       ".record-details-values",
       ".record-quote-card",
-      ".record-signature-card",
+      ".record-ready-list",
       ".record-timeline-list",
     ])
       await surface(page.locator(selector));

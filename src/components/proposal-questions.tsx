@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { X } from "lucide-react";
+import { CircleHelp, X } from "lucide-react";
+import { DisclosureChevron } from "./disclosure-chevron";
 import type { z } from "zod";
 import type { AskQuestionSchema } from "../lib/proposal-questions";
 import {
@@ -1040,6 +1041,304 @@ function ReplyForm({
           Send reply
         </Button>
       </DialogActions>
+    </form>
+  );
+}
+
+// Signing starts a fresh choice: the section collapses once the client signs.
+const collapsedKey = (user: string, proposal: string, signed: boolean) =>
+  `yeswell:questions-collapsed:${user}:${proposal}${signed ? ":signed" : ""}`;
+
+/**
+ * Client questions on the proposal record (Redesign 27). Always shown from
+ * Sent onward: a one-line empty state, or the threads under a heading that
+ * collapses to just its row. The collapsed choice is remembered per person in
+ * this browser; it starts collapsed once the client has signed.
+ */
+export function RecordQuestions({
+  questions,
+  timezone,
+  clientName,
+  previewUrl,
+  user,
+  proposal,
+  signed,
+  phone = false,
+}: {
+  questions: ReturnType<typeof useProposalQuestions>;
+  timezone: string;
+  clientName: string;
+  previewUrl?: string;
+  user: string;
+  proposal: string;
+  signed: boolean;
+  phone?: boolean;
+}) {
+  const { data, error, busy, update } = questions;
+  const threads = data?.threads ?? [];
+  const waiting = threads.filter((t) => t.status === "open");
+  const ordered = [
+    ...threads.filter((t) => t.status !== "resolved"),
+    ...threads.filter((t) => t.status === "resolved"),
+  ];
+  const [collapsed, setCollapsed] = useState<boolean | null>(null);
+  useEffect(() => {
+    let saved: string | null = null;
+    try {
+      saved = localStorage.getItem(collapsedKey(user, proposal, signed));
+    } catch {}
+    setCollapsed(
+      saved === null
+        ? signed || (phone && !threads.some((t) => t.status === "open"))
+        : saved === "1",
+    );
+  }, [user, proposal, signed]);
+  // The hero's "Reply to question" asks for a thread: open the section and
+  // put the cursor in that thread's reply box.
+  const { replying, setReplying } = questions;
+  useEffect(() => {
+    if (!replying) return;
+    setCollapsed(false);
+    requestAnimationFrame(() => {
+      const thread = document.getElementById(`question-${replying}`);
+      thread?.scrollIntoView({ block: "center", behavior: "smooth" });
+      thread?.querySelector("textarea")?.focus({ preventScroll: true });
+      setReplying(null);
+    });
+  }, [replying]);
+  const toggle = () => {
+    const next = !collapsed;
+    setCollapsed(next);
+    try {
+      localStorage.setItem(
+        collapsedKey(user, proposal, signed),
+        next ? "1" : "0",
+      );
+    } catch {}
+  };
+  const time = (value: string) =>
+    new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      timeZone: timezone,
+    }).format(new Date(value));
+  if (!data && !error) return null;
+  if (!threads.length)
+    return (
+      <section
+        className="record-section record-questions"
+        aria-labelledby="questions-heading"
+        data-empty
+      >
+        <StaffSectionHeading id="questions-heading">
+          Client questions
+        </StaffSectionHeading>
+        {error ? (
+          <p role="alert">{error}</p>
+        ) : (
+          <div className="card record-questions-empty">
+            <span className="record-questions-empty-icon" aria-hidden="true">
+              <CircleHelp size={18} />
+            </span>
+            <div>
+              <strong>
+                {signed ? "No questions asked" : "No questions yet"}
+              </strong>
+              <p>
+                {signed
+                  ? `${clientName} signed without asking a question.`
+                  : `${clientName} can ask about any page or paragraph while reading. Questions open here, and we’ll email you.`}
+              </p>
+            </div>
+            {previewUrl && !signed && (
+              <a href={previewUrl} target="_blank" rel="noreferrer">
+                See what {clientName} sees
+              </a>
+            )}
+          </div>
+        )}
+      </section>
+    );
+  const open = collapsed === false;
+  return (
+    <section
+      className="record-section record-questions"
+      aria-labelledby="questions-heading"
+      data-collapsed={!open || undefined}
+    >
+      <div className="record-questions-heading">
+        <button
+          type="button"
+          className="record-questions-toggle"
+          aria-expanded={open}
+          aria-controls="record-questions-body"
+          onClick={toggle}
+        >
+          <DisclosureChevron open={open} />
+          <h2 id="questions-heading" className="staff-section-title">
+            Client questions
+          </h2>
+        </button>
+        {waiting.length > 0 ? (
+          <span className="pill review">
+            {waiting.length} waiting{phone ? "" : " on you"}
+          </span>
+        ) : (
+          signed && <span className="pill neutral">All resolved</span>
+        )}
+        {!phone && (
+          <span className="record-questions-count">
+            {threads.length === 1
+              ? "1 question"
+              : `${threads.length} questions`}
+          </span>
+        )}
+      </div>
+      {open && (
+        <div className="card record-questions-body" id="record-questions-body">
+          {error && <p role="alert">{error}</p>}
+          {ordered.map((thread) =>
+            thread.status === "resolved" ? (
+              <details
+                key={thread.id}
+                id={`question-${thread.id}`}
+                className="record-question-resolved"
+              >
+                <summary>
+                  <DisclosureChevron />
+                  <span>{thread.question}</span>
+                  <span className="pill neutral">Resolved</span>
+                </summary>
+                <QuestionMessages thread={thread} time={time} />
+              </details>
+            ) : (
+              <article
+                key={thread.id}
+                id={`question-${thread.id}`}
+                className="record-question-thread"
+                tabIndex={-1}
+              >
+                <header>
+                  <span className="record-question-about">
+                    {thread.section?.label ?? "General question"}
+                  </span>
+                  <span
+                    className={`pill ${thread.status === "open" ? "review" : "neutral"}`}
+                  >
+                    {thread.status === "open" ? "Waiting on you" : "Answered"}
+                  </span>
+                </header>
+                {thread.excerpt && (
+                  <blockquote className="record-question-excerpt">
+                    {thread.excerpt}
+                  </blockquote>
+                )}
+                <QuestionMessages thread={thread} time={time} />
+                {data?.can_reply && (
+                  <RecordReplyForm
+                    clientName={clientName}
+                    busy={busy}
+                    resolve={() =>
+                      void update(thread.id, { action: "resolve" })
+                    }
+                    send={(reply, text) =>
+                      update(thread.id, { action: "reply", id: reply, text })
+                    }
+                  />
+                )}
+              </article>
+            ),
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function QuestionMessages({
+  thread,
+  time,
+}: {
+  thread: QuestionThread;
+  time: (value: string) => string;
+}) {
+  return (
+    <div className="record-question-messages">
+      <div className="record-question-message" data-from="client">
+        <p className="record-question-meta">
+          <strong>{thread.contact.name}</strong>{" "}
+          <time dateTime={thread.created_at}>{time(thread.created_at)}</time>
+        </p>
+        <p className="question-text">{thread.question}</p>
+      </div>
+      {thread.replies.map((reply) => (
+        <div
+          key={reply.id}
+          className="record-question-message"
+          data-from={reply.from === "client" ? "client" : "staff"}
+        >
+          <p className="record-question-meta">
+            <strong>{reply.name}</strong>{" "}
+            <time dateTime={reply.created_at}>{time(reply.created_at)}</time>
+          </p>
+          <p className="question-text">{reply.text}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function RecordReplyForm({
+  clientName,
+  busy,
+  resolve,
+  send,
+}: {
+  clientName: string;
+  busy: boolean;
+  resolve: () => void;
+  send: (id: string, text: string) => Promise<void>;
+}) {
+  const [text, setText] = useState("");
+  const id = useRef(crypto.randomUUID());
+  return (
+    <form
+      className="record-question-reply"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (!busy && text.trim())
+          void send(id.current, text).then(() => {
+            id.current = crypto.randomUUID();
+            setText("");
+          });
+      }}
+    >
+      <label className="field">
+        Your reply
+        <textarea
+          rows={2}
+          maxLength={questionLimit}
+          required
+          value={text}
+          placeholder={`Write a reply. ${clientName} gets it by email.`}
+          onChange={(e) => setText(e.target.value)}
+        />
+      </label>
+      <div className="record-question-reply-actions">
+        <Button variant="ghost" onClick={resolve} disabled={busy}>
+          Mark resolved
+        </Button>
+        <Button
+          variant="primary"
+          type="submit"
+          busy={busy}
+          disabled={!text.trim()}
+        >
+          Send reply
+        </Button>
+      </div>
     </form>
   );
 }

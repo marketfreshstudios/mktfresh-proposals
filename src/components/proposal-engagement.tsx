@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
 import {
-  Clock3,
   Download,
   Eye,
   MessageCircleQuestion,
@@ -25,12 +24,19 @@ export function ProposalEngagement({
   timezone,
   onLoaded,
   phone = false,
+  wide = false,
+  clientName = "The client",
+  sentAt,
 }: {
   id: string;
   timezone: string;
   notify?: boolean;
   knownRecipient?: boolean;
   phone?: boolean;
+  /** Beside the Timeline before signing: tiles in one row, charts side by side. */
+  wide?: boolean;
+  clientName?: string;
+  sentAt?: string | null;
   onLoaded?: (summary: Pick<Report, "views" | "last_viewed_at"> | null) => void;
 }) {
   const { date } = useStaffDates(timezone);
@@ -41,7 +47,13 @@ export function ProposalEngagement({
   const load = async () => {
     setError("");
     try {
-      const result = await api<Report>(`/api/proposals/${id}/engagement`);
+      const raw = await api<Report>(`/api/proposals/${id}/engagement`);
+      // Older responses (and test mocks) can omit the lists.
+      const result: Report = {
+        ...raw,
+        targets: Array.isArray(raw?.targets) ? raw.targets : [],
+        sessions: Array.isArray(raw?.sessions) ? raw.sessions : [],
+      };
       setReport(result);
       onLoaded?.(result);
     } catch {
@@ -92,7 +104,7 @@ export function ProposalEngagement({
       .toSorted((a, b) => a.started_at.localeCompare(b.started_at))
       .slice(-24);
     const maximum = Math.max(1, ...sessions.map((s) => s.active_ms));
-    if (sessions.length < 2) return null;
+    if (!sessions.length) return null;
     const when = (value: string) =>
       date(value, { month: "short", day: "numeric" });
     return (
@@ -126,9 +138,16 @@ export function ProposalEngagement({
     !!report?.last_viewed_at &&
     Date.now() - Date.parse(report.last_viewed_at) < 2 * 60_000;
   const summary = report?.views
-    ? `${withCount(report.views, "visit")} | ${engagementDuration(report.total_ms)} reading`
+    ? [
+        `${engagementDuration(report.total_ms)} reading`,
+        withCount(report.views, "view"),
+        report.last_viewed_at &&
+          `last viewed ${engagementAgo(report.last_viewed_at)}`,
+      ]
+        .filter(Boolean)
+        .join(" | ")
     : report
-      ? "No visits"
+      ? "Not opened yet"
       : undefined;
   const stat = (
     label: string,
@@ -137,62 +156,88 @@ export function ProposalEngagement({
     title?: string,
   ) => (
     <div>
-      <dt title={title}>
-        <Icon size={14} aria-hidden="true" />
+      <dt title={title} data-icon={Icon.displayName}>
         {label}
       </dt>
       <dd>{value}</dd>
     </div>
   );
-  const refresh = (
-    <Button className="engagement-refresh" onClick={load}>
-      Refresh
-    </Button>
+  const when = (value: string) =>
+    date(value, {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    }).replace(", ", " at ");
+  const sections = report ? readTargets() : [];
+  const read = sections.filter((t) => t.ms > 0);
+  const unread = sections.length - read.length;
+  const sectionWord = report?.targets.some((t) => t.kind === "section")
+    ? "section"
+    : "page";
+  const tiles = (zero = false) => (
+    <dl className="engagement-stats" data-zero={zero || undefined}>
+      {stat("Views", zero ? 0 : report!.views, Eye)}
+      {stat(
+        "Devices",
+        zero ? 0 : report!.unique_viewers,
+        MonitorSmartphone,
+        "Separate browsers that opened this link, not verified people",
+      )}
+      {stat("Downloads", zero ? 0 : report!.downloads, Download)}
+      {stat("Questions", zero ? 0 : report!.questions, MessageCircleQuestion)}
+    </dl>
   );
+  const single = report?.sessions.length === 1 ? report.sessions[0] : null;
   const panel = (
-    <div className={phone ? "engagement-panel" : "card engagement-panel"}>
+    <div
+      className={phone ? "engagement-panel" : "card engagement-panel"}
+      data-wide={wide || undefined}
+    >
       {error && <p role="alert">{error}</p>}
       {!report ? (
         error ? (
-          refresh
+          <Button className="engagement-refresh" onClick={load}>
+            Try again
+          </Button>
         ) : (
           <p role="status">Loading engagement…</p>
         )
       ) : !report.views ? (
         <div className="engagement-empty">
-          <h3>
+          <p className="engagement-eyebrow">
             {report.first_viewed_at
               ? "No tracked visits yet"
               : "Not opened yet"}
+          </p>
+          <h3>
+            {report.first_viewed_at
+              ? `${clientName} opened it, but no reading time was recorded`
+              : `${clientName} hasn’t opened it yet`}
           </h3>
-          {(report.downloads > 0 || report.questions > 0) && (
-            <dl className="engagement-stats">
-              {report.questions > 0 &&
-                stat("Questions", report.questions, MessageCircleQuestion)}
-              {report.downloads > 0 &&
-                stat("Downloads", report.downloads, Download)}
-            </dl>
-          )}
-          {refresh}
+          <p className="muted">
+            {sentAt ? `Sent ${when(sentAt)}. ` : ""}Visits, reading time and the
+            sections read show here once the link is opened.
+          </p>
+          {tiles(!report.downloads && !report.questions)}
         </div>
       ) : (
         <>
-          <div className="engagement-headline">
-            <div>
-              <span className="engagement-eyebrow">
-                <Clock3 size={14} aria-hidden="true" />
-                Time reading
-              </span>
-              <strong>{engagementDuration(report.total_ms)}</strong>
-            </div>
-            {report.last_viewed_at && (
+          <div className="engagement-top">
+            <div className="engagement-headline">
+              <div>
+                <span className="engagement-eyebrow">Time reading</span>
+                <strong>{engagementDuration(report.total_ms)}</strong>
+              </div>
               <p className="engagement-last" data-live={live || undefined}>
                 {live ? (
                   <>
                     <span className="engagement-live-dot" aria-hidden="true" />
                     Reading now
                   </>
-                ) : (
+                ) : single ? (
+                  `Opened once, on ${single.device === "phone" ? "a phone" : "a computer"}`
+                ) : report.last_viewed_at ? (
                   <>
                     Last viewed{" "}
                     <time
@@ -202,37 +247,30 @@ export function ProposalEngagement({
                       {engagementAgo(report.last_viewed_at)}
                     </time>
                   </>
-                )}
+                ) : null}
               </p>
+            </div>
+            {tiles()}
+          </div>
+          <div className="engagement-charts">
+            {visits()}
+            {read.length > 0 && (
+              <section className="engagement-most-read" aria-label="Most read">
+                <p className="engagement-eyebrow">Most read</p>
+                {bars(read.slice(0, 3))}
+                {unread > 0 && (
+                  <p className="engagement-unread">
+                    {unread === 1
+                      ? `The other ${sectionWord} hasn’t been read yet.`
+                      : `The other ${unread} ${sectionWord}s haven’t been read yet.`}
+                  </p>
+                )}
+              </section>
             )}
           </div>
-          <dl className="engagement-stats">
-            {stat("Views", report.views, Eye)}
-            {stat(
-              "Devices",
-              report.unique_viewers,
-              MonitorSmartphone,
-              "Separate browsers that opened this link, not verified people",
-            )}
-            {stat("Downloads", report.downloads, Download)}
-            {report.questions > 0 &&
-              stat("Questions", report.questions, MessageCircleQuestion)}
-          </dl>
-          {visits()}
-          {readTargets().length > 0 && (
-            <section className="engagement-most-read" aria-label="Most read">
-              <p className="engagement-eyebrow">Most read</p>
-              {bars(readTargets().slice(0, 3))}
-              {readTargets().length > 3 && (
-                <details className="engagement-more">
-                  <Disclosure>{`All ${report.targets.some((t) => t.kind === "section") ? "sections" : "pages"} | ${readTargets().length}`}</Disclosure>
-                  {bars(readTargets().slice(3))}
-                </details>
-              )}
-            </section>
-          )}
           <details className="engagement-more">
-            <Disclosure>{`Sessions | ${report.sessions.length}`}</Disclosure>
+            <Disclosure>All {sectionWord}s and sessions</Disclosure>
+            {sections.length > 0 && bars(sections)}
             <ol className="engagement-sessions">
               {report.sessions.map((s) => (
                 <li key={s.id}>
@@ -251,7 +289,6 @@ export function ProposalEngagement({
               ))}
             </ol>
           </details>
-          {refresh}
         </>
       )}
     </div>

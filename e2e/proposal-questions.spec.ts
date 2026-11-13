@@ -256,11 +256,19 @@ test("client question reaches staff, receives a plain-text reply on the same lin
       .getByText("Waiting for a reply"),
   ).toBeVisible();
   await page.goto(staffUrl);
-  const panel = page.getByRole("region", { name: "Questions", exact: true });
+  const panel = page.getByRole("region", {
+    name: "Client questions",
+    exact: true,
+  });
   await expect(
-    panel.getByText("New client question", { exact: true }),
+    panel.getByText("1 waiting on you", { exact: true }),
   ).toBeVisible();
-  await panel.getByRole("button", { name: "Reply", exact: true }).click();
+  // Redesign 27: the hero's Reply jumps to the thread's reply box.
+  await page
+    .locator(".record-hero")
+    .getByRole("button", { name: "Reply to question", exact: true })
+    .click();
+  await expect(panel.getByLabel("Your reply")).toBeFocused();
   await panel
     .getByLabel("Your reply")
     .fill(

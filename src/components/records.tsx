@@ -25,6 +25,11 @@ import {
   Eye,
   Mail,
   SquarePen,
+  X,
+  FileText,
+  PenLine,
+  Clock3,
+  CircleAlert,
 } from "lucide-react";
 import {
   finalOiotClause,
@@ -33,7 +38,7 @@ import {
   oiotPurchasePriceField,
   oiotStepDownField,
 } from "../lib/oiot";
-import { ProposalQuestions, useProposalQuestions } from "./proposal-questions";
+import { RecordQuestions, useProposalQuestions } from "./proposal-questions";
 import type { QuestionSummary } from "../lib/proposal-questions";
 import { Select, Switch } from "./form-controls";
 import {
@@ -83,7 +88,7 @@ import { QuickBooksBilling } from "./quickbooks-billing";
 import { quickBooksCustomerReview } from "../lib/qbo-mapping";
 import { EmailTimelineBody } from "./email-studio";
 import type { EmailLog } from "../lib/email-templates";
-import { engagementDuration } from "../lib/engagement";
+import { engagementAgo, engagementDuration } from "../lib/engagement";
 import { HomeSetup } from "./home-setup";
 import { HomePipeline } from "./home-pipeline";
 import { ContactValue } from "./contact-value";
@@ -93,7 +98,7 @@ import {
   clientDeleteBlocker,
   keepClientHistory,
 } from "../lib/client-retention";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
   reportMetricLabel,
@@ -126,7 +131,7 @@ import {
 } from "../lib/proposal-state";
 import type { ProposalAction } from "../lib/proposal-actions";
 import type { ClientBilling } from "../lib/client-billing";
-import { selected, orderedItems } from "../lib/quote-model";
+import { selected, orderedItems, quoteRange } from "../lib/quote-model";
 import { totals, renderBlocks, variables } from "../lib/presentation";
 import { fontCss } from "../lib/proposal-fonts";
 import { eventLabel } from "../lib/event-label";
@@ -1707,18 +1712,39 @@ export function RecordQuote({
   quote,
   currency,
   signed,
+  imported = false,
 }: {
   quote: Quote;
   currency: string;
   signed: boolean;
+  imported?: boolean;
 }) {
   const money = useMoney();
   const amounts = totals(quote);
   const pricedItems = orderedItems(
     quote.filter((item) => !item.choice_group_placeholder),
   );
-  const chosen = pricedItems.filter((item) => selected(item));
-  const others = pricedItems.filter((item) => !selected(item));
+  const groupSize = (item: (typeof pricedItems)[number]) =>
+    item.choice_group_id
+      ? pricedItems.filter((i) => i.choice_group_id === item.choice_group_id)
+          .length
+      : 0;
+  // Before signing a line says how it works; after, what was chosen.
+  const label = (item: (typeof pricedItems)[number]) => {
+    const chosen = selected(item);
+    if (imported) return "From the imported proposal";
+    if (signed)
+      return groupSize(item) > 1
+        ? `Chosen from ${groupSize(item)} options`
+        : item.optional
+          ? "Optional add-on, chosen"
+          : "";
+    if (item.choice_group_id)
+      return chosen ? "Choose one | Default" : "Choose one";
+    if (item.optional)
+      return chosen ? "Optional | Ticked" : "Optional | Not ticked";
+    return "";
+  };
   const line = (item: (typeof pricedItems)[number]) => (
     <div
       key={item.id}
@@ -1727,7 +1753,7 @@ export function RecordQuote({
     >
       <div>
         <strong>{item.name}</strong>
-        {item.optional && selected(item) && <small>Optional</small>}
+        {label(item) && <small>{label(item)}</small>}
       </div>
       <div className="record-quote-line-amounts">
         {item.sublines.map((line) => (
@@ -1745,9 +1771,22 @@ export function RecordQuote({
       </div>
     </div>
   );
+  const chosen = pricedItems.filter((item) => selected(item));
+  const others = pricedItems.filter((item) => !selected(item));
+  const range = !signed ? quoteRange(quote) : null;
+  const ranged =
+    range &&
+    (range.min.one_time_total !== range.max.one_time_total ||
+      range.min.monthly_total !== range.max.monthly_total);
+  const span = (min: number, max: number, suffix = "") =>
+    min === max
+      ? `${money(min, currency)}${suffix}`
+      : `${money(min, currency)} to ${money(max, currency)}${suffix}`;
   return (
     <>
-      <div className="record-quote-lines">{chosen.map(line)}</div>
+      <div className="record-quote-lines">
+        {(signed ? chosen : pricedItems).map(line)}
+      </div>
       <div className="record-quote-totals">
         <h3>{signed ? "Accepted totals" : "Client sees by default"}</h3>
         <dl>
@@ -1766,12 +1805,17 @@ export function RecordQuote({
             </div>
           )}
         </dl>
+        {ranged && (
+          <p className="record-quote-range">
+            Across all choices:{" "}
+            {span(range.min.one_time_total, range.max.one_time_total)} one-time,{" "}
+            {span(range.min.monthly_total, range.max.monthly_total, "/mo")}
+          </p>
+        )}
       </div>
-      {others.length > 0 && (
+      {signed && others.length > 0 && (
         <details className="record-quote-others">
-          <Disclosure>
-            {`${signed ? "Options not selected" : "Not included by default"} (${others.length})`}
-          </Disclosure>
+          <Disclosure>{`Options not chosen (${others.length})`}</Disclosure>
           <div className="record-quote-lines">{others.map(line)}</div>
         </details>
       )}
@@ -1832,50 +1876,72 @@ function HeroConfetti() {
 function RecordLifecycle({
   proposal,
   data,
+  closed,
 }: {
   proposal: Proposal;
   data: Data;
+  /** A closed proposal swaps step 4 for a red marker with this word. */
+  closed?: "Declined" | "Expired" | "Lost";
 }) {
   const steps = [
     ["Draft", proposal.created_at],
     ["Sent", proposal.sent_at],
     ["Viewed", proposal.first_viewed_at],
-    ["Client signed", proposal.client_signed_at],
+    [closed ?? "Client signed", closed ? null : proposal.client_signed_at],
     [
       "Countersigned",
       proposal.signers.find((signer) => signer.role === "company")?.signed_at,
     ],
   ] as const;
-  const current = Math.max(
+  const reached = Math.max(
     0,
     steps.findLastIndex(([, at]) => !!at),
   );
-  const completed = current === steps.length - 1;
+  const completed = !closed && reached === steps.length - 1;
+  // The last step reached is current, except that once the client signs,
+  // the countersignature is what's being waited on.
+  const at = closed ? 3 : completed ? -1 : reached === 3 ? 4 : reached;
+  const stateOf = (index: number) =>
+    closed && index === 3
+      ? "closed"
+      : completed || index < at
+        ? "done"
+        : index === at
+          ? "current"
+          : "future";
+  const summary = closed
+    ? closed
+    : completed
+      ? "Completed"
+      : steps[Math.max(0, at)][0];
   return (
     <>
       <p className="record-step-summary" aria-hidden="true">
-        Step {current + 1} of {steps.length} | {steps[current][0]}
+        Step {completed ? 5 : Math.max(0, at) + 1} of {steps.length} | {summary}
       </p>
       <ol className="record-lifecycle" aria-label="Proposal lifecycle">
-        {steps.map(([label, at], index) => (
+        {steps.map(([label, time], index) => (
           <li
             key={label}
-            data-step={
-              completed || index < current
-                ? "done"
-                : index === current
-                  ? "current"
-                  : "future"
+            data-step={stateOf(index)}
+            aria-current={
+              index === at || (closed && index === 3) ? "step" : undefined
             }
-            aria-current={index === current ? "step" : undefined}
           >
             <span className="record-step-content">
-              <span className="record-step-marker" aria-hidden="true" />
+              <span className="record-step-marker" aria-hidden="true">
+                {stateOf(index) === "done" && (
+                  <Check size={11} strokeWidth={3.5} />
+                )}
+                {stateOf(index) === "closed" && (
+                  <X size={11} strokeWidth={3.5} />
+                )}
+              </span>
               <span>{label}</span>
               <span className="sr-only">
-                {at
-                  ? timestamp(at, data)
-                  : index < current
+                {time
+                  ? timestamp(time, data)
+                  : stateOf(index) === "done"
                     ? "Complete"
                     : "Waiting"}
               </span>
@@ -2344,7 +2410,6 @@ export function RecordV4({
       });
   }, [p.id]);
   const router = useRouter(),
-    [document, setDocument] = useState(false),
     [already, setAlready] = useState(""),
     [returnUrl, setReturnUrl] = useState("/proposals"),
     [invoice, setInvoice] = useState(false),
@@ -2506,6 +2571,19 @@ export function RecordV4({
   const clientFullName =
     [p.client.first_name, p.client.last_name].filter(Boolean).join(" ") ||
     p.client.company;
+  const shortDate = (value: string, year = false) =>
+    formatStaffDate(value, data.account, {
+      month: "short",
+      day: "numeric",
+      ...(year ? { year: "numeric" } : {}),
+      timeZone: timezone,
+    });
+  const clockTime = (value: string) =>
+    formatStaffDate(value, data.account, {
+      hour: "numeric",
+      minute: "2-digit",
+      timeZone: timezone,
+    });
   const dateOnly = (value: string) =>
     formatStaffDate(value, data.account, {
       dateStyle: "medium",
@@ -2564,21 +2642,21 @@ export function RecordV4({
             )
             .sort()[0]
         : undefined;
-  const recurringSummary = [
-    adopted
-      ? adopted.prices.map(stripeLinkedAmount).join(" | ")
-      : recurringAmount,
-    adopted?.prices.length === 1 && adopted.prices[0].quantity === 1
-      ? adopted.prices[0].name
-      : null,
-    adopted || stripeActive
-      ? "Stripe"
-      : needsLink && !resend
-        ? "No linked subscription"
-        : "Stripe Checkout",
-  ]
-    .filter(Boolean)
-    .join(" | ");
+  const recurringSummary =
+    needsLink && !resend && !adopted
+      ? `${recurringAmount} | No linked subscription`
+      : [
+          `${
+            adopted
+              ? adopted.prices.map(stripeLinkedAmount).join(" | ")
+              : recurringAmount
+          } through Stripe`,
+          adopted?.prices.length === 1 && adopted.prices[0].quantity === 1
+            ? adopted.prices[0].name
+            : null,
+        ]
+          .filter(Boolean)
+          .join(" | ");
   const recurringDescription = nextCharge ? (
     <>
       {recurringSummary}
@@ -2614,7 +2692,7 @@ export function RecordV4({
                 ? { text: stripeStatus?.labels[0] ?? "Ready", tone: "success" }
                 : {
                     text:
-                      stripe || actualSigned ? "In progress" : "Not started",
+                      stripe || actualSigned ? "In progress" : "After signing",
                     tone: "neutral",
                   };
   const markAsInvoiced =
@@ -2708,7 +2786,7 @@ export function RecordV4({
       busy={recordBusy}
       onClick={() => void runAction("resend_billing_link")}
     >
-      {phone ? "Email link" : "Email payment link"}
+      {phone ? "Resend link" : "Resend payment link"}
     </Button>
   );
   const manualInvoice = (
@@ -2728,12 +2806,60 @@ export function RecordV4({
   );
   const canReopen =
     editable && !!p.token && !!(p.version_count ?? p.versions.length);
-  const completeTitle = billingIntegrated
-    ? "Signed by both and billing is set up."
-    : "Signed by both.";
   const signedFile = p.files.some(
     (file) => file.kind === "sealed" && file.stage === "company",
   );
+  // Which lifecycle stage the page is laid out for (Redesign 27).
+  const expired =
+    p.status === "expired" ||
+    (["sent", "viewed"].includes(p.status) &&
+      !!expires &&
+      Date.parse(expires) <= Date.now());
+  const closedAs: "Declined" | "Expired" | "Lost" | undefined =
+    !native || actualSigned
+      ? undefined
+      : p.marked_lost_by
+        ? "Lost"
+        : p.status === "declined"
+          ? "Declined"
+          : expired
+            ? "Expired"
+            : undefined;
+  const stage: "import" | "draft" | "open" | "signed" | "closed" = !native
+    ? "import"
+    : actualSigned || p.marked_won_by
+      ? "signed"
+      : closedAs || archive
+        ? "closed"
+        : p.status === "draft"
+          ? "draft"
+          : "open";
+  const aiDraft = stage === "draft" && !!p.ai_unreviewed;
+  const firstName = p.client.first_name || "the client";
+  const FirstName = p.client.first_name || "The client";
+  const companyName = data.settings?.company_name ?? "Company";
+  const ready = useRecordReady(stage === "draft" ? p.id : null, p.revision);
+  const readyRows = readyCheckRows(ready);
+  const blockers = readyRows.filter((row) => row.tone === "blocker");
+  const viewProposal = `/p/${p.id}?preview=1`;
+  const editUrl = recordUrl + "?action=edit";
+  const quoteUrl = recordUrl + "?view=quote";
+  const copyLink = p.token ? (
+    <CopyClientLink
+      token={p.token}
+      appUrl={data.app_url}
+      label="Copy client link"
+      buttonOnly
+    />
+  ) : null;
+  const sessionsSeen = engagement?.sessions ?? [];
+  const oneShortVisit =
+    p.status === "viewed" &&
+    sessionsSeen.length === 1 &&
+    sessionsSeen[0].active_ms < 60_000;
+  const deviceWord = (device?: string) =>
+    device === "phone" ? "a phone" : "a computer";
+  const firstQuestion = firstOpenQuestion?.question;
   let nextStep: {
     eyebrow: string;
     title: string;
@@ -2741,46 +2867,43 @@ export function RecordV4({
     problem?: boolean;
     actions: ReactNode[];
   };
-  if (archive) {
+  if (stage === "import") {
+    nextStep = {
+      eyebrow: p.client_signed_at ? "Completed in Proposify" : "Imported",
+      title: p.client_signed_at
+        ? `Signed by both sides on ${dateOnly(p.client_signed_at)}.`
+        : "Imported from Proposify.",
+      detail: "The original PDF and Proposify’s audit trail are in Documents.",
+      actions: [],
+    };
+  } else if (archive) {
     nextStep = {
       eyebrow: "Archived",
-      title: company
-        ? billingOpen(p)
-          ? "Signed by both."
-          : completeTitle
-        : "This proposal is archived.",
-      detail: "Unarchive it to show it in All proposals again.",
-      actions: [unarchive()],
-    };
-  } else if (!native) {
-    nextStep = {
-      eyebrow: "Imported | Read-only",
-      title: p.client_signed_at
-        ? `Signed in Proposify on ${dateOnly(p.client_signed_at)}.`
-        : "Imported from Proposify.",
-      detail: "The imported PDF and audit trail are available in Documents.",
-      actions: [
-        <a className="btn" href={downloadUrl}>
-          Download PDF
-        </a>,
-      ],
+      title: `Archived on ${shortDate(p.archived_at!)}. Hidden from your proposal lists.`,
+      detail:
+        "Everything is kept. Unarchive it to edit, send it again or see it in your lists.",
+      actions: [],
     };
   } else if (editsNotLive && !firstOpenQuestion) {
     nextStep = {
       eyebrow: "Edits not live",
-      title: "Your latest edits aren’t on the client’s link yet",
+      title: "Your latest edits aren’t on the client’s link yet.",
       detail: (
         <>
           <p>
-            The client still sees the version from {publishedDate}. Fix this to
-            publish your changes:
+            {FirstName} still sees the version from {publishedDate}. Fix these
+            to publish your changes:
           </p>
           <ul className="record-publication-reasons">
             {reasons.slice(0, 3).map((reason, index) => (
               <li key={index}>{reason}</li>
             ))}
           </ul>
-          {reasons.length > 3 && <p>and {reasons.length - 3} more</p>}
+          {reasons.length > 3 && (
+            <p className="record-publication-more">
+              and {reasons.length - 3} more
+            </p>
+          )}
         </>
       ),
       problem: true,
@@ -2794,62 +2917,54 @@ export function RecordV4({
           target="_blank"
           rel="noreferrer"
         >
-          Preview what the client sees
+          View live version
         </a>,
       ],
     };
   } else if (attention) {
     nextStep = {
-      eyebrow: `Billing needs attention | ${clientFullName}`,
+      eyebrow: "Billing needs attention",
       title: resend
-        ? "Stripe Checkout wasn’t finished."
-        : "Review the billing handoff.",
+        ? `Signed by both sides, but ${billable.monthly_total ? "monthly " : ""}billing isn’t set up.`
+        : "Signed, but the billing handoff needs a look.",
       detail: resend
-        ? "The client can use the payment link to finish setting up billing."
+        ? `${FirstName} hasn’t finished Stripe Checkout. Resend the payment link, or switch to invoicing manually.`
         : "Signatures are safe. Review the billing action below.",
       problem: true,
       actions: [resend && resendLink, manual && manualInvoice].filter(Boolean),
     };
   } else if (signature) {
     nextStep = {
-      eyebrow: `Next step | ${data.settings?.company_signatory?.name || "Company signatory"}`,
-      title: `${clientName} signed. Countersign to finish.`,
+      eyebrow: "Next step | You",
+      title: `${FirstName} signed. Review and countersign.`,
       detail: (
         <>
           Signed {timestamp(p.client_signed_at!, data)}.{" "}
           {invoiceWaiting
-            ? quickBooksInvoiceTiming
-            : "Review the signed scope and prices before applying the company signature."}
+            ? "Once you countersign, the sealed copy goes to both of you and the QuickBooks invoice is created."
+            : "Once you countersign, the sealed copy goes to both of you."}
         </>
       ),
       actions: authorized
         ? [
-            <a className="btn" href={countersignUrl}>
-              {phone ? "Review and countersign" : "Review & countersign"}
+            <a className="btn record-countersign" href={countersignUrl}>
+              Review and countersign
             </a>,
           ]
         : [],
     };
-  } else if (complete) {
+  } else if (complete || (company && actualSigned)) {
     nextStep = {
-      eyebrow: "Completed | Nothing to do",
-      title: completeTitle,
-      detail: `Countersigned ${timestamp(company!.signed_at, data)}.${signedFile ? " The sealed agreement is available to download." : ""}`,
-      actions: [
-        <a className="btn" href={downloadUrl}>
-          Download sealed PDF
-        </a>,
-        typeof stripe?.metadata?.stripe_url === "string" && (
-          <a
-            className="btn"
-            href={stripe.metadata.stripe_url}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Open in Stripe
-          </a>
-        ),
-      ].filter(Boolean),
+      eyebrow: "Completed",
+      title: billingIntegrated
+        ? "Signed by both sides, and billing is set up."
+        : "Signed by both sides.",
+      detail: `Countersigned ${timestamp(company!.signed_at, data)}. ${
+        billingIntegrated
+          ? "Nothing left to do."
+          : "Invoice the client your usual way."
+      }`,
+      actions: [],
     };
   } else if (p.marked_won_by) {
     nextStep = {
@@ -2858,87 +2973,120 @@ export function RecordV4({
       detail: "No electronic signature or automatic billing was created.",
       actions: [],
     };
-  } else if (p.status === "declined") {
-    nextStep = p.marked_lost_by
-      ? {
-          eyebrow: `Lost | Marked by ${person(p.marked_lost_by, data)}${outcome ? ` on ${dateOnly(outcome.created_at)}` : ""}`,
-          title: "This proposal was marked lost.",
-          detail: declineReason || "The client link is closed.",
-          actions: canReopen
-            ? [reopen("Mark as sent again")]
-            : [duplicate("Duplicate as new draft")],
-        }
-      : {
-          eyebrow: outcome
-            ? `Declined | ${dateOnly(outcome.created_at)}`
-            : "Declined",
-          title: `${clientName} declined the proposal.`,
-          detail: declineReason ? (
-            <>Client note: “{declineReason}”</>
-          ) : (
-            "The client link is closed."
-          ),
-          actions: [
-            duplicate("Duplicate as new draft"),
-            p.client.email && (
-              <a className="btn" href={`mailto:${p.client.email}`}>
-                Email {clientName}
-              </a>
-            ),
-          ].filter(Boolean),
-        };
-  } else if (p.status === "expired") {
+  } else if (closedAs === "Lost") {
     nextStep = {
-      eyebrow: expires ? `Expired | ${dateOnly(expires)}` : "Expired",
-      title: `The link expired before ${clientName} signed.`,
-      detail:
-        "Extend link reopens the same client link for the workspace’s default validity period.",
+      eyebrow: "Marked as lost",
+      title: "You marked this proposal as lost.",
+      detail: `Marked by ${person(p.marked_lost_by!, data)}${outcome ? ` on ${shortDate(outcome.created_at)}` : ""}. ${declineReason ? `Note: “${declineReason}”` : "The client link is closed."}`,
+      actions: canReopen
+        ? [reopen("Mark as sent again")]
+        : [duplicate("Duplicate as new draft")],
+    };
+  } else if (closedAs === "Declined") {
+    nextStep = {
+      eyebrow: `Declined by ${FirstName}`,
+      title: `${FirstName} decided not to go ahead.`,
+      detail: outcome
+        ? `Declined ${shortDate(outcome.created_at)}${declineReason ? ` with a note: “${declineReason}”` : "."}`
+        : "The client link is closed.",
       actions: [
-        canReopen && reopen("Extend link"),
-        duplicate("Duplicate"),
+        duplicate("Duplicate as new draft"),
+        p.client.email && (
+          <a className="btn" href={`mailto:${p.client.email}`}>
+            Email {FirstName}
+          </a>
+        ),
       ].filter(Boolean),
     };
+  } else if (closedAs === "Expired") {
+    nextStep = {
+      eyebrow: "Link expired",
+      title: `The link expired before ${FirstName} signed.`,
+      detail: `It closed${expires ? ` on ${shortDate(expires)}` : ""}. Extend it to reopen the same link, or start a fresh draft.`,
+      actions: [
+        canReopen && reopen("Extend link"),
+        duplicate("Duplicate as new draft"),
+      ].filter(Boolean),
+    };
+  } else if (stage === "draft") {
+    nextStep = aiDraft
+      ? {
+          eyebrow: "Next step | You",
+          title: `Claude drafted this for ${FirstName}. Review it before sending.`,
+          detail:
+            "Sections Claude wrote are marked for review. Nothing is sent until you check them off.",
+          actions: [
+            <a className="btn record-ai-review" href={fixUrl}>
+              Review AI draft
+            </a>,
+          ],
+        }
+      : blockers.length
+        ? {
+            eyebrow: "Next step | You",
+            title: `Finish the draft and send it to ${FirstName}.`,
+            detail: `${withCount(blockers.length, "thing")} to fix before sending: ${blockers[0].title}${blockers[0].detail ? ` (${blockers[0].detail})` : ""}.`,
+            actions: [
+              <a className="btn" href={fixUrl}>
+                Fix in editor
+              </a>,
+            ],
+          }
+        : {
+            eyebrow: "Next step | You",
+            title: "Review and send your proposal.",
+            actions: [
+              <a className="btn" href={`${recordUrl}?view=send`}>
+                Review and send
+              </a>,
+            ],
+          };
   } else if (open) {
     const viewing = p.status === "viewed";
-    nextStep = {
-      eyebrow: `Next step | ${clientFullName}`,
-      title: viewing
-        ? `${clientName} is reviewing the proposal.`
-        : `Waiting for ${clientName} to open it.`,
-      detail: [
-        viewing && engagement?.last_viewed_at
-          ? `Opened ${withCount(engagement.views, "time")}, last ${timestamp(engagement.last_viewed_at, data)}.`
-          : viewing && p.first_viewed_at
-            ? `First opened ${timestamp(p.first_viewed_at, data)}.`
-            : p.sent_at
-              ? `${p.delivery_method === "manual" ? "Shared" : "Emailed"} ${timestamp(p.sent_at, data)}${p.client.email ? ` to ${p.client.email}` : ""}. Not opened yet.`
-              : "",
-        firstOpenQuestion ? "The client asked a question." : "",
-        nextReminderDetail,
-      ]
-        .filter(Boolean)
-        .join(" "),
-      actions:
-        firstOpenQuestion && questions.data?.can_reply
-          ? [
+    nextStep = firstOpenQuestion
+      ? {
+          eyebrow: "Next step | You",
+          title: `${FirstName} asked a question before signing.`,
+          detail: `“${firstQuestion}” Your reply goes to ${FirstName} by email.`,
+          actions: [
+            questions.data?.can_reply && (
               <Button
                 busy={questions.busy}
                 onClick={() => questions.setReplying(firstOpenQuestion.id)}
               >
-                {phone ? "Reply" : "Reply to question"}
-              </Button>,
-              remind,
-            ]
-          : [
-              remind,
-              <CopyClientLink
-                token={p.token!}
-                appUrl={data.app_url}
-                label="Copy client link"
-                buttonOnly
-              />,
-            ],
-    };
+                Reply to question
+              </Button>
+            ),
+            copyLink,
+          ].filter(Boolean),
+        }
+      : {
+          eyebrow: `Next step | ${FirstName}`,
+          title: !viewing
+            ? `Sent to ${FirstName}, not opened yet.`
+            : oneShortVisit
+              ? `${FirstName} opened it once. Waiting for a signature.`
+              : `${FirstName} has read it. Waiting for a signature.`,
+          detail: [
+            !viewing
+              ? p.sent_at
+                ? `Sent ${timestamp(p.sent_at, data)}.`
+                : ""
+              : oneShortVisit
+                ? `Opened ${timestamp(sessionsSeen[0].started_at, data)} on ${deviceWord(sessionsSeen[0].device)}, for ${engagementDuration(sessionsSeen[0].active_ms)}.`
+                : engagement?.last_viewed_at
+                  ? `Last viewed ${engagementAgo(engagement.last_viewed_at)}, across ${withCount(engagement.views, "visit")}.`
+                  : p.first_viewed_at
+                    ? `First opened ${timestamp(p.first_viewed_at, data)}.`
+                    : "",
+            nextReminder
+              ? `An automatic reminder goes out ${shortDate(nextReminder)}.`
+              : "",
+          ]
+            .filter(Boolean)
+            .join(" "),
+          actions: [remind, copyLink].filter(Boolean),
+        };
   } else {
     nextStep = {
       eyebrow: "Next step | You",
@@ -2949,59 +3097,54 @@ export function RecordV4({
               .filter((link) => link.status !== "succeeded")
               .map((link) => link.provider),
           )} needs attention.`
-        : p.status === "draft"
-          ? "Review and send your proposal."
-          : resend
-            ? "The client still needs to finish billing setup."
-            : "Billing is being prepared.",
+        : resend
+          ? "The client still needs to finish billing setup."
+          : "Billing is being prepared.",
       actions: resend ? [resendLink] : [],
     };
   }
-  const toolbarClass = nextStep.actions.length ? "" : "record-primary";
+  // The header's main button. It never repeats a hero action.
+  const lockedEdit = native && actualSigned && !company && !archive;
   const primary = archive ? (
-    unarchive(toolbarClass)
-  ) : signature ? (
-    authorized ? (
-      <a
-        className={`btn record-toolbar-countersign ${toolbarClass}`}
-        href={countersignUrl}
-      >
-        Review &amp; countersign
-      </a>
-    ) : (
-      <Button
-        disabled
-        title="Your staff account is not authorized to countersign."
-      >
-        Review &amp; countersign
-      </Button>
-    )
-  ) : native && p.status === "declined" && !p.signers.length ? (
-    duplicate("Duplicate")
-  ) : editable ? (
-    <a
-      className={`btn record-edit ${toolbarClass}`}
-      href={recordUrl + "?action=edit"}
+    unarchive()
+  ) : stage === "import" ? (
+    <a className="btn record-primary" href={downloadUrl}>
+      <FileText size={16} aria-hidden="true" /> Download PDF
+    </a>
+  ) : company && actualSigned ? (
+    <a className="btn record-primary" href={downloadUrl}>
+      <FileText size={16} aria-hidden="true" /> Download sealed PDF
+    </a>
+  ) : lockedEdit ? (
+    <Button
+      className="record-edit"
+      disabled
+      title="Signed proposals are locked."
+      aria-describedby="record-edit-locked"
     >
       Edit
+      <span id="record-edit-locked" className="sr-only">
+        Signed proposals are locked.
+      </span>
+    </Button>
+  ) : editable ? (
+    <a className="btn record-edit record-primary" href={editUrl}>
+      Edit
     </a>
-  ) : native ? (
-    <a className={`btn ${toolbarClass}`} href={downloadUrl}>
-      Download PDF
-    </a>
+  ) : native && p.status === "declined" && !p.signers.length ? (
+    duplicate("Duplicate as new draft")
   ) : null;
   const linkClosed =
     archive ||
-    ["declined", "expired", "archived", "draft"].includes(p.status) ||
-    (["sent", "viewed"].includes(p.status) &&
-      !!expires &&
-      Date.parse(expires) <= Date.now());
+    ["declined", "expired", "archived"].includes(p.status) ||
+    !!p.marked_lost_by ||
+    expired;
   const closedLinkNote =
-    archive || p.status === "archived"
-      ? "The client sees that the proposal is unavailable."
+    archive || p.status === "archived" || p.marked_lost_by
+      ? `${FirstName} sees that this proposal is no longer available.`
       : p.status === "declined"
-        ? "The client sees that the proposal was declined."
-        : "The client sees that the link has expired.";
+        ? `${FirstName} sees that this proposal was declined.`
+        : `${FirstName} sees that this proposal has expired.`;
   const documents = p.files
     .filter((file) =>
       native ? file.kind === "sealed" : file.kind === "import",
@@ -3016,14 +3159,14 @@ export function RecordV4({
       </a>
       {!phone && (
         <div className="record-primary-actions">
-          {native && !archive && (
+          {native && (
             <a
               className="btn record-preview"
               target="_blank"
               rel="noreferrer"
-              href={`/p/${p.id}?preview=1`}
+              href={viewProposal}
             >
-              <span>Preview as client</span>
+              View proposal
             </a>
           )}
           {primary}
@@ -3040,161 +3183,257 @@ export function RecordV4({
       />
     </div>
   );
-  const details = (
-    <section className="record-details record-section">
-      <StaffSectionHeading>Details</StaffSectionHeading>
-      <dl className="card record-details-values">
-        <div className="record-details-client">
-          <dt>Client</dt>
-          <dd>
-            {clientFullName}
-            {p.client.email && (
-              <a href={`mailto:${p.client.email}`}>{p.client.email}</a>
-            )}
-            {canChangeClient(p) ? (
-              <Button
-                className="record-change-client"
-                onClick={() => setClientDialog("change")}
-              >
-                Change client
-              </Button>
+  const linkUrl = p.token ? new URL(`/p/${p.token}`, data.app_url).href : "";
+  const reminderStopped = archive
+    ? "Archived"
+    : p.marked_lost_by
+      ? "Marked as lost"
+      : p.status === "declined"
+        ? "Client declined"
+        : "Link expired";
+  const createdFrom = p.ai_unreviewed
+    ? "By Claude"
+    : (() => {
+        const template = data.templates?.find((t) => t.id === p.template_id);
+        return template ? `From ${template.name}` : "";
+      })();
+  const daysLeft = expires
+    ? Math.ceil((Date.parse(expires) - Date.now()) / 86_400_000)
+    : null;
+  const fact = (
+    key: string,
+    label: string,
+    value: ReactNode,
+    note?: ReactNode,
+    className = "",
+  ) => (
+    <div key={key} className={`record-fact ${className}`}>
+      <dt>{label}</dt>
+      <dd>
+        <span className="record-fact-value">{value}</span>
+        {note && <small className="record-fact-note">{note}</small>}
+      </dd>
+    </div>
+  );
+  const reminderSwitch = (
+    <Switch
+      aria-label="Automatic reminders from the app"
+      checked={reminders}
+      disabled={reminderBusy || !!p.signers.length}
+      onChange={async (e) => {
+        const enabled = e.target.checked;
+        setReminders(enabled);
+        setReminderBusy(true);
+        setError("");
+        try {
+          onChanged(
+            await post<Proposal>(`/api/proposals/${p.id}/reminders`, {
+              revision: p.revision,
+              enabled,
+            }),
+          );
+        } catch (e) {
+          setReminders(automaticRemindersEnabled(p));
+          setError((e as Error).message);
+        } finally {
+          setReminderBusy(false);
+        }
+      }}
+    />
+  );
+  const contactAction = canChangeClient(p) ? (
+    <Button
+      className="record-change-client"
+      onClick={() => setClientDialog("change")}
+    >
+      Change client
+    </Button>
+  ) : (
+    contactEditable && (
+      <Button
+        className="record-change-client"
+        onClick={() => setEditContact(true)}
+      >
+        Edit contact
+      </Button>
+    )
+  );
+  const facts: ReactNode[] = [
+    fact(
+      "client",
+      "Client",
+      <strong>{clientFullName}</strong>,
+      <>
+        {p.client.email && (
+          <a href={`mailto:${p.client.email}`}>{p.client.email}</a>
+        )}
+        {contactAction}
+      </>,
+      "record-details-client",
+    ),
+  ];
+  if (stage === "import") {
+    if (p.client_signed_at)
+      facts.push(fact("signed", "Signed", dateOnly(p.client_signed_at)));
+    facts.push(
+      fact("imported", "Imported", dateOnly(p.created_at), "From Proposify"),
+    );
+  } else if (stage === "draft") {
+    facts.push(
+      fact(
+        "created",
+        "Created",
+        dateOnly(p.created_at),
+        createdFrom || undefined,
+      ),
+    );
+    facts.push(
+      fact(
+        "expires",
+        "Expires",
+        p.valid_until
+          ? readableDate(p.valid_until, timezone)
+          : data.settings?.default_validity_days
+            ? `${data.settings.default_validity_days} days after sending`
+            : "No expiry",
+        undefined,
+        "record-details-expires",
+      ),
+    );
+    facts.push(
+      fact(
+        "reminders",
+        "Reminders",
+        <>
+          {reminderSwitch}
+          <span>{reminders ? "On" : "Off"}</span>
+        </>,
+        reminders ? "Start after you send" : undefined,
+        "record-reminders",
+      ),
+    );
+  } else {
+    if (p.sent_at) facts.push(fact("sent", "Sent", dateOnly(p.sent_at)));
+    if (stage === "open" || closedAs === "Expired")
+      facts.push(
+        fact(
+          "expires",
+          "Expires",
+          expires ? dateOnly(expires) : "No expiry",
+          expired ? (
+            <span className="record-fact-danger">Expired</span>
+          ) : daysLeft !== null ? (
+            daysLeft <= 0 ? (
+              "Today"
             ) : (
-              contactEditable && (
-                <Button
-                  className="record-change-client"
-                  onClick={() => setEditContact(true)}
-                >
-                  Edit contact
-                </Button>
-              )
-            )}
-          </dd>
-        </div>
-        {p.sent_at && (
-          <div>
-            <dt>Sent</dt>
-            <dd>{dateOnly(p.sent_at)}</dd>
-          </div>
-        )}
-        {native && !(actualSigned && (company || phone)) && (
-          <div className="record-details-expires">
-            <dt>Expires</dt>
-            <dd>{expires ? readableDate(expires, timezone) : "No expiry"}</dd>
-          </div>
-        )}
-        {native && p.token && (
-          <div className="record-reminders">
-            <dt>Reminders</dt>
-            <dd>
-              {open ? (
-                <>
-                  <Switch
-                    aria-label="Automatic reminders from the app"
-                    checked={reminders}
-                    disabled={reminderBusy || !!p.signers.length}
-                    onChange={async (e) => {
-                      const enabled = e.target.checked;
-                      setReminders(enabled);
-                      setReminderBusy(true);
-                      setError("");
-                      try {
-                        onChanged(
-                          await post<Proposal>(
-                            `/api/proposals/${p.id}/reminders`,
-                            { revision: p.revision, enabled },
-                          ),
-                        );
-                      } catch (e) {
-                        setReminders(automaticRemindersEnabled(p));
-                        setError((e as Error).message);
-                      } finally {
-                        setReminderBusy(false);
-                      }
-                    }}
-                  />
-                  <span>
-                    {nextReminder
-                      ? `Next on ${dateOnly(nextReminder)}`
-                      : reminders
-                        ? "No reminders scheduled"
-                        : "Off"}
-                  </span>
-                </>
-              ) : (
-                <span>
-                  {p.signers.length
-                    ? "Stopped after signing"
-                    : "Stopped when the link closed"}
-                </span>
-              )}
-            </dd>
-          </div>
-        )}
-        {p.token && (
-          <div className="record-details-link">
-            <dt>Client link</dt>
-            <dd>
-              {linkClosed ? (
-                <>
-                  <s
-                    className="record-link-url"
-                    title={new URL(`/p/${p.token}`, data.app_url).href}
-                  >
-                    {new URL(`/p/${p.token}`, data.app_url).href}
-                  </s>
-                  <small>{closedLinkNote}</small>
-                </>
-              ) : (
-                <CopyClientLink
-                  token={p.token}
-                  appUrl={data.app_url}
-                  label="Copy client link"
-                  iconOnly
-                />
-              )}
-              {editsNotLive && (
-                <small>Shows the version from {publishedDate}</small>
-              )}
-            </dd>
-          </div>
-        )}
-        {(!native || (actualSigned && company)) && (
-          <div className="record-details-documents">
-            <dt>Documents</dt>
-            <dd>
-              {documents.map((file) => (
-                <a
-                  key={file.id}
-                  href={`/api/proposals/${p.id}/files/${file.id}`}
-                >
-                  {file.kind === "import"
-                    ? "Imported PDF"
-                    : file.stage === "company"
-                      ? "Final sealed PDF"
-                      : "Client-signed PDF"}
-                </a>
-              ))}
-              {!native && (
-                <a href={`${recordUrl}?view=evidence`}>Audit trail</a>
-              )}
-              {native && !signedFile && (
-                <small>The signed copy is being sealed.</small>
-              )}
-            </dd>
-          </div>
-        )}
+              `In ${withCount(daysLeft, "day")}`
+            )
+          ) : undefined,
+          "record-details-expires",
+        ),
+      );
+    if (stage === "open")
+      facts.push(
+        fact(
+          "reminders",
+          "Reminders",
+          <>
+            {reminderSwitch}
+            <span>{reminders ? "On" : "Off"}</span>
+          </>,
+          nextReminder
+            ? `Next on ${shortDate(nextReminder)}`
+            : reminders
+              ? "None scheduled"
+              : undefined,
+          "record-reminders",
+        ),
+      );
+    if (stage === "closed")
+      facts.push(fact("reminders", "Reminders", "Stopped", reminderStopped));
+  }
+  if (stage === "draft")
+    facts.push(
+      fact(
+        "link",
+        "Client link",
+        <span className="record-link-field" data-empty>
+          Goes live when you send
+        </span>,
+        undefined,
+        "record-details-link",
+      ),
+    );
+  else if (p.token)
+    facts.push(
+      fact(
+        "link",
+        "Client link",
+        linkClosed ? (
+          <span className="record-link-field" data-closed>
+            <s className="record-link-url" title={linkUrl}>
+              {linkUrl.replace(/^https?:\/\//, "")}
+            </s>
+          </span>
+        ) : (
+          <span className="record-link-field">
+            <span className="record-link-url" title={linkUrl}>
+              {linkUrl.replace(/^https?:\/\//, "")}
+            </span>
+            <CopyClientLink
+              token={p.token}
+              appUrl={data.app_url}
+              label="Copy client link"
+              iconOnly
+            />
+          </span>
+        ),
+        linkClosed
+          ? closedLinkNote
+          : editsNotLive
+            ? `Shows the version from ${shortDate(v!.created_at)}`
+            : undefined,
+        "record-details-link",
+      ),
+    );
+  if (stage === "import" || (stage === "signed" && actualSigned))
+    facts.push(
+      fact(
+        "documents",
+        "Documents",
+        <span className="record-documents">
+          {documents.map((file) => (
+            <a key={file.id} href={`/api/proposals/${p.id}/files/${file.id}`}>
+              <FileText size={14} aria-hidden="true" />
+              {file.kind === "import"
+                ? "Imported PDF"
+                : file.stage === "company"
+                  ? "Final sealed PDF"
+                  : "Client-signed PDF"}
+            </a>
+          ))}
+          {!native && (
+            <a href={`${recordUrl}?view=evidence`}>
+              <FileText size={14} aria-hidden="true" />
+              Proposify audit trail
+            </a>
+          )}
+          {native && !documents.length && (
+            <small>The signed copy is being sealed.</small>
+          )}
+        </span>,
+        undefined,
+        "record-details-documents",
+      ),
+    );
+  const details = (
+    <section className="record-details" aria-label="Details">
+      {phone && <StaffSectionHeading>Details</StaffSectionHeading>}
+      <dl className="card record-details-values" data-count={facts.length}>
+        {facts}
       </dl>
     </section>
   );
-  const latestEvent = p.events.at(-1);
-  const timelineSummary = latestEvent
-    ? `Last: ${unpublishedEdit?.id === latestEvent.id ? "Edited, not live yet" : eventTitle(latestEvent, data)}, ${dateOnly(latestEvent.created_at)}`
-    : "No events";
-  const phoneActions = nextStep.actions.length
-    ? [...nextStep.actions].reverse()
-    : primary
-      ? [primary]
-      : [];
   // One Timeline: record events, every email sent, and each reading session.
   // Choice toggles are left out (too granular); a reading session replaces
   // the raw "opened" events once engagement is known.
@@ -3214,6 +3453,30 @@ export function RecordV4({
     })),
     ...sessions.map((s) => ({ kind: "view" as const, at: s.started_at, s })),
   ].sort((a, b) => b.at.localeCompare(a.at));
+  const latestItem = timelineItems[0];
+  const itemTitle = (item: TimelineItem) =>
+    item.kind === "email"
+      ? item.log.snapshot.subject
+      : item.kind === "view"
+        ? `Viewed by ${FirstName} | ${engagementDuration(item.s.active_ms)}`
+        : unpublishedEdit?.id === item.e.id
+          ? "Edited, not live yet"
+          : eventTitle(item.e, data);
+  const timelineSummary = latestItem
+    ? `Latest: ${itemTitle(latestItem)}, ${timestamp(latestItem.at, data)}`
+    : "No events";
+  const eventIcon = (type: string) =>
+    /sign/.test(type)
+      ? PenLine
+      : /remind|expire/.test(type)
+        ? Clock3
+        : /billing|subscription|stripe|invoice|qbo/.test(type)
+          ? CreditCard
+          : /edit|update|created|draft/.test(type)
+            ? SquarePen
+            : /fail|declin|lost/.test(type)
+              ? CircleAlert
+              : FileText;
   const timeline = (
     <div
       className="card record-timeline-list"
@@ -3229,7 +3492,9 @@ export function RecordV4({
               className="timeline-entry timeline-email"
             >
               <summary>
-                <Mail className="timeline-icon" size={14} aria-label="Email" />
+                <span className="timeline-icon" aria-hidden="true">
+                  <Mail size={14} />
+                </span>
                 <span>
                   <strong>{item.log.snapshot.subject}</strong>
                   <small className="timeline-entry-meta">
@@ -3246,31 +3511,38 @@ export function RecordV4({
               key={`view:${item.s.id}`}
               className="timeline-entry timeline-view"
             >
-              <Eye className="timeline-icon" size={14} aria-hidden="true" />
+              <span className="timeline-icon" aria-hidden="true">
+                <Eye size={14} />
+              </span>
               <div>
                 <strong>
-                  Client viewed the proposal |{" "}
+                  Viewed by {FirstName} on{" "}
+                  {item.s.device === "phone" ? "a phone" : "a computer"} |{" "}
                   {engagementDuration(item.s.active_ms)}
                 </strong>
                 <small className="timeline-entry-meta">
-                  {timestamp(item.at, data)} |{" "}
-                  {item.s.device === "phone" ? "Phone" : "Desktop"}
+                  {timestamp(item.at, data)}
                 </small>
               </div>
             </article>
           );
         const e = item.e;
         const blockedEdit = unpublishedEdit?.id === e.id;
+        const Icon = eventIcon(e.type);
         return (
           <article
             key={e.id}
             className="timeline-entry"
             data-unpublished={blockedEdit || undefined}
           >
-            <span className="timeline-dot" aria-hidden="true" />
+            <span className="timeline-icon" aria-hidden="true">
+              <Icon size={14} />
+            </span>
             <div>
               <strong>
-                {blockedEdit ? "Edited, not live yet" : eventTitle(e, data)}
+                {blockedEdit
+                  ? `Edited, not live yet | ${person(e.actor, data)}`
+                  : eventTitle(e, data)}
               </strong>
               <small className="timeline-entry-meta">
                 {timestamp(e.created_at, data)} | {person(e.actor, data)}
@@ -3281,9 +3553,636 @@ export function RecordV4({
       })}
     </div>
   );
+  // Signature boxes in the hero replace the old Signatures section.
+  const signatureBox = (role: "client" | "company") => {
+    const signer = role === "client" ? clientSigner : company;
+    const next =
+      !signer &&
+      stage !== "closed" &&
+      (role === "client" ? stage === "open" : !!signature);
+    const empty = !native
+      ? ["See imported PDF", ""]
+      : stage === "closed"
+        ? role === "client"
+          ? [
+              closedAs === "Declined" ? "Declined" : "Not signed",
+              closedAs === "Declined" && outcome
+                ? `${shortDate(outcome.created_at)} | ${clockTime(outcome.created_at)}`
+                : closedAs === "Expired"
+                  ? "Link expired"
+                  : "Link closed",
+            ]
+          : [
+              closedAs === "Expired" ? "Waiting" : "Not needed",
+              closedAs === "Expired"
+                ? `After ${FirstName} signs`
+                : "Link closed",
+            ]
+        : role === "client"
+          ? stage === "draft"
+            ? ["Not sent yet", "Signs first"]
+            : [`Waiting for ${FirstName}`, "Signs first"]
+          : signature
+            ? ["Waiting for you", "Signs next"]
+            : ["Waiting", `After ${FirstName} signs`];
+    return (
+      <div
+        className="record-sign-box"
+        data-next={next || undefined}
+        data-signed={!!signer || undefined}
+      >
+        <span className="record-sign-label">
+          {role === "client" ? "Client" : companyName}
+          {signer && <Check size={14} strokeWidth={3} aria-label="Signed" />}
+        </span>
+        {signer ? (
+          <>
+            <span className="record-sign-mark">
+              {signer.image ? (
+                <img src={signer.image} alt={`${signer.name}’s signature`} />
+              ) : (
+                <span>{signer.typed_name || signer.name}</span>
+              )}
+            </span>
+            <small>
+              <time dateTime={signer.signed_at}>
+                {shortDate(signer.signed_at)}
+                {stage !== "import" && ` | ${clockTime(signer.signed_at)}`}
+              </time>
+            </small>
+          </>
+        ) : (
+          <>
+            <span className="record-sign-mark" data-empty>
+              {empty[0]}
+            </span>
+            {empty[1] && <small>{empty[1]}</small>}
+          </>
+        )}
+      </div>
+    );
+  };
+  const signaturesLine = company
+    ? "Signed by both"
+    : clientSigner
+      ? `${FirstName} signed ${shortDate(clientSigner.signed_at)} | You’re next`
+      : stage === "closed"
+        ? "Not signed"
+        : `${FirstName} signs first, then you`;
+  const billingWord =
+    stage === "closed"
+      ? "Won’t start"
+      : billingStatus === "Set up" && stripe && !qboIntegrated
+        ? "Set up"
+        : signature && stripeActive
+          ? "Monthly set up"
+          : billingStatus;
+  const oiotTerms = signedOiot && (
+    <section className="record-oiot">
+      <h3>{oiotPlan.name}</h3>
+      <dl>
+        <div>
+          <dt>Purchase price</dt>
+          <dd>{signedOiot[oiotPurchasePriceField]}</dd>
+        </div>
+        <div>
+          <dt>Kickoff</dt>
+          <dd>{signedOiot[oiotKickoffField]}</dd>
+        </div>
+        <div>
+          <dt>Steps down</dt>
+          <dd>
+            After {oiotPlan.paidPayments} payments
+            {signedOiot[oiotStepDownField] &&
+              ` to ${signedOiot[oiotStepDownField]}/mo`}
+          </dd>
+        </div>
+      </dl>
+    </section>
+  );
+  const billingSection = showBilling && stage !== "closed" && (
+    <section className="record-billing record-section">
+      <StaffSectionHeading
+        action={
+          retryInBilling && (
+            <Button onClick={() => void retryBilling()}>Retry billing</Button>
+          )
+        }
+      >
+        Billing
+      </StaffSectionHeading>
+      {(needsLink ||
+        stripeIntegrated ||
+        invoiceWaiting ||
+        qboIntegrated ||
+        qbo?.metadata?.manual_invoice ||
+        markAsInvoiced) && (
+        <div className="card record-billing-card">
+          <dl>
+            {(stripeIntegrated || needsLink) && (
+              <RecordBillingRow
+                label={
+                  billable.yearly_total && !billable.monthly_total
+                    ? "Yearly"
+                    : "Monthly"
+                }
+                end={
+                  !needsLink && (
+                    <span className={`pill ${stripeChip.tone}`}>
+                      {stripeChip.text}
+                    </span>
+                  )
+                }
+              >
+                {adopted ? (
+                  <>
+                    {recurringDescription}
+                    <LinkedStripeSubscription
+                      subscription={adopted}
+                      date={dateOnly}
+                    />
+                  </>
+                ) : needsLink ? (
+                  <div className="stripe-link-notice">
+                    <p>{recurringDescription}</p>
+                    {linkBlocked ? (
+                      <p className="muted">{linkBlocked}</p>
+                    ) : (
+                      <Button onClick={() => setLinkingStripe(true)}>
+                        Link a Stripe subscription
+                      </Button>
+                    )}
+                    {resend && (
+                      <span className="pill warning">Needs linking</span>
+                    )}
+                  </div>
+                ) : stripe &&
+                  (stripeStatus?.labels.length ||
+                    stripeStatus?.subscriptions.length) ? (
+                  <details className="record-provider-details">
+                    <Disclosure>{recurringDescription}</Disclosure>
+                    <StripeBillingDetails
+                      link={stripe}
+                      dashboardUrl={
+                        data.connections?.stripe_connect?.dashboardUrl
+                      }
+                    />
+                  </details>
+                ) : (
+                  <>
+                    {recurringDescription}
+                    {!actualSigned && (
+                      <p>Set up by {firstName} right after signing.</p>
+                    )}
+                  </>
+                )}{" "}
+                {stripe?.last_error && (
+                  <p className="record-billing-problem">{stripe.last_error}</p>
+                )}
+                {resend && p.token && (
+                  // The proposal link is the permanent payment link: it
+                  // always opens a live Stripe checkout page.
+                  <div className="record-payment-link">
+                    <Button
+                      className="record-primary"
+                      busy={recordBusy}
+                      onClick={() => void runAction("resend_billing_link")}
+                    >
+                      Resend payment link
+                    </Button>
+                    {manualInvoice}
+                  </div>
+                )}
+              </RecordBillingRow>
+            )}
+            {invoiceWaiting ? (
+              <RecordBillingRow
+                label="One-time"
+                end={
+                  <span className="pill neutral">After you countersign</span>
+                }
+              >
+                {oneTimeAmount} | QuickBooks
+                <p>The invoice is created as a draft once you countersign.</p>
+              </RecordBillingRow>
+            ) : qbo &&
+              !qbo.metadata?.skipped &&
+              !qbo.metadata?.manual_invoice ? (
+              <QuickBooksBilling
+                proposal={p}
+                link={qbo}
+                onRefresh={onRefresh}
+                amount={oneTimeAmount}
+                manualAction={markAsInvoiced}
+              />
+            ) : qboIntegrated || qbo?.metadata?.manual_invoice ? (
+              <RecordBillingRow
+                label="One-time"
+                end={
+                  <span
+                    className={`pill ${qbo?.metadata?.manual_invoice ? "success" : "neutral"}`}
+                  >
+                    {qbo?.metadata?.manual_invoice
+                      ? "Invoiced manually"
+                      : actualSigned
+                        ? "In progress"
+                        : "After both sign"}
+                  </span>
+                }
+              >
+                {oneTimeAmount} |{" "}
+                {qbo?.metadata?.manual_invoice
+                  ? "Manual invoice"
+                  : "QuickBooks"}
+                {!qbo?.metadata?.manual_invoice && !actualSigned && (
+                  <p>Draft invoice once you countersign.</p>
+                )}
+              </RecordBillingRow>
+            ) : null}
+          </dl>
+          {oiotTerms}
+        </div>
+      )}
+      {recordJobs.length > 0 && (
+        <details
+          className="card record-billing-note"
+          open={
+            !!highlightedJob ||
+            recordJobs.some(
+              (job) => job.status === "failed" || !!job.last_error,
+            ) ||
+            undefined
+          }
+        >
+          <Disclosure>Background jobs</Disclosure>
+          <div className="record-jobs">
+            {recordJobs.map((j) => (
+              <div
+                key={j.id}
+                id={jobRecordAnchor(j.id)}
+                tabIndex={-1}
+                className={
+                  highlightedJob === j.id ? "record-job-highlight" : undefined
+                }
+                data-job-id={j.id}
+              >
+                <JobState
+                  state={
+                    j.status === "running"
+                      ? "running"
+                      : j.status === "failed" || j.last_error
+                        ? "failed"
+                        : "queued"
+                  }
+                  label={jobName(
+                    j,
+                    p.billing_links
+                      .filter((l) => l.status !== "succeeded")
+                      .map((l) => l.provider),
+                  )}
+                  error={
+                    j.last_error
+                      ? friendlyJobError(j.last_error).message
+                      : undefined
+                  }
+                  attempts={j.attempts}
+                  onRetry={
+                    !(qboIssue && j.kind === "billing") &&
+                    j.status !== "running" &&
+                    (j.status === "failed" || j.last_error)
+                      ? () => {
+                          void post(`/api/proposals/${p.id}/retry`)
+                            .then(onRefresh)
+                            .catch((e) => setError(e.message));
+                        }
+                      : undefined
+                  }
+                />
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
+    </section>
+  );
+  const quoteSection = (
+    <section className="record-quote record-section">
+      <StaffSectionHeading
+        action={
+          editable &&
+          !actualSigned &&
+          stage !== "closed" && (
+            <a className="btn" href={quoteUrl}>
+              Edit quote
+            </a>
+          )
+        }
+      >
+        Quote
+      </StaffSectionHeading>
+      <div className="card record-quote-card">
+        {editsNotLive && (
+          <div className="record-quote-notice">
+            <p>
+              Showing your latest edits. {FirstName} sees the version from{" "}
+              {publishedDate}.
+            </p>
+            <a href={previewLiveUrl} target="_blank" rel="noreferrer">
+              View live version
+            </a>
+          </div>
+        )}
+        {p.marked_won_by ? (
+          <p className="record-card-message">
+            No client-signed version. Outcome recorded manually.
+          </p>
+        ) : !native && !displayQuote.length ? (
+          <p className="record-card-message">Pricing is in the imported PDF.</p>
+        ) : (
+          <RecordQuote
+            quote={displayQuote}
+            currency={p.currency}
+            signed={actualSigned || !native}
+            imported={!native}
+          />
+        )}
+      </div>
+    </section>
+  );
+  const questionsSection = native && p.token && (
+    <RecordQuestions
+      questions={questions}
+      timezone={timezone}
+      clientName={FirstName}
+      previewUrl={viewProposal}
+      user={data.user.actor}
+      proposal={p.id}
+      signed={actualSigned || stage === "closed"}
+      phone={phone}
+    />
+  );
+  const hasThreads = !!questions.data?.threads.length;
+  const engagementSection = native && stage !== "draft" && (
+    <ProposalEngagement
+      knownRecipient={!!p.token && !!p.client.email}
+      id={p.id}
+      timezone={timezone}
+      notify={data.settings?.engagement_notifications?.in_app !== false}
+      onLoaded={setEngagement}
+      phone={phone}
+      wide={stage !== "signed"}
+      clientName={FirstName}
+      sentAt={p.sent_at}
+    />
+  );
+  const timelineSection = (
+    <section className="timeline record-section">
+      {phone ? (
+        <RecordDisclosure title="Timeline" summary={timelineSummary}>
+          <a
+            className="record-phone-evidence"
+            href={`${recordUrl}?view=evidence`}
+          >
+            Evidence
+          </a>
+          {timeline}
+        </RecordDisclosure>
+      ) : (
+        <>
+          <StaffSectionHeading
+            action={<a href={`${recordUrl}?view=evidence`}>Evidence</a>}
+          >
+            Timeline
+          </StaffSectionHeading>
+          {timeline}
+        </>
+      )}
+    </section>
+  );
+  const readySection = stage === "draft" && (
+    <section className="record-ready record-section">
+      <StaffSectionHeading
+        action={
+          ready && (
+            <span className={`pill ${blockers.length ? "review" : "success"}`}>
+              {blockers.length ? `${blockers.length} to fix` : "Ready"}
+            </span>
+          )
+        }
+      >
+        Ready to send
+      </StaffSectionHeading>
+      <ul className="card record-ready-list">
+        {!ready ? (
+          <li role="status">Checking…</li>
+        ) : (
+          readyRows.map((row, index) => (
+            <li key={index} data-tone={row.tone}>
+              <span className="record-ready-icon" aria-hidden="true">
+                {row.tone === "pass" ? (
+                  <Check size={12} strokeWidth={3.5} />
+                ) : (
+                  "!"
+                )}
+              </span>
+              <span>
+                <strong>{row.title}</strong>
+                {row.detail && <small>{row.detail}</small>}
+              </span>
+            </li>
+          ))
+        )}
+      </ul>
+    </section>
+  );
+  const row = (
+    key: string,
+    main: ReactNode,
+    side: ReactNode,
+    variant?: "even",
+  ) =>
+    main && side ? (
+      <div key={key} className="record-row" data-variant={variant}>
+        <div className="record-row-main">{main}</div>
+        <div className="record-row-side">{side}</div>
+      </div>
+    ) : (
+      <div key={key} className="record-row" data-single>
+        {main || side}
+      </div>
+    );
+  const column = (...parts: ReactNode[]) =>
+    parts.some(Boolean) ? (
+      <div className="record-stack">
+        {parts.map((part, index) =>
+          part ? <Fragment key={index}>{part}</Fragment> : null,
+        )}
+      </div>
+    ) : null;
+  // Section order by stage (Redesign 27 §4; phone §12).
+  let sections: ReactNode[];
+  if (phone) {
+    const openThread = !!firstOpenQuestion;
+    sections =
+      stage === "draft"
+        ? [readySection, quoteSection, billingSection, details, timelineSection]
+        : stage === "signed"
+          ? attention
+            ? [
+                billingSection,
+                quoteSection,
+                details,
+                questionsSection,
+                engagementSection,
+                timelineSection,
+              ]
+            : [
+                quoteSection,
+                billingSection,
+                details,
+                questionsSection,
+                engagementSection,
+                timelineSection,
+              ]
+          : stage === "import"
+            ? [quoteSection, billingSection, details, timelineSection]
+            : [
+                openThread && questionsSection,
+                quoteSection,
+                billingSection,
+                details,
+                !openThread && questionsSection,
+                engagementSection,
+                timelineSection,
+              ];
+  } else if (stage === "draft") {
+    sections = [
+      row(
+        "draft",
+        quoteSection,
+        column(readySection, billingSection, timelineSection),
+      ),
+    ];
+  } else if (stage === "open") {
+    sections = [
+      questionsSection,
+      row("activity", engagementSection, timelineSection),
+      row("money", quoteSection, billingSection),
+    ];
+  } else if (stage === "signed") {
+    sections = billingSection
+      ? [
+          row("money", quoteSection, billingSection),
+          hasThreads && questionsSection,
+          row("activity", engagementSection, timelineSection, "even"),
+        ]
+      : [
+          row("money", quoteSection, timelineSection),
+          hasThreads && questionsSection,
+          engagementSection,
+        ];
+  } else if (stage === "closed") {
+    sections = [
+      hasThreads && questionsSection,
+      row("activity", engagementSection, timelineSection),
+      quoteSection,
+    ];
+  } else {
+    sections = [
+      row("money", quoteSection, column(billingSection, timelineSection)),
+    ];
+  }
+  // Phone: View proposal plus the state's main action in a sticky bar.
+  const phoneMain: ReactNode =
+    stage === "import" ? (
+      <a className="btn" href={downloadUrl}>
+        Download PDF
+      </a>
+    ) : archive ? (
+      unarchive()
+    ) : attention && resend ? (
+      resendLink
+    ) : signature && authorized ? (
+      <a className="btn record-countersign" href={countersignUrl}>
+        Review and countersign
+      </a>
+    ) : company && actualSigned ? (
+      <a className="btn" href={downloadUrl}>
+        Download sealed PDF
+      </a>
+    ) : stage === "draft" ? (
+      aiDraft ? (
+        <a className="btn record-ai-review" href={fixUrl}>
+          Review AI draft
+        </a>
+      ) : blockers.length ? (
+        <a className="btn" href={fixUrl}>
+          Fix in editor
+        </a>
+      ) : (
+        <a className="btn" href={`${recordUrl}?view=send`}>
+          Review and send
+        </a>
+      )
+    ) : stage === "open" ? (
+      editsNotLive && !firstOpenQuestion ? (
+        <a className="btn" href={fixUrl}>
+          Fix in editor
+        </a>
+      ) : firstOpenQuestion && questions.data?.can_reply ? (
+        <Button onClick={() => questions.setReplying(firstOpenQuestion.id)}>
+          Reply
+        </Button>
+      ) : (
+        remind
+      )
+    ) : (
+      (nextStep.actions[0] ?? null)
+    );
+  const phoneActions = [
+    native && (
+      <a
+        className="btn record-preview"
+        target="_blank"
+        rel="noreferrer"
+        href={viewProposal}
+      >
+        View proposal
+      </a>
+    ),
+    phoneMain,
+  ].filter(Boolean);
+  const heroChips = (
+    <>
+      {p.status === "declined" && !p.marked_lost_by ? (
+        <span className="pill danger" data-proposal-status={p.status}>
+          Declined
+        </span>
+      ) : native ? (
+        <ProposalBadges p={p} />
+      ) : (
+        <span
+          className={`pill ${statusDisplay(p.status).tone}`}
+          data-proposal-status={p.status}
+        >
+          {statusDisplay(p.status).name}
+        </span>
+      )}
+      {stage === "open" && firstOpenQuestion && (
+        <span className="pill review">
+          {withCount(
+            questions.data!.threads.filter((t) => t.status === "open").length,
+            "question",
+          )}
+        </span>
+      )}
+      {!native && <span className="pill neutral">Imported</span>}
+    </>
+  );
   return (
     <div
       className="record-v4 stack"
+      data-stage={stage}
       data-client-signed={actualSigned || undefined}
       data-awaiting-countersign={signature || undefined}
     >
@@ -3360,34 +4259,26 @@ export function RecordV4({
             works.
           </Banner>
         )}
-      {archive && (
-        <div className="record-archive-note">
-          Archived{p.archived_by ? ` by ${person(p.archived_by, data)}` : ""} on{" "}
-          {dateOnly(p.archived_at!)}. It’s hidden from All proposals.
-        </div>
-      )}
-      <header className="record-hero">
+      <header className="record-hero" data-stage={stage}>
         {actualSigned && !p.marked_won_by && <HeroConfetti />}
         {phone && toolbar}
         <div className="record-hero-intro">
-          <div className="record-hero-client">
-            <span>{p.client.company}</span>
-            {p.status === "declined" && !p.marked_lost_by ? (
-              <span className="pill danger" data-proposal-status={p.status}>
-                Declined
-              </span>
-            ) : (
-              <ProposalBadges p={p} />
+          <div className="record-hero-heading">
+            <div className="record-hero-client">
+              <span>{p.client.company}</span>
+              {heroChips}
+            </div>
+            <h1 className="t-page-title">{p.title}</h1>
+            {!phone && (
+              <div className="record-prepared-by">
+                <span
+                  className="avatar record-owner-avatar"
+                  data-initials={staffInitials(ownerName)}
+                  aria-hidden="true"
+                />
+                {native ? "Prepared by" : "Imported by"} {ownerName}
+              </div>
             )}
-          </div>
-          <h1 className="t-page-title">{p.title}</h1>
-          <div className="record-prepared-by">
-            <span
-              className="avatar record-owner-avatar"
-              data-initials={staffInitials(ownerName)}
-              aria-hidden="true"
-            />
-            Prepared by {ownerName}
           </div>
           {(native || displayQuote.length > 0) && (
             <dl className="record-hero-amounts">
@@ -3402,58 +4293,84 @@ export function RecordV4({
             </dl>
           )}
         </div>
-        {native && (
+        {native ? (
           <div className="record-hero-progress">
-            <RecordLifecycle proposal={p} data={data} />
-            {billingIntegrated && (
+            <RecordLifecycle proposal={p} data={data} closed={closedAs} />
+            {(billingIntegrated || stage === "closed") && (
               <div
                 className="record-hero-billing"
                 data-needs-attention={billingStatus === "Needs attention"}
+                data-muted={stage === "closed" || undefined}
               >
                 <span>
                   Billing<span className="record-billing-colon">:</span>
                 </span>
                 <strong>
-                  {(billingStatus === "Set up" ||
-                    billingStatus === "Linked") && (
-                    <CircleCheck
-                      className="record-hero-billing-done"
-                      size={16}
-                      aria-hidden="true"
-                    />
-                  )}
-                  {phone && billingStatus === "Starts after you countersign"
-                    ? "After you countersign"
-                    : billingStatus}
+                  {stage !== "closed" &&
+                    (billingStatus === "Set up" ||
+                      billingStatus === "Linked" ||
+                      billingWord === "Monthly set up") && (
+                      <CircleCheck
+                        className="record-hero-billing-done"
+                        size={16}
+                        aria-hidden="true"
+                      />
+                    )}
+                  {phone
+                    ? billingWord.charAt(0).toLowerCase() + billingWord.slice(1)
+                    : billingWord}
                 </strong>
               </div>
             )}
           </div>
+        ) : (
+          <p className="record-import-note">
+            <FileText size={16} aria-hidden="true" />
+            Imported from Proposify on {shortDate(p.created_at, true)}.
+            Read-only: signed and sealed in Proposify.
+          </p>
         )}
-        <section
-          className="next-card record-next-step"
-          data-problem={nextStep.problem || undefined}
-        >
-          <div className="next-copy">
-            <span className="t-eyebrow">{nextStep.eyebrow}</span>
-            <h2>{nextStep.title}</h2>
-            {typeof nextStep.detail === "string"
-              ? nextStep.detail && <p>{nextStep.detail}</p>
-              : nextStep.detail}
-          </div>
-          {!phone && nextStep.actions.length > 0 && (
-            <div className="actions record-next-actions">
-              {nextStep.actions.map((action, index) => (
-                <div key={index}>{action}</div>
-              ))}
+        <div className="record-hero-bottom">
+          <section
+            className="next-card record-next-step"
+            data-problem={nextStep.problem || undefined}
+          >
+            <div className="next-copy">
+              <span className="t-eyebrow">{nextStep.eyebrow}</span>
+              <h2>{nextStep.title}</h2>
+              {typeof nextStep.detail === "string"
+                ? nextStep.detail && <p>{nextStep.detail}</p>
+                : nextStep.detail}
             </div>
-          )}
-        </section>
+            {!phone && nextStep.actions.length > 0 && (
+              <div className="actions record-next-actions">
+                {nextStep.actions.map((action, index) => (
+                  <div key={index}>{action}</div>
+                ))}
+              </div>
+            )}
+          </section>
+          {!p.marked_won_by &&
+            (phone ? (
+              <p className="record-sign-line">
+                <PenLine size={14} aria-hidden="true" />
+                {clientSigner && (
+                  <Check size={14} strokeWidth={3} aria-hidden="true" />
+                )}
+                {signaturesLine}
+              </p>
+            ) : (
+              <div className="record-sign-boxes" aria-label="Signatures">
+                {signatureBox("client")}
+                {signatureBox("company")}
+              </div>
+            ))}
+        </div>
       </header>
       {editsNotLive && firstOpenQuestion && (
         <div className="record-publication-banner" role="status">
           <p>
-            <strong>Edits not live.</strong> The client still sees the version
+            <strong>Edits not live.</strong> {FirstName} still sees the version
             from {publishedDate}. {reasons[0]}
             {reasons.length > 1 && `, and ${reasons.length - 1} more`}.
           </p>
@@ -3461,377 +4378,9 @@ export function RecordV4({
         </div>
       )}
       {!phone && details}
-      <div className="record-columns">
-        <div className="record-aside">
-          {native && p.token && (
-            <ProposalQuestions questions={questions} timezone={timezone} />
-          )}
-          {phone && complete && details}
-          <section className="record-quote record-section">
-            <StaffSectionHeading
-              action={
-                <div className="record-section-actions">
-                  {editable && (
-                    <a className="btn" href={recordUrl + "?action=edit"}>
-                      Edit
-                    </a>
-                  )}
-                  <Button onClick={() => setDocument(true)}>
-                    {phone ? "Open" : "Open document"}
-                  </Button>
-                </div>
-              }
-            >
-              Quote
-            </StaffSectionHeading>
-            <div className="card record-quote-card">
-              {editsNotLive && (
-                <div className="record-quote-notice">
-                  <p>
-                    Showing your latest edits. The client sees the version from{" "}
-                    {publishedDate}.
-                  </p>
-                  <a href={previewLiveUrl} target="_blank" rel="noreferrer">
-                    View live version
-                  </a>
-                </div>
-              )}
-              {p.marked_won_by ? (
-                <p className="record-card-message">
-                  No client-signed version. Outcome recorded manually.
-                </p>
-              ) : !native && !displayQuote.length ? (
-                <p className="record-card-message">
-                  Pricing is in the imported PDF.
-                </p>
-              ) : (
-                <RecordQuote
-                  quote={displayQuote}
-                  currency={p.currency}
-                  signed={actualSigned}
-                />
-              )}
-            </div>
-          </section>
-          {!p.marked_won_by && (
-            <section className="record-signatures record-section">
-              <StaffSectionHeading>Signatures</StaffSectionHeading>
-              <div className="card record-signature-card">
-                <div className="record-signature-box">
-                  <h3>Client</h3>
-                  {clientSigner ? (
-                    <RecordSignature signer={clientSigner} data={data} />
-                  ) : (
-                    <>
-                      <p className="record-signature-mark">
-                        {native ? "Not signed yet" : "See imported PDF"}
-                      </p>
-                      <strong>
-                        {clientFullName}
-                        {p.client.title && ` | ${p.client.title}`}
-                      </strong>
-                      {open && <small>Waiting on {clientName}</small>}
-                    </>
-                  )}
-                </div>
-                <div className="record-signature-box" data-next={signature}>
-                  <h3>{data.settings?.company_name ?? "Company"}</h3>
-                  {company ? (
-                    <RecordSignature signer={company} data={data} />
-                  ) : (
-                    <>
-                      <p className="record-signature-mark">
-                        {native ? "Not signed yet" : "See imported PDF"}
-                      </p>
-                      <strong>
-                        {data.settings?.company_signatory?.name ??
-                          "Company signatory"}
-                      </strong>
-                      {native && (
-                        <small>
-                          {actualSigned
-                            ? "Awaiting signature"
-                            : "After the client signs"}
-                        </small>
-                      )}
-                    </>
-                  )}
-                </div>
-              </div>
-            </section>
-          )}
-          {phone && !complete && details}
-        </div>
-        <div className="record-support">
-          {showBilling && (
-            <section className="record-billing record-section">
-              <StaffSectionHeading
-                action={
-                  retryInBilling && (
-                    <Button onClick={() => void retryBilling()}>
-                      Retry billing
-                    </Button>
-                  )
-                }
-              >
-                Billing
-              </StaffSectionHeading>
-              {(needsLink ||
-                stripeIntegrated ||
-                invoiceWaiting ||
-                qboIntegrated ||
-                qbo?.metadata?.manual_invoice ||
-                markAsInvoiced) && (
-                <dl className="card record-billing-card">
-                  {(stripeIntegrated || needsLink) && (
-                    <RecordBillingRow
-                      label={
-                        billable.yearly_total && !billable.monthly_total
-                          ? "Yearly"
-                          : "Monthly"
-                      }
-                      end={
-                        resend && p.token ? (
-                          <div className="record-payment-link">
-                            {!needsLink && (
-                              <span className={`pill ${stripeChip.tone}`}>
-                                {stripeChip.text}
-                              </span>
-                            )}
-                            {/* The proposal link is the permanent payment link:
-                                it always opens a live Stripe checkout page. */}
-                            <CopyClientLink
-                              token={p.token}
-                              appUrl={data.app_url}
-                              label="Copy payment link"
-                              buttonOnly
-                            />
-                            <Button
-                              busy={recordBusy}
-                              onClick={() =>
-                                void runAction("resend_billing_link")
-                              }
-                            >
-                              Email payment link
-                            </Button>
-                          </div>
-                        ) : (
-                          <span className={`pill ${stripeChip.tone}`}>
-                            {stripeChip.text}
-                          </span>
-                        )
-                      }
-                    >
-                      {adopted ? (
-                        <>
-                          {recurringDescription}
-                          <LinkedStripeSubscription
-                            subscription={adopted}
-                            date={dateOnly}
-                          />
-                        </>
-                      ) : needsLink ? (
-                        <div className="stripe-link-notice">
-                          <p>{recurringDescription}</p>
-                          {linkBlocked ? (
-                            <p className="muted">{linkBlocked}</p>
-                          ) : (
-                            <Button onClick={() => setLinkingStripe(true)}>
-                              Link a Stripe subscription
-                            </Button>
-                          )}
-                          {resend && (
-                            <span className="pill warning">Needs linking</span>
-                          )}
-                        </div>
-                      ) : stripe &&
-                        (stripeStatus?.labels.length ||
-                          stripeStatus?.subscriptions.length) ? (
-                        <details className="record-provider-details">
-                          <Disclosure>{recurringDescription}</Disclosure>
-                          <StripeBillingDetails
-                            link={stripe}
-                            dashboardUrl={
-                              data.connections?.stripe_connect?.dashboardUrl
-                            }
-                          />
-                        </details>
-                      ) : (
-                        recurringDescription
-                      )}{" "}
-                      {stripe?.last_error && (
-                        <p className="record-billing-problem">
-                          {stripe.last_error}
-                        </p>
-                      )}
-                    </RecordBillingRow>
-                  )}
-                  {invoiceWaiting ? (
-                    <RecordBillingRow
-                      label="One-time"
-                      end={
-                        <span className="pill info">
-                          Waiting for countersignature
-                        </span>
-                      }
-                    >
-                      {oneTimeAmount} | QuickBooks invoice
-                      <p>{quickBooksInvoiceTiming}</p>
-                    </RecordBillingRow>
-                  ) : qbo &&
-                    !qbo.metadata?.skipped &&
-                    !qbo.metadata?.manual_invoice ? (
-                    <QuickBooksBilling
-                      proposal={p}
-                      link={qbo}
-                      onRefresh={onRefresh}
-                      amount={oneTimeAmount}
-                      manualAction={markAsInvoiced}
-                    />
-                  ) : qboIntegrated || qbo?.metadata?.manual_invoice ? (
-                    <RecordBillingRow
-                      label="One-time"
-                      end={
-                        <span
-                          className={`pill ${qbo?.metadata?.manual_invoice ? "success" : "neutral"}`}
-                        >
-                          {qbo?.metadata?.manual_invoice
-                            ? "Invoiced manually"
-                            : actualSigned
-                              ? "In progress"
-                              : "Not started"}
-                        </span>
-                      }
-                    >
-                      {oneTimeAmount} |{" "}
-                      {qbo?.metadata?.manual_invoice
-                        ? "Manual invoice"
-                        : "QuickBooks invoice"}
-                    </RecordBillingRow>
-                  ) : null}
-                </dl>
-              )}
-              {signedOiot && (
-                <section className="card record-billing-note record-oiot">
-                  <h3>{oiotPlan.name}</h3>
-                  <dl>
-                    <div>
-                      <dt>Purchase price</dt>
-                      <dd>{signedOiot[oiotPurchasePriceField]}</dd>
-                    </div>
-                    <div>
-                      <dt>Kickoff</dt>
-                      <dd>{signedOiot[oiotKickoffField]}</dd>
-                    </div>
-                    <div>
-                      <dt>Steps down</dt>
-                      <dd>
-                        After {oiotPlan.paidPayments} payments
-                        {signedOiot[oiotStepDownField] &&
-                          ` to ${signedOiot[oiotStepDownField]}/mo`}
-                      </dd>
-                    </div>
-                  </dl>
-                </section>
-              )}
-              {recordJobs.length > 0 && (
-                <details
-                  className="card record-billing-note"
-                  open={
-                    !!highlightedJob ||
-                    recordJobs.some(
-                      (job) => job.status === "failed" || !!job.last_error,
-                    ) ||
-                    undefined
-                  }
-                >
-                  <Disclosure>Background jobs</Disclosure>
-                  <div className="record-jobs">
-                    {recordJobs.map((j) => (
-                      <div
-                        key={j.id}
-                        id={jobRecordAnchor(j.id)}
-                        tabIndex={-1}
-                        className={
-                          highlightedJob === j.id
-                            ? "record-job-highlight"
-                            : undefined
-                        }
-                        data-job-id={j.id}
-                      >
-                        <JobState
-                          state={
-                            j.status === "running"
-                              ? "running"
-                              : j.status === "failed" || j.last_error
-                                ? "failed"
-                                : "queued"
-                          }
-                          label={jobName(
-                            j,
-                            p.billing_links
-                              .filter((l) => l.status !== "succeeded")
-                              .map((l) => l.provider),
-                          )}
-                          error={
-                            j.last_error
-                              ? friendlyJobError(j.last_error).message
-                              : undefined
-                          }
-                          attempts={j.attempts}
-                          onRetry={
-                            !(qboIssue && j.kind === "billing") &&
-                            j.status !== "running" &&
-                            (j.status === "failed" || j.last_error)
-                              ? () => {
-                                  void post(`/api/proposals/${p.id}/retry`)
-                                    .then(onRefresh)
-                                    .catch((e) => setError(e.message));
-                                }
-                              : undefined
-                          }
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </details>
-              )}
-            </section>
-          )}
-          {native && (
-            <ProposalEngagement
-              knownRecipient={!!p.token && !!p.client.email}
-              id={p.id}
-              timezone={timezone}
-              notify={data.settings?.engagement_notifications?.in_app !== false}
-              onLoaded={setEngagement}
-              phone={phone}
-            />
-          )}
-          <section className="timeline record-section">
-            {phone ? (
-              <RecordDisclosure title="Timeline" summary={timelineSummary}>
-                <a
-                  className="record-phone-evidence"
-                  href={`${recordUrl}?view=evidence`}
-                >
-                  Evidence
-                </a>
-                {timeline}
-              </RecordDisclosure>
-            ) : (
-              <>
-                <StaffSectionHeading
-                  action={<a href={`${recordUrl}?view=evidence`}>Evidence</a>}
-                >
-                  Timeline
-                </StaffSectionHeading>
-                {timeline}
-              </>
-            )}
-          </section>
-        </div>
-      </div>
+      {sections.map((section, index) =>
+        section ? <Fragment key={index}>{section}</Fragment> : null,
+      )}
       {phone && phoneActions.length > 0 && (
         <div
           className="record-phone-actions"
@@ -3852,37 +4401,6 @@ export function RecordV4({
             </div>
           ))}
         </div>
-      )}
-      {document && (
-        <Sheet title={p.title} onClose={() => setDocument(false)}>
-          <style>{fontCss(p.workspace_settings ?? data.settings)}</style>
-          <article
-            className="paper record-document proposal-typography"
-            dangerouslySetInnerHTML={{
-              __html: v
-                ? renderBlocks(
-                    v.content,
-                    v.quote,
-                    v.variables_resolved,
-                    p.currency,
-                  )
-                : native
-                  ? renderBlocks(
-                      p.content,
-                      p.quote,
-                      variables({
-                        ...p,
-                        workspace_settings: data.settings ?? undefined,
-                      }),
-                      p.currency,
-                    )
-                  : "<p>No rendered document is available for this import. Download its PDF.</p>",
-            }}
-          />
-          {p.signers.map((s) => (
-            <SignatureEvidence key={s.role} signer={s} data={data} />
-          ))}
-        </Sheet>
       )}
       {invoice && (
         <Sheet
@@ -3952,6 +4470,72 @@ export function RecordV4({
     </div>
   );
 }
+
+type ReadyResult = { ready: boolean; errors: string[]; warnings: string[] };
+/** The editor's Send tab checks, for the draft record's Ready to send card. */
+function useRecordReady(id: string | null, revision: number) {
+  const [result, setResult] = useState<ReadyResult | null>(null);
+  useEffect(() => {
+    if (!id) return setResult(null);
+    let active = true;
+    api<ReadyResult>(`/api/proposals/${id}/ready`)
+      .then((value) => {
+        // Older responses (and test mocks) can omit the lists.
+        if (active && value && typeof value === "object")
+          setResult({
+            ready: !!value.ready,
+            errors: Array.isArray(value.errors) ? value.errors : [],
+            warnings: Array.isArray(value.warnings) ? value.warnings : [],
+          });
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [id, revision]);
+  return result;
+}
+/** Blockers first (AI review leading), then warnings, then the all-clear. */
+export function readyCheckRows(ready: ReadyResult | null) {
+  if (!ready) return [];
+  const rows: {
+    tone: "blocker" | "warning" | "pass";
+    title: string;
+    detail?: string;
+  }[] = [];
+  const ai = "Confirm review of AI changes before sending: ";
+  for (const error of ready.errors)
+    if (error.startsWith(ai))
+      rows.unshift({
+        tone: "blocker",
+        title: "AI content to review",
+        detail: error.slice(ai.length),
+      });
+    else if (error.endsWith(": review AI price with Use list price or Keep"))
+      rows.push({
+        tone: "blocker",
+        title: "AI price differs from list",
+        detail: `${error.split(": review AI price")[0]}. Use the list price or keep it in the editor.`,
+      });
+    else rows.push({ tone: "blocker", title: error });
+  for (const warning of ready.warnings)
+    rows.push(
+      warning.includes(": custom — check scope and price")
+        ? {
+            tone: "warning",
+            title: "Custom line",
+            detail: `${warning.split(": custom —")[0]} has a manual price. Check the scope and price.`,
+          }
+        : { tone: "warning", title: warning },
+    );
+  if (!ready.errors.length)
+    rows.push({
+      tone: "pass",
+      title: "Quote, contract and signature blocks are in place.",
+    });
+  return rows;
+}
+
 function ClientInitials({ company }: { company: string }) {
   return (
     <span className="client-initials" aria-hidden="true">
