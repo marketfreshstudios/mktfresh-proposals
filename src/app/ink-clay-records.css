@@ -1222,7 +1222,11 @@
   gap: 32px;
 }
 .record-hero {
+  --record-hero-price: #e07a4a;
+  --record-hero-done: #7fd3a0;
   --record-hero-line: #36525c;
+  position: relative;
+  isolation: isolate;
   --record-hero-problem: #ff9a8c;
   --focus-outline: 2px solid var(--hero-ink);
   display: grid;
@@ -1303,7 +1307,7 @@
 }
 .record-hero-amounts dd {
   margin: 0;
-  color: var(--hero-ink);
+  color: var(--record-hero-price);
   font: 400 40px/46px var(--font-title);
   white-space: nowrap;
 }
@@ -1390,6 +1394,54 @@
   padding-inline-start: 24px;
   border-inline-start: 1px solid var(--record-hero-line);
   font-size: 13px;
+}
+.record-hero-billing strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.record-hero-billing-done {
+  flex: none;
+  color: var(--record-hero-done);
+}
+.record-hero-confetti {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.record-hero-confetti i {
+  position: absolute;
+  top: -12px;
+  width: 7px;
+  height: 11px;
+  border-radius: 2px;
+  opacity: 0;
+  animation: record-confetti-fall 2.8s cubic-bezier(0.25, 0.6, 0.45, 1) forwards;
+}
+.record-hero-confetti i[data-wide="true"] {
+  width: 10px;
+  height: 6px;
+}
+@keyframes record-confetti-fall {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--drift), 420px) rotate(var(--spin));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .record-hero-confetti {
+    display: none;
+  }
 }
 .record-hero-billing[data-needs-attention="true"] strong {
   color: var(--record-hero-problem);
@@ -1618,6 +1670,18 @@
 }
 .record-quote-line[data-chosen="false"] {
   color: var(--ink-muted);
+}
+.record-quote-others {
+  border-block-start: 1px solid var(--border);
+  color: var(--ink-muted);
+}
+.record-quote-others > summary {
+  padding: 12px 22px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.record-quote-others .record-quote-line:last-child {
+  border-block-end: 0;
 }
 .record-quote-line-amounts {
   text-align: end;
