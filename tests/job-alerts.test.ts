@@ -66,7 +66,7 @@ it("five failed PDF attempts send one specific alert; retrying the same error ne
   ) as any[];
   expect(alerts).toHaveLength(1);
   expect(alerts[0].subject).toBe(
-    `Signed PDF and certificate needs attention: ${p.title}`,
+    `Signed PDF and certificate needs attention: ${p.client.company || `${p.client.first_name} ${p.client.last_name}`.trim()}`,
   );
   expect(alerts[0].text).not.toContain("Billing");
   expect(alerts[0].html).not.toContain("Billing");
@@ -155,7 +155,9 @@ it("all job subjects use their own names and unknown errors stay in a small Deta
         job_failure: failure,
       },
     });
-    expect(r.subject).toBe(`${label} needs attention: ${p.title}`);
+    expect(r.subject).toBe(
+      `${label} needs attention: ${p.client.company || `${p.client.first_name} ${p.client.last_name}`.trim()}`,
+    );
     expect(r.text).toContain("Details: Unexpected <printer> failure");
     expect(r.html).toContain("&lt;printer&gt;");
   }
@@ -267,7 +269,7 @@ it("an email delivery failure alerts staff only at exhaustion without recursivel
   expect(alerts).toHaveLength(1);
   expect([...mailer.sent.values()]).toHaveLength(1);
   expect(([...mailer.sent.values()][0] as any).subject).toBe(
-    `Email delivery needs attention: ${p.title}`,
+    `Email delivery needs attention: ${p.client.company || `${p.client.first_name} ${p.client.last_name}`.trim()}`,
   );
 });
 

@@ -9,7 +9,7 @@ export function emailPickerFields(key: string) {
   const prefixes = key.startsWith("team_")
     ? ["team.", "sender.", "workspace."]
     : key === "staff_billing_failed"
-      ? ["job.", "proposal."]
+      ? ["job.", "client.", "proposal."]
       : key === "question_reply"
         ? ["sender.", "workspace."]
         : ["client.", "proposal.", "quote.", "sender.", "workspace."];

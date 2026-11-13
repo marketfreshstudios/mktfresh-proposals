@@ -10,6 +10,7 @@ export const emailFields = {
   "job.summary": "Job failure summary",
   "client.first_name": "Client first name",
   "client.full_name": "Client full name",
+  "client.name": "Client company, or name if no company",
   "client.company": "Client company",
   "sender.name": "Sender name",
   "workspace.name": "Workspace name",
@@ -64,7 +65,7 @@ export const emailDefaults = [
   def(
     "staff_question",
     "New proposal question",
-    "New question on {{proposal.title}}",
+    "New question from {{client.name}}",
     "A client asked a question about {{proposal.title}}. Open the proposal record to read it and reply.",
     "Open question",
     true,
@@ -114,7 +115,7 @@ export const emailDefaults = [
   def(
     "staff_billing_complete",
     "Client completed billing setup",
-    "Billing setup completed: {{proposal.title}}",
+    "{{client.name}} finished billing setup",
     "{{client.full_name}} at {{client.company}} completed billing setup. The confirmed details are below.",
     "Review proposal",
     true,
@@ -129,23 +130,23 @@ export const emailDefaults = [
   def(
     "staff_viewed",
     "Client opened proposal",
-    "Client opened {{proposal.title}}",
-    "{{client.full_name}} at {{client.company}} opened the proposal.",
-    "Review proposal",
+    "👀 {{client.name}} is reading your proposal",
+    "{{client.full_name}} just opened {{proposal.title}}. They're reading it now, so it's a good moment to be ready if they reach out.",
+    "See the proposal",
     true,
   ),
   def(
     "staff_signed",
     "Client signed",
-    "Client signed {{proposal.title}}",
-    "{{client.full_name}} signed the proposal. Review the agreement and apply the company countersignature when you’re ready.",
+    "🎉 {{client.name}} signed!",
+    "Nice work. {{client.full_name}} just signed {{proposal.title}}.\n\nOne step left: add your countersignature to make it official. Then you both get the completed copy.",
     "Review and countersign",
     true,
   ),
   def(
     "staff_countersign_reminder",
     "Countersign reminder",
-    "Countersignature needed: {{proposal.title}}",
+    "Countersignature still needed: {{client.name}}",
     "{{client.full_name}} at {{client.company}} has signed. The agreement is waiting for the company countersignature.",
     "Review and countersign",
     true,
@@ -153,7 +154,7 @@ export const emailDefaults = [
   def(
     "staff_completed",
     "Agreement completed",
-    "Agreement completed: {{proposal.title}}",
+    "Agreement completed: {{client.name}}",
     "The client and company signatures have been recorded. The completed agreement is available on the proposal record.",
     "Review proposal",
     true,
@@ -161,7 +162,7 @@ export const emailDefaults = [
   def(
     "staff_declined",
     "Client declined",
-    "Client declined {{proposal.title}}",
+    "{{client.name}} declined the proposal",
     "{{client.full_name}} at {{client.company}} declined the proposal.",
     "Review proposal",
     true,
@@ -169,7 +170,7 @@ export const emailDefaults = [
   def(
     "staff_billing_failed",
     "Job needs attention",
-    "{{job.name}} needs attention: {{proposal.title}}",
+    "{{job.name}} needs attention: {{client.name}}",
     "{{job.summary}}",
     "Open proposal",
     true,
@@ -177,7 +178,7 @@ export const emailDefaults = [
   def(
     "staff_copy",
     "Signed document copy",
-    "Signed copy: {{proposal.title}}",
+    "Signed copy: {{client.name}}",
     "A signed document copy is attached. The proposal record contains the signatures and full evidence.",
     "Review proposal",
     true,
@@ -228,6 +229,11 @@ export function emailValues(p: Proposal) {
       all[k] ??
         (
           {
+            "client.name":
+              p.client.company ||
+              [p.client.first_name, p.client.last_name]
+                .filter(Boolean)
+                .join(" "),
             "team.name": "Jamie Example",
             "team.email": "staff@example.test",
             "team.role": "Staff",
