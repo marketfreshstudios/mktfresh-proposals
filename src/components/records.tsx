@@ -4707,6 +4707,8 @@ export function ClientsV4({
       undefined,
     ),
     [confirm, setConfirm] = useState<"archive" | "delete" | null>(null),
+    // The Stripe customer disclosure: null until someone opens or closes it.
+    [customerOpen, setCustomerOpen] = useState<boolean | null>(null),
     [menu, setMenu] = useState(false),
     [edit, setEdit] = useState(false),
     [editClient, setEditClient] = useState(false),
@@ -4929,6 +4931,240 @@ export function ClientsV4({
       setBusy(false);
     }
   }
+  // Option A (owner-approved 13 Nov): the plan summary first, the Stripe
+  // customer behind a disclosure, and one line for QuickBooks.
+  const owner = data.user.staff_role === "owner";
+  const stripeOn = !!billing?.available;
+  const qboOn = !!data.connections?.qbo;
+  const candidates = billing?.candidates ?? [];
+  const monthlyItems = (billing?.items ?? []).filter(
+    (i) => i.interval === "month" && i.interval_count === 1,
+  );
+  const interval = (i: ClientBilling["items"][number]) =>
+    `/${i.interval_count > 1 ? i.interval_count : ""}${
+      i.interval === "month" ? "mo" : i.interval === "year" ? "yr" : i.interval
+    }`;
+  const billingChip = !billing
+    ? null
+    : billing.subscriber
+      ? { tone: "success", text: "Stripe subscriber" }
+      : !stripeOn && !qboOn
+        ? { tone: "neutral", text: "Not connected" }
+        : !stripeOn
+          ? { tone: "neutral", text: "Stripe not connected" }
+          : billing.linked_id
+            ? { tone: "neutral", text: "No active subscription" }
+            : candidates.length
+              ? { tone: "neutral", text: "Stripe not linked" }
+              : { tone: "neutral", text: "Not billed yet" };
+  const stripeCustomer = (
+    <details
+      id="stripe-customers"
+      className="client-billing-customer"
+      open={customerOpen ?? (!billing?.linked_id && candidates.length > 0)}
+      onToggle={(e) => {
+        const open = e.currentTarget.open;
+        if (
+          open !==
+          (customerOpen ?? (!billing?.linked_id && candidates.length > 0))
+        )
+          setCustomerOpen(open);
+      }}
+    >
+      <Disclosure>
+        <span>Stripe customer</span>
+        <span className={`pill ${billing?.linked_id ? "success" : "review"}`}>
+          {billing?.linked_id
+            ? "Linked"
+            : candidates.length === 1
+              ? "1 match"
+              : `${candidates.length} matches`}
+        </span>
+      </Disclosure>
+      <div className="client-billing-candidates">
+        {candidates
+          .filter(
+            (candidate) =>
+              !billing?.linked_id || candidate.id === billing.linked_id,
+          )
+          .map((candidate) => (
+            <article
+              className="client-billing-candidate stripe-candidate"
+              key={candidate.id}
+            >
+              <div className="client-billing-candidate-name">
+                <strong>{candidate.name}</strong>
+                <code>{candidate.id}</code>
+              </div>
+              <dl>
+                <div>
+                  <dt>Created</dt>
+                  <dd>
+                    {candidate.created
+                      ? readableDate(candidate.created)
+                      : "Unavailable"}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Card</dt>
+                  <dd>{candidate.card || "No default card recorded"}</dd>
+                </div>
+                <div>
+                  <dt>Monthly</dt>
+                  <dd>
+                    {candidate.monthly_totals.length
+                      ? candidate.monthly_totals
+                          .map((t) => `${money(t.amount, t.currency)}/mo`)
+                          .join(" | ")
+                      : money(0) + "/mo"}
+                    {`, ${candidate.subscriptions} ${
+                      candidate.subscriptions === 1
+                        ? "subscription"
+                        : "subscriptions"
+                    }`}
+                  </dd>
+                </div>
+              </dl>
+              {candidate.id === billing?.linked_id ? (
+                <div className="client-billing-links">
+                  {billing.stripe_url && (
+                    <a
+                      target="_blank"
+                      rel="noreferrer"
+                      href={billing.stripe_url}
+                    >
+                      Open in Stripe
+                    </a>
+                  )}
+                  <button
+                    type="button"
+                    className="link-button"
+                    onClick={() => setLinkChoice(null)}
+                  >
+                    Unlink customer
+                  </button>
+                </div>
+              ) : (
+                <Button
+                  onClick={() => {
+                    // Keep the customer in view once it is linked.
+                    setCustomerOpen(true);
+                    setLinkChoice(candidate.id);
+                  }}
+                >
+                  {billing?.linked_id
+                    ? "Use this customer"
+                    : "Link this customer"}
+                </Button>
+              )}
+            </article>
+          ))}
+      </div>
+    </details>
+  );
+  const monthlyRow = !stripeOn ? (
+    <div className="client-billing-row">
+      <span className="client-billing-label">Monthly</span>
+      <p className="client-billing-line">Stripe isn’t connected</p>
+      {owner && (
+        <a className="client-billing-action" href="/studio/connections/stripe">
+          Connect Stripe
+        </a>
+      )}
+    </div>
+  ) : (
+    <div className="client-billing-row">
+      <span className="client-billing-label">Monthly</span>
+      {billing?.subscriber && billing.items.length ? (
+        <>
+          {billing.items.map((i) => (
+            <p className="client-billing-item" key={i.id}>
+              <span>
+                {i.name}
+                {i.qty !== 1 ? ` × ${i.qty}` : ""}
+              </span>
+              <span>
+                {money(i.amount * i.qty, i.currency)}
+                {interval(i)}
+              </span>
+            </p>
+          ))}
+          {/* A total only adds something when there is more than one line. */}
+          {monthlyItems.length > 1 &&
+            currencyGroups.map((currency) => (
+              <p
+                className="client-billing-item client-billing-total"
+                key={currency}
+              >
+                <span>Total</span>
+                <span>
+                  {money(
+                    monthlyItems
+                      .filter((i) => i.currency === currency)
+                      .reduce((v, i) => v + i.amount * i.qty, 0),
+                    currency,
+                  )}
+                  /mo
+                </span>
+              </p>
+            ))}
+          <p className="client-billing-meta">
+            {billing.card ?? "No default card recorded"}
+            {billing.next_invoice &&
+              ` | Next period ends ${readableDate(billing.next_invoice)}`}
+          </p>
+        </>
+      ) : (
+        <>
+          <p className="client-billing-line">
+            {billing?.linked_id || candidates.length
+              ? "No subscription in Yeswell yet"
+              : "No subscription yet"}
+          </p>
+          {!billing?.linked_id && !candidates.length && (
+            <p className="client-billing-meta">
+              Created at checkout when a client signs for monthly services.
+            </p>
+          )}
+        </>
+      )}
+      {billing?.stripe_email && (
+        <p className="client-billing-meta">
+          Stripe sends receipts to {billing.stripe_email}.
+        </p>
+      )}
+    </div>
+  );
+  const quickBooksRow = (
+    <div className="client-billing-row client-billing-qbo">
+      <div className="client-billing-row-head">
+        <span className="client-billing-label">QuickBooks</span>
+        {!qboOn ? (
+          <span className="client-billing-status">Not connected</span>
+        ) : billing?.qbo_url ? (
+          <a href={billing.qbo_url} target="_blank" rel="noreferrer">
+            Linked customer ↗
+          </a>
+        ) : (
+          <span className="client-billing-status">Not linked</span>
+        )}
+      </div>
+      {!qboOn
+        ? owner && (
+            <a
+              className="client-billing-action"
+              href="/studio/connections/quickbooks"
+            >
+              Connect QuickBooks
+            </a>
+          )
+        : !billing?.qbo_url && (
+            <p className="client-billing-meta">
+              Links automatically with the first invoice.
+            </p>
+          )}
+    </div>
+  );
   const billingCard = (
     <section
       className="client-side-section"
@@ -4937,17 +5173,9 @@ export function ClientsV4({
       <StaffSectionHeading
         id="client-billing-title"
         action={
-          billing && (
-            <span
-              className={`pill ${billing.subscriber ? "success" : "neutral"}`}
-            >
-              {billing.subscriber
-                ? "Stripe subscriber"
-                : billing.available
-                  ? billing.linked_id
-                    ? "No active subscription"
-                    : "Stripe customer not linked"
-                  : "Stripe not connected"}
+          billingChip && (
+            <span className={`pill ${billingChip.tone}`}>
+              {billingChip.text}
             </span>
           )
         }
@@ -4981,157 +5209,29 @@ export function ClientsV4({
           </Banner>
         ) : !billing ? (
           <Skeleton kind="cards" label="Loading billing details…" />
+        ) : !stripeOn && !qboOn ? (
+          <div className="client-billing-row">
+            <p className="client-billing-line">
+              Stripe and QuickBooks aren’t connected
+            </p>
+            <p className="client-billing-meta">
+              {owner
+                ? "Connect them to bill monthly plans and invoice one-time work from signed proposals."
+                : "The workspace owner can connect them in Studio."}
+            </p>
+            {owner && (
+              <a className="client-billing-action" href="/studio/connections">
+                Connect billing
+              </a>
+            )}
+          </div>
         ) : (
           <>
-            <p>
-              {billing.subscriber
-                ? "New monthly items on a signed proposal are added to this customer’s subscription after the client approves the new charge."
-                : billing.notice ||
-                  "A new monthly plan starts through Checkout after signature."}
-            </p>
-            {billing.stripe_email && (
-              <p className="muted">
-                Stripe sends receipts to {billing.stripe_email}. Yeswell doesn’t
-                change emails in Stripe.
-              </p>
-            )}
-            <div className="linked-billing-summary" hidden={!billing.linked_id}>
-              <div className="current-subscription">
-                {billing.items.map((i) => (
-                  <p key={i.id}>
-                    <strong>
-                      {i.name}
-                      {i.qty !== 1 ? ` × ${i.qty}` : ""}
-                    </strong>
-                    <span>
-                      {money(i.amount * i.qty, i.currency)}/
-                      {i.interval_count > 1 ? i.interval_count : ""}
-                      {i.interval === "month"
-                        ? "mo"
-                        : i.interval === "year"
-                          ? "yr"
-                          : i.interval}
-                    </span>
-                  </p>
-                ))}
-              </div>
-              {currencyGroups.map((currency) => (
-                <p key={currency}>
-                  <strong>
-                    Current monthly{" "}
-                    {money(
-                      billing.items
-                        .filter(
-                          (i) =>
-                            i.currency === currency &&
-                            i.interval === "month" &&
-                            i.interval_count === 1,
-                        )
-                        .reduce((v, i) => v + i.amount * i.qty, 0),
-                      currency,
-                    )}
-                    /mo
-                  </strong>
-                </p>
-              ))}
-              <small>
-                Card on file:{" "}
-                {billing.card ??
-                  (billing.available
-                    ? "No default card recorded"
-                    : "Unavailable")}
-                {billing.next_invoice &&
-                  ` | Next period ends ${readableDate(billing.next_invoice)}`}
-              </small>
-            </div>
-            {(billing.linked_id || !!billing.candidates?.length) && (
-              <section
-                id="stripe-customers"
-                className="stripe-customer-chooser stack"
-                aria-label="Stripe customers"
-              >
-                <h3>
-                  {billing.linked_id
-                    ? "Linked Stripe customer"
-                    : "Choose a Stripe customer"}
-                </h3>
-                <div className="customer-candidates">
-                  {(billing.candidates ?? [])
-                    .filter(
-                      (candidate) =>
-                        !billing.linked_id ||
-                        candidate.id === billing.linked_id,
-                    )
-                    .map((candidate) => (
-                      <article className="stripe-candidate" key={candidate.id}>
-                        <strong>{candidate.name}</strong>
-                        <code>{candidate.id}</code>
-                        <dl>
-                          <div>
-                            <dt>Created</dt>
-                            <dd>
-                              {candidate.created
-                                ? readableDate(candidate.created)
-                                : "Unavailable"}
-                            </dd>
-                          </div>
-                          <div>
-                            <dt>Card on file</dt>
-                            <dd>
-                              {candidate.card || "No default card recorded"}
-                            </dd>
-                          </div>
-                          <div>
-                            <dt>Active subscriptions</dt>
-                            <dd>{candidate.subscriptions}</dd>
-                          </div>
-                          <div>
-                            <dt>Monthly total</dt>
-                            <dd>
-                              {candidate.monthly_totals.length
-                                ? candidate.monthly_totals
-                                    .map(
-                                      (t) =>
-                                        `${money(t.amount, t.currency)}/mo`,
-                                    )
-                                    .join(" | ")
-                                : money(0) + "/mo"}
-                            </dd>
-                          </div>
-                        </dl>
-                        {candidate.id === billing.linked_id ? (
-                          <DialogActions>
-                            <span className="pill success">Linked</span>
-                            <Button onClick={() => setLinkChoice(null)}>
-                              Unlink customer
-                            </Button>
-                          </DialogActions>
-                        ) : (
-                          <Button onClick={() => setLinkChoice(candidate.id)}>
-                            {billing.linked_id
-                              ? "Use this customer"
-                              : "Link this customer"}
-                          </Button>
-                        )}
-                      </article>
-                    ))}
-                </div>
-              </section>
-            )}
-            <DialogActions>
-              {billing.stripe_url && (
-                <a target="_blank" rel="noreferrer" href={billing.stripe_url}>
-                  Open Stripe ↗
-                </a>
-              )}
-              {billing.qbo_url ? (
-                <a href={billing.qbo_url} target="_blank" rel="noreferrer">
-                  QuickBooks: linked ↗
-                </a>
-              ) : (
-                <span>QuickBooks: not linked</span>
-              )}
-            </DialogActions>
+            {monthlyRow}
+            {stripeOn &&
+              (billing.linked_id || candidates.length > 0) &&
+              stripeCustomer}
+            {quickBooksRow}
           </>
         )}
       </div>

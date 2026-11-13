@@ -621,7 +621,9 @@ for (const width of [1440, 768, 375]) {
           expect(f.billingReads()).toBe(billingBefore);
         }
         if (selector === ".client-detail-v4") {
-          await expect(page.getByText("Current monthly $175/mo")).toBeVisible();
+          await expect(
+            page.locator(".client-billing-item", { hasText: "$175/mo" }),
+          ).toBeVisible();
           const contact = await page
             .getByRole("heading", { name: "Contact details" })
             .boundingBox();
