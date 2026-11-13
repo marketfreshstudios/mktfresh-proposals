@@ -606,11 +606,10 @@ for (const width of [1440, 768, 375]) {
         await expect(page.locator(selector)).toBeVisible();
         await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
         if (selector === ".clients-directory-v4") {
+          // No placeholder Monthly column; live billing is on the client page.
           await expect(
-            page
-              .locator('[title="Open the client to see live billing"]')
-              .first(),
-          ).toBeVisible();
+            page.locator('[title="Open the client to see live billing"]'),
+          ).toHaveCount(0);
           await expect(
             page.getByText("Not billed through Stripe").first(),
           ).toBeVisible();
@@ -633,7 +632,7 @@ for (const width of [1440, 768, 375]) {
             .getByRole("heading", { name: "Activity", exact: true })
             .boundingBox();
           const billing = await page
-            .getByRole("heading", { name: "How they’re billed" })
+            .getByRole("heading", { name: "Billing" })
             .boundingBox();
           expect(proposals!.y).toBeLessThan(activity!.y);
           expect(contact!.y).toBeLessThan(billing!.y);

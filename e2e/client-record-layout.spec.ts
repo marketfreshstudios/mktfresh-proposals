@@ -151,10 +151,17 @@ test("client records put contact first on narrow screens and keep billing histor
     await expect(
       page.getByRole("link", { name: `Open ${client.company}: ${sent.title}` }),
     ).toBeVisible();
-    await expect(
-      page.getByRole("heading", { name: "How they’re billed" }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Billing" })).toBeVisible();
     await expect(page.locator(".client-detail-header .action")).toHaveCount(1);
+    // The header actions sit at the page edge, not the end of the name.
+    const [actions, columns] = await Promise.all(
+      [".client-record-actions", ".client-record-columns"].map((selector) =>
+        page.locator(selector).boundingBox(),
+      ),
+    );
+    expect(
+      Math.abs(actions!.x + actions!.width - (columns!.x + columns!.width)),
+    ).toBeLessThan(2);
     const [contact, proposals, billing, notes, activity] = await Promise.all(
       [
         ".client-contact-card",

@@ -2005,7 +2005,7 @@ async function handleRoute(
           check(
             (raw.stripe_customer_id ?? null) ===
               (previous?.stripe_customer_id ?? null),
-            "Choose a Stripe customer from How they’re billed on the client page",
+            "Choose a Stripe customer under Billing on the client page",
           );
           const client = await rt.service.updateClient(raw, user);
           await workspaceEvent(rt.repo, user, "client_saved", {

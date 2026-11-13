@@ -78,6 +78,27 @@ it("recovers failed provider jobs, continues other providers, seals and verifies
   state = (await repo.get(p.id))!;
   expect(state.billing_links.every((l) => l.status === "succeeded")).toBe(true);
   expect(stripe.objects.size).toBe(1);
+  // Billing that succeeded links its customers to the client automatically.
+  const linked = (
+    await repo.entities<import("../src/lib/model").Client>("clients")
+  ).find((c) => c.id === state.client.id)!;
+  for (const provider of ["stripe", "qbo"] as const)
+    expect(
+      linked[provider === "stripe" ? "stripe_customer_id" : "qbo_customer_id"],
+    ).toBe(
+      state.billing_links.find((l) => l.provider === provider)!
+        .external_customer_id,
+    );
+  // A link a person already chose is never replaced.
+  expect(
+    await repo.linkClientBillingCustomer(
+      linked.id,
+      "stripe",
+      "cus_other",
+      linked.email,
+      state.id,
+    ),
+  ).toBe(false);
   expect(qbo.objects.size).toBe(1);
   const file = state.files.find((f) => f.kind === "sealed")!;
   expect((await worker.verify(state, file.id)).valid).toBe(true);

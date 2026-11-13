@@ -474,6 +474,12 @@
 .ink-clay .client-detail-v4 > .client-detail-header {
   display: grid;
   gap: var(--space-4);
+  /* The toolbar spans the page, never the width of the client name. */
+  grid-template-columns: minmax(0, 1fr);
+  inline-size: 100%;
+}
+.ink-clay .client-side-section > .staff-section-heading {
+  align-items: center;
 }
 .client-identity > .client-initials {
   width: 48px;
@@ -670,7 +676,7 @@
 }
 .ink-clay .clients-directory-v4 :is(.client-table-head, .client-table-row) {
   grid-template-columns:
-    minmax(0, 2fr) minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 0.8fr)
+    minmax(0, 2fr) minmax(0, 1.3fr) minmax(0, 1.2fr)
     minmax(0, 1.15fr);
 }
 @media (min-width: 1100px) {
@@ -980,14 +986,22 @@
   border-radius: var(--radius-card);
   padding: var(--space-5);
 }
-.ink-clay .client-record-side :is(.client-contact-card, .client-notes) h2 {
+.ink-clay .client-record-side :is(.client-contact-card, .client-notes) > h2 {
   margin: 0;
 }
 .ink-clay .client-contact-card dl {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 0;
-  margin: 12px 0 0;
+  margin: 0;
+}
+/* The title sits outside the card, so the first row needs no rule. */
+.ink-clay .client-contact-card dl > div:first-child {
+  padding-block-start: 0;
+  border-top: 0;
+}
+.ink-clay .client-contact-card dl > div:last-child {
+  padding-block-end: 0;
 }
 .ink-clay .client-contact-card dl > div {
   display: grid;
@@ -1060,16 +1074,16 @@
   .client-record-columns > div {
     display: contents;
   }
-  .client-contact-card {
+  .client-side-section:has(> .client-contact-card) {
     order: 0;
   }
   .client-proposals {
     order: 1;
   }
-  .client-billing {
+  .client-side-section:has(> .client-billing) {
     order: 2;
   }
-  .client-notes {
+  .client-side-section:has(> .client-notes) {
     order: 3;
   }
   .client-activity {
@@ -2631,7 +2645,8 @@
 }
 .ink-clay .record-v4 .record-section > .staff-section-heading h2,
 .ink-clay .record-v4 .record-questions-heading h2 {
-  font: 400 22px/28px var(--font-title);
+  /* Same as Home's section titles (staff-headings.css). */
+  font: 400 26px/32px var(--font-title);
 }
 .ink-clay .record-v4.stack {
   gap: 32px;
@@ -2816,6 +2831,7 @@
 .ink-clay .record-v4 .record-details-values {
   display: flex;
   flex-wrap: nowrap;
+  align-items: stretch;
   gap: 0;
   padding: 0;
   border: 1px solid var(--border-strong);
@@ -2824,6 +2840,7 @@
 }
 .ink-clay .record-v4 .record-details-values > .record-fact {
   display: block;
+  align-self: stretch;
   flex: 1 1 0;
   min-inline-size: 0;
   padding: 16px 22px;
@@ -2904,15 +2921,31 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.record-link-field .round-icon,
-.record-link-field button {
+.ink-clay .record-v4 .record-link-field .record-link-url {
+  display: block;
+  line-height: 18px;
+}
+/* A plain square icon button inside the field: no ring, no offset. */
+.ink-clay .record-v4 .record-link-field .round-icon,
+.ink-clay .record-v4 .record-link-field button {
+  --round-icon-size: 30px;
   flex: none;
+  align-self: center;
   inline-size: 30px;
   block-size: 30px;
   min-block-size: 30px;
+  margin: 0;
   padding: 0;
+  border: 0;
   border-radius: 8px;
-  background: var(--surface, #fff);
+  background: transparent;
+  box-shadow: none;
+  color: var(--ink-muted);
+}
+.ink-clay .record-v4 .record-link-field .round-icon:hover,
+.ink-clay .record-v4 .record-link-field button:hover {
+  background: var(--segment);
+  color: var(--ink);
 }
 .record-documents {
   display: grid;
@@ -2958,8 +2991,26 @@
 .ink-clay .record-v4 .record-timeline-list {
   max-block-size: 420px;
 }
+/* Beside Engagement (two columns), the Timeline takes Engagement's height
+   and its events scroll inside the card: the side column stretches with
+   the row and the Timeline fills it without sizing the row itself. */
+@media (min-width: 960px) {
+  .record-row:has(.engagement-panel) > .record-row-side:has(> .timeline) {
+    position: relative;
+    min-block-size: 240px;
+  }
+  .record-row:has(.engagement-panel) > .record-row-side > .timeline {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+}
 .record-row:has(.engagement-panel) .record-timeline-list {
   max-block-size: none;
+  min-block-size: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .ink-clay .record-v4 .record-timeline-list .timeline-entry,
 .ink-clay .record-v4 .record-timeline-list .timeline-email > summary {
@@ -3008,7 +3059,7 @@
 .ink-clay .record-v4 .record-billing-card > dl {
   margin: 0;
 }
-.record-billing-card > .record-oiot {
+.record-billing-card .record-oiot {
   margin: 0 20px 20px;
   padding: 12px 14px;
   border-radius: 12px;
@@ -3314,14 +3365,16 @@
   .record-link-field {
     min-block-size: 48px;
   }
-  .record-link-field button,
-  .record-link-field .round-icon {
+  .ink-clay .record-v4 .record-link-field button,
+  .ink-clay .record-v4 .record-link-field .round-icon {
+    --round-icon-size: 44px;
     inline-size: 44px;
     block-size: 44px;
+    min-block-size: 44px;
   }
   .ink-clay .record-v4 .record-section > .staff-section-heading h2,
   .ink-clay .record-v4 .record-questions-heading h2 {
-    font: 400 20px/26px var(--font-title);
+    font: 400 22px/28px var(--font-title);
   }
   .record-questions-empty {
     flex-wrap: wrap;
@@ -3468,4 +3521,38 @@
   color: inherit;
   font: inherit;
   text-decoration: underline;
+}
+
+/* Billing disclosures list the chosen lines behind each total. */
+.record-billing-detail {
+  display: grid;
+  gap: 12px;
+  margin-block-start: 10px;
+}
+.record-billing-items {
+  display: grid;
+  inline-size: 100%;
+  justify-self: stretch;
+  align-self: stretch;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font: 400 14px/20px var(--font-ui);
+}
+.record-billing-items li {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+.record-billing-items li > span:last-child {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.record-billing-items small {
+  color: var(--ink-muted);
+}
+.ink-clay .record-v4 .record-billing-detail .record-oiot {
+  margin: 0;
 }

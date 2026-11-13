@@ -73,7 +73,7 @@ export function EditClientModal({
         </Field>
         <p>
           Only enter a QuickBooks ID after checking this client’s identity.
-          Choose a Stripe customer in How they’re billed.
+          Choose a Stripe customer under Billing.
         </p>
         <DialogActions>
           <Button disabled={busy} onClick={onClose}>

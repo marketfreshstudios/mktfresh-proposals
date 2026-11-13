@@ -555,6 +555,89 @@ it("database links and audit are atomic, scoped, preserve contact data and rejec
   }
 });
 
+it("billing links its customer to an unlinked client, as the system only, never replacing a link", async () => {
+  const db = await postgresFixture();
+  try {
+    const workspace = randomUUID(),
+      client = randomUUID();
+    await db.query("insert into public.workspaces(id,name) values ($1,'One')", [
+      workspace,
+    ]);
+    await db.query(
+      "insert into public.clients(id,workspace_id,data) values($1,$2,$3)",
+      [
+        client,
+        workspace,
+        {
+          id: client,
+          email: "a@example.test",
+          company: "Example",
+          stripe_customer_id: null,
+          qbo_customer_id: "58",
+        },
+      ],
+    );
+    const call = (
+      provider: string,
+      customer: string,
+      actor = "system",
+      email = "a@example.test",
+    ) =>
+      db.query<{ linked: boolean }>(
+        "select public.link_client_billing_customer($1,$2,$3,$4,$5,$6) as linked",
+        [
+          workspace,
+          client,
+          provider,
+          customer,
+          email,
+          {
+            id: randomUUID(),
+            actor,
+            type:
+              provider === "stripe"
+                ? "client_stripe_linked"
+                : "client_qbo_linked",
+            created_at: new Date().toISOString(),
+            metadata: { proposal_id: randomUUID() },
+          },
+        ],
+      );
+    await expect(call("stripe", "cus_1", staff.actor)).rejects.toThrow(
+      "System",
+    );
+    expect(
+      (await call("stripe", "cus_1", "system", "b@example.test")).rows[0]
+        .linked,
+    ).toBe(false);
+    expect((await call("stripe", "cus_1")).rows[0].linked).toBe(true);
+    expect((await call("stripe", "cus_2")).rows[0].linked).toBe(false);
+    expect((await call("qbo", "99")).rows[0].linked).toBe(false);
+    const saved = await db.query<{ data: any }>(
+      "select data from public.clients where id=$1",
+      [client],
+    );
+    expect(saved.rows[0].data).toMatchObject({
+      stripe_customer_id: "cus_1",
+      qbo_customer_id: "58",
+    });
+    const events = await db.query<{ data: any }>(
+      "select data from public.workspace_events where workspace_id=$1",
+      [workspace],
+    );
+    expect(events.rows).toHaveLength(1);
+    expect(events.rows[0].data).toMatchObject({
+      actor: "system",
+      type: "client_stripe_linked",
+      metadata: { client_id: client, customer_id: "cus_1", provider: "stripe" },
+    });
+    await db.exec("set role authenticated");
+    await expect(call("qbo", "1")).rejects.toThrow("permission denied");
+  } finally {
+    await db.close();
+  }
+});
+
 it("contact edits preserve a Stripe link chosen after the form was opened", async () => {
   const { repo, draft } = await setup();
   const api = stripe(draft.client.email, 1);

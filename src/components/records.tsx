@@ -3662,6 +3662,68 @@ export function RecordV4({
       </dl>
     </section>
   );
+  // The chosen lines behind each billing total, as the quote shows them.
+  const billingItems = (kind: "one_time" | "recurring") => {
+    const rows = orderedItems(
+      (v?.quote ?? p.quote).filter((item) => !item.choice_group_placeholder),
+    )
+      .filter((item) => selected(item))
+      .flatMap((item) =>
+        item.sublines
+          .filter((line) =>
+            kind === "one_time"
+              ? line.interval === "one_time"
+              : line.interval !== "one_time",
+          )
+          .map((line) => ({
+            key: `${item.id}:${line.id}`,
+            name: line.label ? `${item.name} | ${line.label}` : item.name,
+            qty: line.qty,
+            amount: `${money(line.amount * line.qty, p.currency)}${
+              line.interval === "month"
+                ? "/mo"
+                : line.interval === "year"
+                  ? "/yr"
+                  : ""
+            }`,
+          })),
+      );
+    return rows.length ? (
+      <ul className="record-billing-items">
+        {rows.map((row) => (
+          <li key={row.key}>
+            <span>
+              {row.name}
+              {row.qty !== 1 && <small> {row.qty} ×</small>}
+            </span>
+            <span>{row.amount}</span>
+          </li>
+        ))}
+      </ul>
+    ) : null;
+  };
+  const oneTimeItems = billingItems("one_time");
+  const recurringItems = billingItems("recurring");
+  // Monthly opens to its lines, the plan terms and Stripe detail.
+  const monthlyDisclosure = (extra?: ReactNode) => (
+    <details className="record-provider-details">
+      <Disclosure>{recurringDescription}</Disclosure>
+      <div className="record-billing-detail">
+        {recurringItems}
+        {oiotTerms}
+        {extra}
+      </div>
+    </details>
+  );
+  const oneTimeDisclosure = (summary: ReactNode) =>
+    oneTimeItems ? (
+      <details className="record-provider-details">
+        <Disclosure>{summary}</Disclosure>
+        <div className="record-billing-detail">{oneTimeItems}</div>
+      </details>
+    ) : (
+      summary
+    );
   const billingSection = showBilling && stage !== "closed" && (
     <section className="record-billing record-section">
       <StaffSectionHeading
@@ -3704,10 +3766,12 @@ export function RecordV4({
                       subscription={adopted}
                       date={dateOnly}
                     />
+                    {oiotTerms}
                   </>
                 ) : needsLink ? (
                   <div className="stripe-link-notice">
                     <p>{recurringDescription}</p>
+                    {oiotTerms}
                     {linkBlocked ? (
                       <p className="muted">{linkBlocked}</p>
                     ) : (
@@ -3722,18 +3786,19 @@ export function RecordV4({
                 ) : stripe &&
                   (stripeStatus?.labels.length ||
                     stripeStatus?.subscriptions.length) ? (
-                  <details className="record-provider-details">
-                    <Disclosure>{recurringDescription}</Disclosure>
+                  monthlyDisclosure(
                     <StripeBillingDetails
                       link={stripe}
                       dashboardUrl={
                         data.connections?.stripe_connect?.dashboardUrl
                       }
-                    />
-                  </details>
+                    />,
+                  )
                 ) : (
                   <>
-                    {recurringDescription}
+                    {recurringItems || oiotTerms
+                      ? monthlyDisclosure()
+                      : recurringDescription}
                     {!actualSigned && (
                       <p>Set up by {firstName} right after signing.</p>
                     )}
@@ -3765,7 +3830,7 @@ export function RecordV4({
                   <span className="pill neutral">After you countersign</span>
                 }
               >
-                {oneTimeAmount} | QuickBooks
+                {oneTimeDisclosure(<>{oneTimeAmount} | QuickBooks</>)}
                 <p>The invoice is created as a draft once you countersign.</p>
               </RecordBillingRow>
             ) : qbo &&
@@ -3777,6 +3842,7 @@ export function RecordV4({
                 onRefresh={onRefresh}
                 amount={oneTimeAmount}
                 manualAction={markAsInvoiced}
+                items={oneTimeItems}
               />
             ) : qboIntegrated || qbo?.metadata?.manual_invoice ? (
               <RecordBillingRow
@@ -3793,17 +3859,22 @@ export function RecordV4({
                   </span>
                 }
               >
-                {oneTimeAmount} |{" "}
-                {qbo?.metadata?.manual_invoice
-                  ? "Manual invoice"
-                  : "QuickBooks"}
+                {oneTimeDisclosure(
+                  <>
+                    {oneTimeAmount} |{" "}
+                    {qbo?.metadata?.manual_invoice
+                      ? "Manual invoice"
+                      : "QuickBooks"}
+                  </>,
+                )}
                 {!qbo?.metadata?.manual_invoice && !actualSigned && (
                   <p>Draft invoice once you countersign.</p>
                 )}
               </RecordBillingRow>
             ) : null}
           </dl>
-          {oiotTerms}
+          {/* Without a Monthly row, the plan terms still show on the card. */}
+          {!(stripeIntegrated || needsLink) && oiotTerms}
         </div>
       )}
       {recordJobs.length > 0 && (
@@ -4748,16 +4819,9 @@ export function ClientsV4({
         ) : (
           <StaffTable className="client-directory client-table">
             <StaffTableHead className="client-table-head">
-              {["Client", "Contact", "Proposals", "Monthly now", "Billing"].map(
-                (label) => (
-                  <span
-                    key={label}
-                    className={label === "Monthly now" ? "num-col" : undefined}
-                  >
-                    {label}
-                  </span>
-                ),
-              )}
+              {["Client", "Contact", "Proposals", "Billing"].map((label) => (
+                <span key={label}>{label}</span>
+              ))}
             </StaffTableHead>
             {!data && <Skeleton kind="table" label="Loading clients…" />}
             {visibleClients.map((c) => {
@@ -4769,6 +4833,13 @@ export function ClientsV4({
               const drafts = proposals.filter(
                 (p) => p.status === "draft",
               ).length;
+              const won = proposals.filter((p) => inView(p, "won")).length;
+              const closed = proposals.filter((p) =>
+                ["declined", "expired"].includes(p.status),
+              ).length;
+              const archived = (data?.proposals ?? []).filter(
+                (p) => p.client.id === c.id && inView(p, "archived"),
+              ).length;
               const proposalStatus = awaiting
                 ? `${awaiting} to countersign`
                 : proposals.some(billingIssues)
@@ -4777,7 +4848,13 @@ export function ClientsV4({
                     ? `${open} open`
                     : drafts
                       ? `${drafts} ${drafts === 1 ? "draft" : "drafts"}`
-                      : "—";
+                      : won
+                        ? `${won} won`
+                        : closed
+                          ? `${closed} closed`
+                          : archived
+                            ? `${archived} archived`
+                            : "None yet";
               return (
                 <article
                   key={c.id}
@@ -4796,20 +4873,6 @@ export function ClientsV4({
                     {c.first_name} {c.last_name}
                   </span>
                   <span data-label="Proposals">{proposalStatus}</span>
-                  <span className="num-col" data-label="Monthly now">
-                    {c.stripe_customer_id ? (
-                      <a
-                        className="inner-action"
-                        href={`/clients/${c.id}`}
-                        title="Open the client to see live billing"
-                        aria-label="Open the client to see live billing"
-                      >
-                        —
-                      </a>
-                    ) : (
-                      "—"
-                    )}
-                  </span>
                   <span data-label="Billing">
                     <span
                       className={`pill ${c.stripe_customer_id ? "info" : "neutral"}`}
@@ -4867,200 +4930,211 @@ export function ClientsV4({
     }
   }
   const billingCard = (
-    <section className="client-billing card">
-      <header>
-        <h2 className="t-card-title">How they’re billed</h2>
-        {billing && (
-          <span
-            className={`pill ${billing.subscriber ? "success" : "neutral"}`}
-          >
-            {billing.subscriber
-              ? "Stripe subscriber"
-              : billing.available
-                ? billing.linked_id
-                  ? "No active subscription"
-                  : "Stripe customer not linked"
-                : "Stripe not connected"}
-          </span>
-        )}
-      </header>
-      {billingError && client.stripe_customer_id && (
-        <p>
-          <code>{client.stripe_customer_id}</code>{" "}
-          <Button onClick={() => setLinkChoice(null)}>Unlink customer</Button>
-        </p>
-      )}
-      {billingError ? (
-        <Banner tone="warning" title="Current billing details unavailable">
-          {billingError}
-          <Button
-            onClick={() => {
-              setBillingError("");
-              api<ClientBilling>(`/api/clients/${client.id}/billing`)
-                .then((value) => {
-                  if (!Array.isArray(value.items))
-                    throw new Error("Billing details could not be loaded.");
-                  setBilling(value);
-                })
-                .catch((e) => setBillingError(e.message));
-            }}
-          >
-            Retry
-          </Button>
-        </Banner>
-      ) : !billing ? (
-        <Skeleton kind="cards" label="Loading billing details…" />
-      ) : (
-        <>
+    <section
+      className="client-side-section"
+      aria-labelledby="client-billing-title"
+    >
+      <StaffSectionHeading
+        id="client-billing-title"
+        action={
+          billing && (
+            <span
+              className={`pill ${billing.subscriber ? "success" : "neutral"}`}
+            >
+              {billing.subscriber
+                ? "Stripe subscriber"
+                : billing.available
+                  ? billing.linked_id
+                    ? "No active subscription"
+                    : "Stripe customer not linked"
+                  : "Stripe not connected"}
+            </span>
+          )
+        }
+      >
+        Billing
+      </StaffSectionHeading>
+      <div className="client-billing card">
+        {billingError && client.stripe_customer_id && (
           <p>
-            {billing.subscriber
-              ? "New monthly items on a signed proposal are added to this customer’s subscription after the client approves the new charge."
-              : billing.notice ||
-                "A new monthly plan starts through Checkout after signature."}
+            <code>{client.stripe_customer_id}</code>{" "}
+            <Button onClick={() => setLinkChoice(null)}>Unlink customer</Button>
           </p>
-          {billing.stripe_email && (
-            <p className="muted">
-              Stripe sends receipts to {billing.stripe_email}. Yeswell doesn’t
-              change emails in Stripe.
+        )}
+        {billingError ? (
+          <Banner tone="warning" title="Current billing details unavailable">
+            {billingError}
+            <Button
+              onClick={() => {
+                setBillingError("");
+                api<ClientBilling>(`/api/clients/${client.id}/billing`)
+                  .then((value) => {
+                    if (!Array.isArray(value.items))
+                      throw new Error("Billing details could not be loaded.");
+                    setBilling(value);
+                  })
+                  .catch((e) => setBillingError(e.message));
+              }}
+            >
+              Retry
+            </Button>
+          </Banner>
+        ) : !billing ? (
+          <Skeleton kind="cards" label="Loading billing details…" />
+        ) : (
+          <>
+            <p>
+              {billing.subscriber
+                ? "New monthly items on a signed proposal are added to this customer’s subscription after the client approves the new charge."
+                : billing.notice ||
+                  "A new monthly plan starts through Checkout after signature."}
             </p>
-          )}
-          <div className="linked-billing-summary" hidden={!billing.linked_id}>
-            <div className="current-subscription">
-              {billing.items.map((i) => (
-                <p key={i.id}>
+            {billing.stripe_email && (
+              <p className="muted">
+                Stripe sends receipts to {billing.stripe_email}. Yeswell doesn’t
+                change emails in Stripe.
+              </p>
+            )}
+            <div className="linked-billing-summary" hidden={!billing.linked_id}>
+              <div className="current-subscription">
+                {billing.items.map((i) => (
+                  <p key={i.id}>
+                    <strong>
+                      {i.name}
+                      {i.qty !== 1 ? ` × ${i.qty}` : ""}
+                    </strong>
+                    <span>
+                      {money(i.amount * i.qty, i.currency)}/
+                      {i.interval_count > 1 ? i.interval_count : ""}
+                      {i.interval === "month"
+                        ? "mo"
+                        : i.interval === "year"
+                          ? "yr"
+                          : i.interval}
+                    </span>
+                  </p>
+                ))}
+              </div>
+              {currencyGroups.map((currency) => (
+                <p key={currency}>
                   <strong>
-                    {i.name}
-                    {i.qty !== 1 ? ` × ${i.qty}` : ""}
+                    Current monthly{" "}
+                    {money(
+                      billing.items
+                        .filter(
+                          (i) =>
+                            i.currency === currency &&
+                            i.interval === "month" &&
+                            i.interval_count === 1,
+                        )
+                        .reduce((v, i) => v + i.amount * i.qty, 0),
+                      currency,
+                    )}
+                    /mo
                   </strong>
-                  <span>
-                    {money(i.amount * i.qty, i.currency)}/
-                    {i.interval_count > 1 ? i.interval_count : ""}
-                    {i.interval === "month"
-                      ? "mo"
-                      : i.interval === "year"
-                        ? "yr"
-                        : i.interval}
-                  </span>
                 </p>
               ))}
+              <small>
+                Card on file:{" "}
+                {billing.card ??
+                  (billing.available
+                    ? "No default card recorded"
+                    : "Unavailable")}
+                {billing.next_invoice &&
+                  ` | Next period ends ${readableDate(billing.next_invoice)}`}
+              </small>
             </div>
-            {currencyGroups.map((currency) => (
-              <p key={currency}>
-                <strong>
-                  Current monthly{" "}
-                  {money(
-                    billing.items
-                      .filter(
-                        (i) =>
-                          i.currency === currency &&
-                          i.interval === "month" &&
-                          i.interval_count === 1,
-                      )
-                      .reduce((v, i) => v + i.amount * i.qty, 0),
-                    currency,
-                  )}
-                  /mo
-                </strong>
-              </p>
-            ))}
-            <small>
-              Card on file:{" "}
-              {billing.card ??
-                (billing.available
-                  ? "No default card recorded"
-                  : "Unavailable")}
-              {billing.next_invoice &&
-                ` | Next period ends ${readableDate(billing.next_invoice)}`}
-            </small>
-          </div>
-          {(billing.linked_id || !!billing.candidates?.length) && (
-            <section
-              id="stripe-customers"
-              className="stripe-customer-chooser stack"
-              aria-label="Stripe customers"
-            >
-              <h3>
-                {billing.linked_id
-                  ? "Linked Stripe customer"
-                  : "Choose a Stripe customer"}
-              </h3>
-              <div className="customer-candidates">
-                {(billing.candidates ?? [])
-                  .filter(
-                    (candidate) =>
-                      !billing.linked_id || candidate.id === billing.linked_id,
-                  )
-                  .map((candidate) => (
-                    <article className="stripe-candidate" key={candidate.id}>
-                      <strong>{candidate.name}</strong>
-                      <code>{candidate.id}</code>
-                      <dl>
-                        <div>
-                          <dt>Created</dt>
-                          <dd>
-                            {candidate.created
-                              ? readableDate(candidate.created)
-                              : "Unavailable"}
-                          </dd>
-                        </div>
-                        <div>
-                          <dt>Card on file</dt>
-                          <dd>
-                            {candidate.card || "No default card recorded"}
-                          </dd>
-                        </div>
-                        <div>
-                          <dt>Active subscriptions</dt>
-                          <dd>{candidate.subscriptions}</dd>
-                        </div>
-                        <div>
-                          <dt>Monthly total</dt>
-                          <dd>
-                            {candidate.monthly_totals.length
-                              ? candidate.monthly_totals
-                                  .map(
-                                    (t) => `${money(t.amount, t.currency)}/mo`,
-                                  )
-                                  .join(" | ")
-                              : money(0) + "/mo"}
-                          </dd>
-                        </div>
-                      </dl>
-                      {candidate.id === billing.linked_id ? (
-                        <DialogActions>
-                          <span className="pill success">Linked</span>
-                          <Button onClick={() => setLinkChoice(null)}>
-                            Unlink customer
+            {(billing.linked_id || !!billing.candidates?.length) && (
+              <section
+                id="stripe-customers"
+                className="stripe-customer-chooser stack"
+                aria-label="Stripe customers"
+              >
+                <h3>
+                  {billing.linked_id
+                    ? "Linked Stripe customer"
+                    : "Choose a Stripe customer"}
+                </h3>
+                <div className="customer-candidates">
+                  {(billing.candidates ?? [])
+                    .filter(
+                      (candidate) =>
+                        !billing.linked_id ||
+                        candidate.id === billing.linked_id,
+                    )
+                    .map((candidate) => (
+                      <article className="stripe-candidate" key={candidate.id}>
+                        <strong>{candidate.name}</strong>
+                        <code>{candidate.id}</code>
+                        <dl>
+                          <div>
+                            <dt>Created</dt>
+                            <dd>
+                              {candidate.created
+                                ? readableDate(candidate.created)
+                                : "Unavailable"}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>Card on file</dt>
+                            <dd>
+                              {candidate.card || "No default card recorded"}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>Active subscriptions</dt>
+                            <dd>{candidate.subscriptions}</dd>
+                          </div>
+                          <div>
+                            <dt>Monthly total</dt>
+                            <dd>
+                              {candidate.monthly_totals.length
+                                ? candidate.monthly_totals
+                                    .map(
+                                      (t) =>
+                                        `${money(t.amount, t.currency)}/mo`,
+                                    )
+                                    .join(" | ")
+                                : money(0) + "/mo"}
+                            </dd>
+                          </div>
+                        </dl>
+                        {candidate.id === billing.linked_id ? (
+                          <DialogActions>
+                            <span className="pill success">Linked</span>
+                            <Button onClick={() => setLinkChoice(null)}>
+                              Unlink customer
+                            </Button>
+                          </DialogActions>
+                        ) : (
+                          <Button onClick={() => setLinkChoice(candidate.id)}>
+                            {billing.linked_id
+                              ? "Use this customer"
+                              : "Link this customer"}
                           </Button>
-                        </DialogActions>
-                      ) : (
-                        <Button onClick={() => setLinkChoice(candidate.id)}>
-                          {billing.linked_id
-                            ? "Use this customer"
-                            : "Link this customer"}
-                        </Button>
-                      )}
-                    </article>
-                  ))}
-              </div>
-            </section>
-          )}
-          <DialogActions>
-            {billing.stripe_url && (
-              <a target="_blank" rel="noreferrer" href={billing.stripe_url}>
-                Open Stripe ↗
-              </a>
+                        )}
+                      </article>
+                    ))}
+                </div>
+              </section>
             )}
-            {billing.qbo_url ? (
-              <a href={billing.qbo_url} target="_blank" rel="noreferrer">
-                QuickBooks: linked ↗
-              </a>
-            ) : (
-              <span>QuickBooks: not linked</span>
-            )}
-          </DialogActions>
-        </>
-      )}
+            <DialogActions>
+              {billing.stripe_url && (
+                <a target="_blank" rel="noreferrer" href={billing.stripe_url}>
+                  Open Stripe ↗
+                </a>
+              )}
+              {billing.qbo_url ? (
+                <a href={billing.qbo_url} target="_blank" rel="noreferrer">
+                  QuickBooks: linked ↗
+                </a>
+              ) : (
+                <span>QuickBooks: not linked</span>
+              )}
+            </DialogActions>
+          </>
+        )}
+      </div>
     </section>
   );
   const proposalsSection = (
@@ -5088,47 +5162,56 @@ export function ClientsV4({
     </section>
   );
   const notesCard = (
-    <section className="client-notes card">
-      <header className="section-heading">
-        <h2 className="t-card-title">Notes</h2>
-        <Button onClick={() => setEdit(!edit)}>
-          {edit ? "Cancel" : client.notes ? "Edit note" : "Add note"}
-        </Button>
-      </header>
-      {edit ? (
-        <form
-          className="form"
-          onSubmit={async (e) => {
-            e.preventDefault();
-            try {
-              await post("/api/clients", {
-                ...client,
-                notes: new FormData(e.currentTarget).get("notes"),
-              });
-              setEdit(false);
-              await onRefresh();
-            } catch (e) {
-              setError((e as Error).message);
-            }
-          }}
-        >
-          <Field label="Client notes">
-            <textarea
-              name="notes"
-              defaultValue={client.notes}
-              maxLength={10000}
-            />
-          </Field>
-          <Button type="submit">Save notes</Button>
-        </form>
-      ) : (
-        <p style={{ whiteSpace: "pre-wrap" }}>
-          {client.notes || "No notes yet."}
-        </p>
-      )}
-      {(edit || client.notes) && (
-        <small>AI assistants can read these notes when drafting.</small>
-      )}
+    <section
+      className="client-side-section"
+      aria-labelledby="client-notes-title"
+    >
+      <StaffSectionHeading
+        id="client-notes-title"
+        action={
+          <Button onClick={() => setEdit(!edit)}>
+            {edit ? "Cancel" : client.notes ? "Edit note" : "Add note"}
+          </Button>
+        }
+      >
+        Notes
+      </StaffSectionHeading>
+      <div className="client-notes card">
+        {edit ? (
+          <form
+            className="form"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              try {
+                await post("/api/clients", {
+                  ...client,
+                  notes: new FormData(e.currentTarget).get("notes"),
+                });
+                setEdit(false);
+                await onRefresh();
+              } catch (e) {
+                setError((e as Error).message);
+              }
+            }}
+          >
+            <Field label="Client notes">
+              <textarea
+                name="notes"
+                defaultValue={client.notes}
+                maxLength={10000}
+              />
+            </Field>
+            <Button type="submit">Save notes</Button>
+          </form>
+        ) : (
+          <p style={{ whiteSpace: "pre-wrap" }}>
+            {client.notes || "No notes yet."}
+          </p>
+        )}
+        {(edit || client.notes) && (
+          <small>AI assistants can read these notes when drafting.</small>
+        )}
+      </div>
     </section>
   );
   const activitySection = (
@@ -5168,25 +5251,32 @@ export function ClientsV4({
     </section>
   );
   const contactCard = (
-    <section className="client-contact-card card">
-      <h2 className="t-card-title">Contact details</h2>
-      <dl>
-        {[
-          [
-            "Name",
-            [client.first_name, client.last_name].filter(Boolean).join(" "),
-          ],
-          ["Email", client.email],
-          ["Phone", formattedPhone(client.phone)],
-          ["Title", client.title],
-          ["Address", formattedAddress(client.address)],
-        ].map(([label, value]) => (
-          <div key={label}>
-            <dt>{label}</dt>
-            <dd>{value || "—"}</dd>
-          </div>
-        ))}
-      </dl>
+    <section
+      className="client-side-section"
+      aria-labelledby="client-contact-title"
+    >
+      <StaffSectionHeading id="client-contact-title">
+        Contact details
+      </StaffSectionHeading>
+      <div className="client-contact-card card">
+        <dl>
+          {[
+            [
+              "Name",
+              [client.first_name, client.last_name].filter(Boolean).join(" "),
+            ],
+            ["Email", client.email],
+            ["Phone", formattedPhone(client.phone)],
+            ["Title", client.title],
+            ["Address", formattedAddress(client.address)],
+          ].map(([label, value]) => (
+            <div key={label}>
+              <dt>{label}</dt>
+              <dd>{value || "—"}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
     </section>
   );
   return (

@@ -44,6 +44,9 @@ import {
   type Template,
   type SavedBlock,
 } from "./model";
+// Billing links a client to the customer its proposal used, as the system.
+const billingSystem: Actor = { actor: "system", ip: "", user_agent: "" };
+
 export type EntityTable =
   | "email_templates"
   | "email_log"
@@ -141,6 +144,14 @@ export interface Repository {
     customer: string | null,
     actor: Actor,
   ): Promise<void>;
+  /** After billing succeeds: link the customer it used, if the client has none. */
+  linkClientBillingCustomer(
+    id: string,
+    provider: "stripe" | "qbo",
+    customer: string,
+    email: string,
+    proposalId: string,
+  ): Promise<boolean>;
   finishDocumentRefresh<T extends { id: string }>(
     document: T,
     attempt: string,
@@ -760,6 +771,43 @@ export class MemoryRepository implements Repository {
     });
     this.catalog.set("workspace_events", events);
   }
+  async linkClientBillingCustomer(
+    id: string,
+    provider: "stripe" | "qbo",
+    customer: string,
+    email: string,
+    proposalId: string,
+  ) {
+    const field =
+      provider === "stripe" ? "stripe_customer_id" : "qbo_customer_id";
+    const client = this.catalog.get("clients")?.get(id) as Client | undefined;
+    if (!client) throw new AppError(404, "Client not found");
+    // Never replace a link a person chose, or link a client whose email changed.
+    if (client[field] || client.email.toLowerCase() !== email.toLowerCase())
+      return false;
+    this.catalog
+      .get("clients")!
+      .set(id, structuredClone({ ...client, [field]: customer }));
+    const events = this.catalog.get("workspace_events") ?? new Map();
+    const idEvent = crypto.randomUUID();
+    events.set(idEvent, {
+      id: idEvent,
+      ...billingSystem,
+      type:
+        provider === "stripe" ? "client_stripe_linked" : "client_qbo_linked",
+      created_at: new Date().toISOString(),
+      metadata: {
+        proposal_id: proposalId,
+        client_id: id,
+        name: client.company,
+        provider,
+        previous_customer_id: null,
+        customer_id: customer,
+      },
+    });
+    this.catalog.set("workspace_events", events);
+    return true;
+  }
   private logClientLifecycle(
     type: string,
     client: Client,
@@ -1107,6 +1155,28 @@ export class LocalRepository extends MemoryRepository {
     const run = this.tail.then(async () => {
       await super.linkClientStripe(id, expected, email, customer, actor);
       await this.persist();
+    });
+    this.tail = run.catch(() => {});
+    return run;
+  }
+  override async linkClientBillingCustomer(
+    id: string,
+    provider: "stripe" | "qbo",
+    customer: string,
+    email: string,
+    proposalId: string,
+  ) {
+    await this.ready;
+    const run = this.tail.then(async () => {
+      const linked = await super.linkClientBillingCustomer(
+        id,
+        provider,
+        customer,
+        email,
+        proposalId,
+      );
+      if (linked) await this.persist();
+      return linked;
     });
     this.tail = run.catch(() => {});
     return run;
@@ -1716,6 +1786,32 @@ export class SupabaseRepository implements Repository {
         error.code === "40001" ? 409 : error.code === "P0002" ? 404 : 400,
         error.message,
       );
+  }
+  async linkClientBillingCustomer(
+    id: string,
+    provider: "stripe" | "qbo",
+    customer: string,
+    email: string,
+    proposalId: string,
+  ) {
+    const { data, error } = await this.db.rpc("link_client_billing_customer", {
+      target_workspace: this.workspaceId,
+      target_client: id,
+      provider,
+      customer,
+      expected_email: email,
+      audit_event: {
+        id: crypto.randomUUID(),
+        ...billingSystem,
+        type:
+          provider === "stripe" ? "client_stripe_linked" : "client_qbo_linked",
+        created_at: new Date().toISOString(),
+        metadata: { proposal_id: proposalId },
+      },
+    });
+    if (error)
+      throw new AppError(error.code === "P0002" ? 404 : 400, error.message);
+    return data === true;
   }
   async archiveClient(id: string, archived: boolean, actor: Actor) {
     if (!actor.actor.startsWith("staff:"))
