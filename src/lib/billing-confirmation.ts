@@ -64,7 +64,7 @@ export function billingCompletionText(
     "Billing setup completed",
     ...c.items.map(
       (i) =>
-        `${i.name} · ${formatMoney(i.amount * i.qty, c.currency, cents)}/${i.interval === "month" ? "month" : "year"}`,
+        `${i.name} | ${formatMoney(i.amount * i.qty, c.currency, cents)}/${i.interval === "month" ? "month" : "year"}`,
     ),
     c.card ? `Card: ${cardLabel(c.card)}` : "",
     details.next_billing_at
