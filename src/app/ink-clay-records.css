@@ -454,18 +454,6 @@
   background: var(--segment);
   border-color: var(--border-strong);
 }
-.client-initials {
-  display: inline-grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  flex: none;
-  border-radius: var(--radius-md);
-  color: var(--info);
-  background: var(--info-soft);
-  font-weight: 600;
-}
-
 .ink-clay .client-table-row strong[data-label="Company"] {
   display: flex;
   gap: 10px;
