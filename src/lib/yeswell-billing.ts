@@ -560,3 +560,99 @@ export async function billingOverview(
     billing_ready: !!stripe,
   };
 }
+
+type LiveSubscription = Subscription & {
+  items: {
+    data: {
+      id: string;
+      price: { lookup_key: string | null; id: string };
+      quantity: number;
+    }[];
+  };
+};
+/** The subscription change that adds one person, charged prorated right away. */
+async function addSeatChange(stripe: StripeApi, w: WorkspaceRow) {
+  check(
+    w.stripe_subscription_id && w.plan_status !== "canceled",
+    "Choose a plan first.",
+    409,
+  );
+  const sub = await stripe.get<LiveSubscription>(
+    `/v1/subscriptions/${w.stripe_subscription_id}`,
+  );
+  const details = subscriptionDetails(sub);
+  check(
+    details.plan && details.interval,
+    "This plan can't add people here. Use Manage billing.",
+    409,
+  );
+  const items = sub.items.data as {
+    id: string;
+    price: { lookup_key: string | null };
+    quantity: number;
+  }[];
+  const seat = items.find(
+    (i) => i.price.lookup_key === lookupKey("seat", details.interval!),
+  );
+  const price = (
+    await ensurePrices(stripe, [{ kind: "seat", interval: details.interval! }])
+  ).get(lookupKey("seat", details.interval!))!;
+  const item = seat
+    ? { id: seat.id, quantity: seat.quantity + 1 }
+    : { price, quantity: 1 };
+  return { sub, details, item, people: (details.people ?? 0) + 1 };
+}
+/** What adding a person costs today, as Stripe works it out. */
+export async function previewAddSeat(
+  stripe: StripeApi,
+  store: BillingStore,
+  workspaceId: string,
+) {
+  const w = await store.workspace(workspaceId);
+  const { sub, details, item, people } = await addSeatChange(stripe, w);
+  const preview = await stripe.post<{ amount_due: number; currency: string }>(
+    "/v1/invoices/create_preview",
+    {
+      customer: sub.customer,
+      subscription: sub.id,
+      subscription_details: {
+        items: [item],
+        proration_behavior: "always_invoice",
+      },
+    },
+  );
+  return {
+    plan: details.plan,
+    interval: details.interval,
+    people_now: details.people,
+    people_after: people,
+    due_today_cents: preview.amount_due,
+    currency: preview.currency,
+  };
+}
+/** Adds one person and charges the prorated amount now. */
+export async function addSeat(
+  stripe: StripeApi,
+  store: BillingStore,
+  workspaceId: string,
+) {
+  const w = await store.workspace(workspaceId);
+  const { sub, item, people } = await addSeatChange(stripe, w);
+  const updated = await stripe.post<Subscription>(
+    `/v1/subscriptions/${sub.id}`,
+    {
+      items: [item],
+      proration_behavior: "always_invoice",
+      payment_behavior: "error_if_incomplete",
+    },
+    `yeswell-seat-${sub.id}-${people}`,
+  );
+  await store.sync(
+    w.id,
+    updated.customer,
+    updated.id,
+    updated.status,
+    subscriptionDetails(updated),
+  );
+  return { people };
+}

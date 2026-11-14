@@ -5,6 +5,7 @@ import { unfinishedAssignment } from "../lib/proposal-owner";
 import { DialogActions } from "./dialog-actions";
 import { ReassignDialog } from "./reassign-proposal";
 import { useEffect, useState } from "react";
+import { AddSeatSheet, SeatLine, seatsFull, useSeats } from "./team-seats";
 import type { Data } from "./staff-app";
 import { useStaffDates } from "./staff-account-context";
 import { ApiError, api, post, Button, Field, Banner, date } from "./ui";
@@ -46,9 +47,12 @@ export function TeamStudio({
     [error, setError] = useState(""),
     [work, setWork] = useState<{ id: string; title: string }[]>([]);
   const [reassign, setReassign] = useState<TeamPerson | null>(null);
+  const [seatsVersion, setSeatsVersion] = useState(0),
+    [addSeat, setAddSeat] = useState(false);
   const Heading = embedded ? "h3" : "h2";
   const owner = data.user.staff_role === "owner",
     self = data.user.actor.slice(6);
+  const [seats] = useSeats(owner, `${seatsVersion}:${people.length}`);
   const fallback = () =>
     data.staff.map(
       (m) =>
@@ -116,13 +120,26 @@ export function TeamStudio({
             className="action"
             onClick={() => {
               setError("");
-              setDialog({ action: "invite" });
+              if (seatsFull(seats)) setAddSeat(true);
+              else setDialog({ action: "invite" });
             }}
           >
             Invite
           </Button>
         )}
       </header>
+      {owner && <SeatLine seats={seats} />}
+      {addSeat && seats && (
+        <AddSeatSheet
+          seats={seats}
+          onClose={() => setAddSeat(false)}
+          onAdded={() => {
+            setAddSeat(false);
+            setSeatsVersion((v) => v + 1);
+            setDialog({ action: "invite" });
+          }}
+        />
+      )}
       {error && !dialog && (
         <Banner tone="danger" title="Team change could not be completed">
           {error}
