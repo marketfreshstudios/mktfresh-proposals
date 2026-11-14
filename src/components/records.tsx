@@ -4610,19 +4610,6 @@ export function readyCheckRows(ready: ReadyResult | null) {
   return rows;
 }
 
-function ClientInitials({ company }: { company: string }) {
-  return (
-    <span className="client-initials" aria-hidden="true">
-      {company
-        .trim()
-        .split(/\s+/)
-        .slice(0, 2)
-        .map((word) => word[0])
-        .join("")
-        .toUpperCase()}
-    </span>
-  );
-}
 function ClientDetailHeader({
   selected,
   client,
@@ -4863,10 +4850,7 @@ export function ClientsV4({
                     href={`/clients/${c.id}`}
                     aria-label={`Open ${c.company}`}
                   />
-                  <strong data-label="Company">
-                    <ClientInitials company={c.company} />
-                    {c.company}
-                  </strong>
+                  <strong data-label="Company">{c.company}</strong>
                   <span data-label="Contact">
                     {c.first_name} {c.last_name}
                   </span>
