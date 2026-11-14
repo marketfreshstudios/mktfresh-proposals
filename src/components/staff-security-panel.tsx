@@ -1,4 +1,5 @@
 "use client";
+import { PasswordInput } from "./form-controls";
 
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Laptop, Smartphone } from "lucide-react";
@@ -92,18 +93,16 @@ function PasswordDialog({
         }}
       >
         <Field label="Current password">
-          <input
+          <PasswordInput
             required
-            type="password"
             name="current"
             autoComplete="current-password"
             maxLength={200}
           />
         </Field>
         <Field label="New password">
-          <input
+          <PasswordInput
             required
-            type="password"
             name="password"
             autoComplete="new-password"
             minLength={8}
@@ -111,9 +110,8 @@ function PasswordDialog({
           />
         </Field>
         <Field label="Confirm new password">
-          <input
+          <PasswordInput
             required
-            type="password"
             name="confirm"
             autoComplete="new-password"
             minLength={8}
@@ -628,8 +626,7 @@ export function StaffEmailSettings({
               </p>
             )}
             <Field label="Your password" hint="To confirm it’s you.">
-              <input
-                type="password"
+              <PasswordInput
                 name="password"
                 autoComplete="current-password"
                 maxLength={200}

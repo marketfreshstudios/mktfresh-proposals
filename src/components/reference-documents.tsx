@@ -1,5 +1,5 @@
 "use client";
-import { Select } from "./form-controls";
+import { Select, PasswordInput } from "./form-controls";
 import { Disclosure } from "./ui";
 import { useState } from "react";
 import type { ReferenceDocument } from "../lib/documents";
@@ -159,11 +159,7 @@ function ReferenceForm({
             <input name="username" autoComplete="off" />
           </Field>
           <Field label="Basic auth password">
-            <input
-              name="password"
-              type="password"
-              autoComplete="new-password"
-            />
+            <PasswordInput name="password" autoComplete="new-password" />
           </Field>
           {document?.has_auth && (
             <label>

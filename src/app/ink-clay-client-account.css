@@ -180,8 +180,7 @@
   padding: 20px;
   text-align: start;
 }
-.client-flow .flow-password input,
-.client-flow .flow-password button {
+.client-flow .flow-password-input input {
   min-height: 52px;
 }
 .flow-locked [role="alert"] {

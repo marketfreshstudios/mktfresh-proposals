@@ -1,4 +1,5 @@
 "use client";
+import { PasswordInput } from "./form-controls";
 import { StaffAuthFrame } from "./staff-auth-frame";
 import { useEffect, useState } from "react";
 import { post, Field, Button, Banner, ApiError } from "./ui";
@@ -6,7 +7,6 @@ export function SetStaffPassword() {
   const [link, setLink] = useState<{ token_hash?: string; type?: string }>({}),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
-    [show, setShow] = useState(false),
     [ready, setReady] = useState(false),
     [closed, setClosed] = useState<"expired" | "deactivated">();
   useEffect(() => {
@@ -81,8 +81,7 @@ export function SetStaffPassword() {
         }}
       >
         <Field label="New password">
-          <input
-            type={show ? "text" : "password"}
+          <PasswordInput
             name="password"
             autoComplete="new-password"
             required
@@ -91,8 +90,7 @@ export function SetStaffPassword() {
           />
         </Field>
         <Field label="Type new password again">
-          <input
-            type={show ? "text" : "password"}
+          <PasswordInput
             name="confirm"
             autoComplete="new-password"
             required
@@ -100,9 +98,6 @@ export function SetStaffPassword() {
             maxLength={200}
           />
         </Field>
-        <Button onClick={() => setShow(!show)} aria-pressed={show}>
-          {show ? "Hide passwords" : "Show passwords"}
-        </Button>
         <p className="muted">
           Use at least 8 characters. Your workspace’s authentication password
           rules also apply.

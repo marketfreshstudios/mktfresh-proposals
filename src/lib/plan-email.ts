@@ -3,6 +3,8 @@ import { ResendMailer } from "./jobs";
 import { yeswellFrom } from "./email-identity";
 import { workspaceOrigin } from "./links";
 import { TRIAL_WARNING_DAYS } from "./plan";
+import { yeswellEmail } from "./yeswell-email";
+import { workspaceDomain } from "./workspace-address";
 
 type Kind = "reminder" | "ended";
 type Workspace = {
@@ -18,8 +20,6 @@ export type TrialMail = {
   html: string;
 };
 
-const escape = (v: string) =>
-  v.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 const day = (iso: string) =>
   new Date(iso).toLocaleDateString("en-US", {
     weekday: "long",
@@ -34,7 +34,7 @@ export function trialEmail(
   owner: { email: string; first_name: string },
 ): TrialMail {
   const url = `${workspaceOrigin(workspace.slug)}/billing`;
-  const host = new URL(url).host;
+  const host = workspaceDomain() ? new URL(url).host : workspace.name;
   const subject =
     kind === "reminder"
       ? `Your Yeswell trial ends ${day(workspace.trial_ends_at).split(",")[0]}`
@@ -52,13 +52,15 @@ export function trialEmail(
   return {
     to: owner.email,
     subject,
-    text: `Hi ${owner.first_name},\n\n${lines.join("\n\n")}\n\nChoose a plan: ${url}`,
-    html: `<!doctype html><html><body style="margin:0;background:#f2efe8;font-family:Helvetica,Arial,sans-serif;color:#13303a">
-<div style="max-width:520px;margin:0 auto;padding:32px 20px"><div style="background:#faf8f4;border:1px solid #e2ddd3;border-radius:14px;padding:28px 24px">
-<p style="margin:0 0 16px;font-size:16px">Hi ${escape(owner.first_name)},</p>
-${lines.map((l) => `<p style="margin:0 0 16px;font-size:16px;line-height:24px">${escape(l)}</p>`).join("")}
-<a href="${escape(url)}" style="display:inline-block;margin-top:6px;background:#bf5f2e;color:#ffffff;text-decoration:none;font-weight:700;padding:11px 20px;border-radius:999px">Choose a plan</a>
-</div></div></body></html>`,
+    ...yeswellEmail({
+      origin: workspaceOrigin(workspace.slug),
+      title:
+        kind === "reminder" ? "Your trial ends soon" : "Your trial has ended",
+      greeting: `Hi ${owner.first_name},`,
+      paragraphs: lines,
+      button: { label: "Choose a plan", url },
+      workspace: workspace.name,
+    }),
   };
 }
 

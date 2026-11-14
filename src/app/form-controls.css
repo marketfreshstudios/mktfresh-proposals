@@ -136,3 +136,42 @@ input[type="search"]:focus-visible {
   border-color: transparent;
   box-shadow: none;
 }
+
+/* Password fields: an eye button inside the field shows or hides the text. */
+.password-input {
+  position: relative;
+  display: block;
+  min-width: 0;
+}
+.password-input > input {
+  width: 100%;
+  padding-inline-end: 48px;
+}
+.password-input > .password-toggle {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 4px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  margin: auto 0;
+  min-height: 0;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-muted, #56646a);
+  cursor: pointer;
+}
+.password-input > .password-toggle:hover {
+  color: var(--ink, #1c1b18);
+}
+.password-input > .password-toggle:focus-visible {
+  outline: var(--focus-outline, 2px solid currentColor);
+  outline-offset: 0;
+}
+.password-input > .password-toggle:disabled {
+  cursor: default;
+  opacity: 0.5;
+}

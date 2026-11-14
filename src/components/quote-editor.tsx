@@ -4,7 +4,7 @@ import { TemplateStylesAction } from "./editor/template-styles-action";
 import { PanelHeading } from "./editor/panel-heading";
 import { staffFromAddress } from "../lib/email-identity";
 import { withCount } from "../lib/count-label";
-import { Select, Switch } from "./form-controls";
+import { Select, Switch, PasswordInput } from "./form-controls";
 import { useReloadGuard } from "./reload-safety";
 import { resolvedEditorText } from "../lib/editor-fields";
 import { businessStateError, businessStateUrl } from "../lib/business-state";
@@ -1479,8 +1479,7 @@ function QuoteEditorContent({
         </label>
         {protectedLink && (
           <Field label="Password">
-            <input
-              type="password"
+            <PasswordInput
               autoComplete="new-password"
               minLength={8}
               value={password}

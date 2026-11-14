@@ -3,7 +3,7 @@ import type { PlanState } from "../lib/plan";
 import { BillingPage } from "./billing-page";
 import { withCount } from "../lib/count-label";
 import { StaffTable, StaffTableEmpty, StaffNativeTable } from "./staff-table";
-import { Select } from "./form-controls";
+import { Select, PasswordInput } from "./form-controls";
 import { ReloadSafetyProvider } from "./reload-safety";
 import { DeploymentNotice } from "./deployment-notice";
 import { staffPageName } from "../lib/staff-brand";
@@ -885,8 +885,7 @@ function Login({
           <input type="email" name="email" required autoComplete="username" />
         </Field>
         <Field label="Password">
-          <input
-            type="password"
+          <PasswordInput
             name="password"
             required
             autoComplete="current-password"
@@ -927,7 +926,7 @@ function Login({
             }}
           >
             <Field label="Local token">
-              <input name="token" type="password" required />
+              <PasswordInput name="token" required />
             </Field>
             <Button type="submit">Open local workspace</Button>
           </form>
@@ -1066,8 +1065,7 @@ function NewProposal({
                 />
               </Field>
               <Field label="Proposal password (optional)">
-                <input
-                  type="password"
+                <PasswordInput
                   name="password"
                   minLength={8}
                   autoComplete="new-password"

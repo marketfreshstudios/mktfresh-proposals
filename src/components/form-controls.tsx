@@ -6,6 +6,7 @@ import {
   type InputHTMLAttributes,
   type ComponentPropsWithRef,
 } from "react";
+import { Eye, EyeOff } from "lucide-react";
 
 /** Native selection behavior with the same field contract in every surface. */
 export function Select({
@@ -48,5 +49,32 @@ export function Switch({
       }}
       className={`shared-switch ${className}`}
     />
+  );
+}
+
+/** A password field with an eye button that shows or hides what's typed. */
+export function PasswordInput({
+  className = "",
+  ...props
+}: Omit<InputHTMLAttributes<HTMLInputElement>, "type">) {
+  const [shown, setShown] = useState(false);
+  return (
+    <span className={`password-input ${className}`.trim()}>
+      <input {...props} type={shown ? "text" : "password"} />
+      <button
+        type="button"
+        className="password-toggle"
+        aria-label={shown ? "Hide password" : "Show password"}
+        aria-pressed={shown}
+        disabled={props.disabled}
+        onClick={() => setShown((s) => !s)}
+      >
+        {shown ? (
+          <EyeOff aria-hidden="true" size={18} />
+        ) : (
+          <Eye aria-hidden="true" size={18} />
+        )}
+      </button>
+    </span>
   );
 }

@@ -73,7 +73,7 @@ import { ClientSignatureBlock } from "./client-signature-block";
 import { SignatureForm } from "./signature";
 import { api, ApiError, Banner, Button, Icon, date } from "./ui";
 import { Skeleton } from "./foundation";
-import { Select } from "./form-controls";
+import { Select, PasswordInput } from "./form-controls";
 import { StaffIconContext } from "./staff-icons";
 export type PublicProposal = ReturnType<typeof publicResult> & {
   preview_can_send?: boolean;
@@ -231,8 +231,7 @@ function NewClientFlow({
     [ended, setEnded] = useState(false),
     [password, setPassword] = useState("");
   const [declineNote, setDeclineNote] = useState("");
-  const [showPassword, setShowPassword] = useState(false),
-    [stale, setStale] = useState(false),
+  const [stale, setStale] = useState(false),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const [declining, setDeclining] = useState(false),
@@ -963,23 +962,14 @@ function NewClientFlow({
             >
               <div className="field">
                 <label htmlFor="proposal-password">Password</label>
-                <div className="flow-password">
-                  <input
-                    id="proposal-password"
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    autoComplete="current-password"
-                  />
-                  <button
-                    type="button"
-                    className="btn ghost"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? "Hide" : "Show"}
-                  </button>
-                </div>
+                <PasswordInput
+                  id="proposal-password"
+                  className="flow-password-input"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="current-password"
+                />
               </div>
               {error && <p role="alert">{error}</p>}
               <Button type="submit" variant="primary" busy={busy}>

@@ -1,5 +1,5 @@
 "use client";
-import { Switch, Select } from "./form-controls";
+import { Switch, Select, PasswordInput } from "./form-controls";
 import { QuickBooksPicker } from "./quickbooks-fields";
 import { useReloadGuard } from "./reload-safety";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -1156,8 +1156,7 @@ export function WorkspaceStudio({
                 : "Default password"
             }
           >
-            <input
-              type="password"
+            <PasswordInput
               autoComplete="new-password"
               minLength={8}
               maxLength={200}
