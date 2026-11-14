@@ -123,6 +123,7 @@ test("billing: choose a plan with Stripe's total, then current plan and member v
     await expect
       .poll(() => checkout)
       .toEqual({ plan: "agency", interval: "year", people: 5, domain: false });
+    await page.waitForURL(/checkout=fake/);
 
     await mock(page, {
       ...base,
