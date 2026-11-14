@@ -1,4 +1,5 @@
 "use client";
+import { useReadOnly } from "./workspace-plan";
 import { ToastSurface } from "./toast-surface";
 import { timelineEvents } from "../lib/timeline";
 import { StaffSectionHeading } from "./staff-section-heading";
@@ -1313,13 +1314,14 @@ function HomeIntro({
   subtitle: string;
   onNew: () => void;
 }) {
+  const readOnly = useReadOnly();
   return (
     <section className="home-intro">
       <div>
         <p className="home-date">{subtitle}</p>
         <h1 className="t-page-title">{title}</h1>
       </div>
-      <Button className="action" onClick={onNew}>
+      <Button className="action" onClick={onNew} disabled={readOnly}>
         New proposal
       </Button>
     </section>

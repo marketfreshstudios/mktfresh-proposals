@@ -145,7 +145,7 @@ import {
   refreshDocument,
   refreshDueDocuments,
 } from "./documents";
-import { appOrigin } from "./links";
+import { workspaceOrigin } from "./links";
 import { signatoryVersion, validateSignatureImage } from "./company-signatory";
 import { StaffAccountPatchSchema } from "./staff-account-model";
 import {
@@ -218,6 +218,13 @@ import {
 } from "./repository";
 import { CONSENT, hashPassword, sha256 } from "./content";
 import { requestHost } from "./workspace-address";
+import { sendTrialEmails } from "./plan-email";
+import {
+  WorkspaceReadOnly,
+  allowedWhileReadOnly,
+  assertWorkspaceWritable,
+  workspacePlan,
+} from "./plan";
 import {
   SignupError,
   checkAddress,
@@ -926,6 +933,9 @@ async function handleRoute(
         401,
       );
       check(method === "GET" || method === "POST", "Method not allowed", 405);
+      await sendTrialEmails().catch(() => {
+        console.error("Unable to send trial emails");
+      });
       const results = [];
       for (const rt of await allRuntimes()) {
         const cutoff = new Date();
@@ -967,6 +977,8 @@ async function handleRoute(
         : response;
     }
     const user = await staff(req);
+    if (!["GET", "HEAD"].includes(method) && !allowedWhileReadOnly(path))
+      await assertWorkspaceWritable(user.workspace_id);
     if (path.join("/") === "auth/staff-home-banner" && method === "POST") {
       check(sameOrigin(req), "Same-origin request required", 403);
       await dismissStaffHomeBanner(user);
@@ -1083,10 +1095,16 @@ async function handleRoute(
         workspaceStaff(user.workspace_id),
         workspaceStaffPhotos(rt.repo),
       ]);
+      const defaults = settings
+        ? undefined
+        : await workspaceDefaults(rt.repo, user);
       return json({
         user,
         account,
-        app_url: appOrigin(),
+        app_url: workspaceOrigin(
+          (settings ?? defaults)?.workspace_slug ?? null,
+        ),
+        plan: await workspacePlan(user.workspace_id),
         settings: settings
           ? {
               ...WorkspaceSettingsSchema.parse(settings),
@@ -1094,9 +1112,7 @@ async function handleRoute(
               default_password_enabled: !!settings.default_password_hash,
             }
           : null,
-        workspace_defaults: settings
-          ? undefined
-          : await workspaceDefaults(rt.repo, user),
+        workspace_defaults: defaults,
         signatory_version: signatoryVersion(settings),
         staff: members.map((member) => ({
           ...member,
@@ -2803,7 +2819,8 @@ async function handleRoute(
           error: e.message,
           ...(e instanceof StaffSecurityRequired ? { state: e.state } : {}),
           ...(e instanceof StaffSessionExpired ||
-          e instanceof StaffPasswordRequired
+          e instanceof StaffPasswordRequired ||
+          e instanceof WorkspaceReadOnly
             ? { code: e.code }
             : {}),
         },

@@ -1,4 +1,5 @@
 "use client";
+import type { PlanState } from "../lib/plan";
 import { withCount } from "../lib/count-label";
 import { StaffTable, StaffTableEmpty, StaffNativeTable } from "./staff-table";
 import { Select } from "./form-controls";
@@ -95,6 +96,7 @@ import { inView } from "../lib/proposal-state";
 import type { WorkspaceSettings } from "../lib/workspace";
 export type Data = {
   app_url: string;
+  plan?: PlanState;
   connections?: ConnectionStatus | null;
   user: Actor & { staff_home_banner_dismissed?: boolean };
   account?: StaffAccount;
@@ -197,6 +199,7 @@ function StaffAppContent({
     }
   }
   function openNew() {
+    if (data?.plan?.mode === "read_only") return;
     if (reportShell || section === "account")
       location.href = "/proposals?new=1";
     else setNewOpen(true);
@@ -217,6 +220,7 @@ function StaffAppContent({
         account?: StaffAccount;
         signatory_version: string;
         app_url: string;
+        plan?: PlanState;
         staff: Data["staff"];
       }>("/api/auth/session");
       if (reportShell || section === "account") {
@@ -261,6 +265,7 @@ function StaffAppContent({
         settings: session.settings,
         workspace_defaults: session.workspace_defaults,
         app_url: session.app_url,
+        plan: session.plan,
         user: session.user,
         account: session.account,
         signatory_version: session.signatory_version,
@@ -673,6 +678,7 @@ function StaffAppContent({
         (content.type === RecordV4 || content.type === DetailsLoading)
       }
       settings={data?.settings ?? data?.workspace_defaults ?? null}
+      plan={data?.plan ?? null}
       name={data?.user.staff_name ?? ""}
       email={data?.user.staff_email ?? ""}
       role={data?.user.staff_role}
