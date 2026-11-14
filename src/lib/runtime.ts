@@ -5,6 +5,7 @@ import { StripeConnect, stripeConnectConfig } from "./providers/stripe-connect";
 import { StripeProvider } from "./providers/stripe";
 import { QboProvider } from "./providers/qbo";
 import { LOCAL_WORKSPACE_ID } from "./workspace";
+import { publicHostAllows } from "./workspace-host";
 import { check } from "./model";
 import { join } from "node:path";
 import { LocalRepository, SupabaseRepository, supabase } from "./repository";
@@ -112,7 +113,7 @@ export async function resolveStripeAccount(base: Runtime): Promise<Runtime> {
   return account ? createRuntime(base.repo.workspaceId, account) : base;
 }
 // Token lookup returns only the tenant selector; all subsequent operations are scoped.
-export async function publicRuntime(token: string) {
+export async function publicRuntime(token: string, host?: string | null) {
   check(validClientToken(token), "Not found", 404);
   if (process.env.APP_MODE === "local") {
     const rt = runtime();
@@ -125,6 +126,7 @@ export async function publicRuntime(token: string) {
     .eq("token", token)
     .maybeSingle();
   check(!error && data, "Not found", 404);
+  check(await publicHostAllows(host, data.workspace_id), "Not found", 404);
   return resolveStripeAccount(runtime(data.workspace_id));
 }
 export async function allRuntimes() {

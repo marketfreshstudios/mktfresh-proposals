@@ -3,6 +3,7 @@ import { staffRequestHeaders, withStaffCookies } from "./lib/staff-session";
 import { AppError } from "./lib/model";
 import { StaffPasswordRequired } from "./lib/staff-access";
 import { cookie, staff } from "./lib/auth";
+import { WorkspaceHostMismatch } from "./lib/workspace-host";
 import {
   priorStaffState,
   staffIdentityCookie,
@@ -48,6 +49,17 @@ export async function proxy(request: NextRequest) {
     return withStaffCookies(request, response);
   } catch (error) {
     const status = error instanceof AppError ? error.status : 503;
+    if (page && error instanceof WorkspaceHostMismatch && error.origin) {
+      const response = NextResponse.redirect(
+        new URL(
+          request.nextUrl.pathname + request.nextUrl.search,
+          error.origin,
+        ),
+        307,
+      );
+      response.headers.set("Cache-Control", "no-store");
+      return response;
+    }
     if (
       page &&
       (status === 401 ||

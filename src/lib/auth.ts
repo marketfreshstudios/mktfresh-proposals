@@ -12,6 +12,7 @@ import {
 } from "./staff-session";
 import { AppError, type Actor } from "./model";
 import { supabase } from "./repository";
+import { checkStaffWorkspaceHost } from "./workspace-host";
 export function equalSecret(a: string, b: string) {
   const aa = Buffer.from(a),
     bb = Buffer.from(b);
@@ -98,6 +99,7 @@ async function checkStaff(request: Request): Promise<StaffActor> {
   };
   keepStaffSession(request, credentials);
   if (member.data.password_change_required) throw new StaffPasswordRequired();
+  await checkStaffWorkspaceHost(request, member.data.workspace_id);
   return {
     ...actor(request, "staff:" + user.id),
     workspace_id: member.data.workspace_id,
