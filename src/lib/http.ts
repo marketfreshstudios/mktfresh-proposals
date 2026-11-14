@@ -220,6 +220,17 @@ import { CONSENT, hashPassword, sha256 } from "./content";
 import { requestHost } from "./workspace-address";
 import { sendTrialEmails } from "./plan-email";
 import {
+  SelectionSchema,
+  billingMailer,
+  billingOverview,
+  databaseBillingStore,
+  handleBillingWebhook,
+  openPortal,
+  previewSelection,
+  startCheckout,
+  yeswellStripe,
+} from "./yeswell-billing";
+import {
   WorkspaceReadOnly,
   allowedWhileReadOnly,
   assertWorkspaceWritable,
@@ -483,6 +494,21 @@ async function handleRoute(
       if (hint) response.headers.append("Set-Cookie", hint);
       await recordStaffDevice(req, session);
       return setStaffCookies(response, session);
+    }
+    if (path.join("/") === "billing/webhook" && method === "POST") {
+      const raw = await req.text();
+      check(Buffer.byteLength(raw) < 2000000, "Request too large", 413);
+      return json(
+        await handleBillingWebhook(
+          raw,
+          req.headers.get("stripe-signature") ?? "",
+          {
+            stripe: yeswellStripe(),
+            store: databaseBillingStore(),
+            mail: billingMailer(),
+          },
+        ),
+      );
     }
     if (path[0] === "webhooks" && path[1] === "stripe" && method === "POST") {
       const isConnect = path[2] === "connect";
@@ -1022,6 +1048,78 @@ async function handleRoute(
         return json({ signed_out: true });
       }
       throw new AppError(404, "Security settings route not found");
+    }
+    if (path[0] === "billing") {
+      const local = process.env.APP_MODE === "local";
+      const members = await workspaceStaff(user.workspace_id);
+      if (path.length === 1 && method === "GET") {
+        const owners = members
+          .filter(
+            (m) =>
+              m.role === "owner" &&
+              ("status" in m ? m.status : "active") !== "deactivated",
+          )
+          .map((m) => m.display_name || m.name);
+        if (user.staff_role !== "owner") return json({ owner: false, owners });
+        const stripe = process.env.YESWELL_STRIPE_SECRET_KEY
+          ? yeswellStripe()
+          : null;
+        return json({
+          owner: true,
+          owners,
+          plan: await workspacePlan(user.workspace_id),
+          people_in_use: members.filter(
+            (m) => ("status" in m ? m.status : "active") !== "deactivated",
+          ).length,
+          ...(local
+            ? {
+                subscribed: false,
+                not_billed: false,
+                subscription: null,
+                launch_price: false,
+                launch_spots_left: 25,
+                card: null,
+                billing_ready: !!stripe,
+              }
+            : await billingOverview(
+                stripe,
+                databaseBillingStore(),
+                user.workspace_id,
+              )),
+        });
+      }
+      check(
+        user.staff_role === "owner",
+        "Only workspace owners can change billing.",
+        403,
+      );
+      check(sameOrigin(req), "Same-origin request required", 403);
+      if (path[1] === "preview" && method === "POST")
+        return json(
+          await previewSelection(
+            yeswellStripe(),
+            SelectionSchema.parse(await body(req)),
+          ),
+        );
+      if (path[1] === "checkout" && method === "POST")
+        return json(
+          await startCheckout(
+            yeswellStripe(),
+            databaseBillingStore(),
+            user.workspace_id,
+            { email: user.staff_email },
+            SelectionSchema.parse(await body(req)),
+          ),
+        );
+      if (path[1] === "portal" && method === "POST")
+        return json(
+          await openPortal(
+            yeswellStripe(),
+            databaseBillingStore(),
+            user.workspace_id,
+          ),
+        );
+      throw new AppError(404, "Not found");
     }
     const rt = await workspaceRuntime(user.workspace_id);
     if (path[0] === "account") {
