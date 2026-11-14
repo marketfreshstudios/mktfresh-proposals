@@ -12,7 +12,7 @@ import {
 } from "./lib/staff-security-session";
 export function staffPagePath(path: string) {
   return (
-    !/^\/(?:api|login|set-password|p|oauth|mcp|_next|fonts|brand|schemas|\.well-known)(?:\/|$)/.test(
+    !/^\/(?:api|login|set-password|start|p|oauth|mcp|_next|fonts|brand|schemas|\.well-known)(?:\/|$)/.test(
       path,
     ) &&
     ![
@@ -112,7 +112,7 @@ export async function proxy(request: NextRequest) {
 }
 export const config = {
   matcher: [
-    "/((?!api(?:/|$)|login(?:/|$)|set-password(?:/|$)|p(?:/|$)|oauth(?:/|$)|mcp(?:/|$)|\\.well-known(?:/|$)|_next(?:/|$)|fonts(?:/|$)|schemas(?:/|$)|favicon.ico$|pdf.worker.min.mjs$|pdfjs-LICENSE.txt$).*)",
+    "/((?!api(?:/|$)|login(?:/|$)|set-password(?:/|$)|start(?:/|$)|p(?:/|$)|oauth(?:/|$)|mcp(?:/|$)|\\.well-known(?:/|$)|_next(?:/|$)|fonts(?:/|$)|schemas(?:/|$)|favicon.ico$|pdf.worker.min.mjs$|pdfjs-LICENSE.txt$).*)",
     "/api/proposals/:path*",
     "/api/reports/:path*",
     "/api/clients/:path*",

@@ -18,7 +18,7 @@ import {
 } from "./email-templates";
 import { emailLayout } from "./email-layout";
 import { escape } from "./presentation";
-import { appOrigin } from "./links";
+import { workspaceOrigin } from "./links";
 import {
   staffFromAddress,
   workspaceSecuritySender,
@@ -67,7 +67,10 @@ export async function sendTeamEmail(
     "Email subject must resolve to one line",
     409,
   );
-  const url = new URL("/set-password", appOrigin());
+  const url = new URL(
+    "/set-password",
+    workspaceOrigin(settings?.workspace_slug),
+  );
   url.hash = new URLSearchParams({
     token_hash: input.token,
     type: input.type,
@@ -75,7 +78,7 @@ export async function sendTeamEmail(
   const layout = (buttonUrl: string) =>
     emailLayout({
       staff: true,
-      origin: appOrigin(),
+      origin: workspaceOrigin(settings?.workspace_slug),
       title: key === "team_invite" ? "You're invited" : "Choose a new password",
       bodyHtml: body.html,
       bodyText: body.text,
@@ -106,7 +109,9 @@ export async function sendTeamEmail(
     `team:${repo.workspaceId}:${id}`,
   );
   // Log the rendered message, but never retain a reusable password/invite credential.
-  const redacted = layout(`${appOrigin()}/set-password`);
+  const redacted = layout(
+    `${workspaceOrigin(settings?.workspace_slug)}/set-password`,
+  );
   await repo.put("email_log", {
     id,
     proposal_id: null,
@@ -119,7 +124,7 @@ export async function sendTeamEmail(
       ...redacted,
       body_html: body.html,
       button_label: t.button_label,
-      button_url: `${appOrigin()}/set-password`,
+      button_url: `${workspaceOrigin(settings?.workspace_slug)}/set-password`,
       to: input.email,
       ...identity,
       prepared_at: new Date().toISOString(),
@@ -147,11 +152,14 @@ export async function sendPasswordChangedEmail(
   const title = "Your Yeswell password was changed";
   const body = "Your Yeswell account now uses your new password.";
   const help = "Not you? Contact your workspace admin right away.";
-  const button = { label: "Sign in", url: `${appOrigin()}/login` };
+  const button = {
+    label: "Sign in",
+    url: `${workspaceOrigin(settings?.workspace_slug)}/login`,
+  };
   const layout = emailLayout({
     title,
     staff: true,
-    origin: appOrigin(),
+    origin: workspaceOrigin(settings?.workspace_slug),
     bodyHtml: `<p>${escape(body)}</p><p>${escape(help)}</p>`,
     bodyText: `${body}\n\n${help}`,
     button,

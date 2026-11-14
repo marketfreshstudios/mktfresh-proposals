@@ -49,6 +49,7 @@ export default defineConfig({
         DEV_STAFF_TOKEN: "e2e-staff-secret-only",
         APP_URL: "http://127.0.0.1:3100",
         CRON_SECRET: "e2e-cron-only",
+        SIGNUP_ENABLED: "true",
       },
     },
     {

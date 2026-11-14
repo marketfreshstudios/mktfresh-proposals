@@ -744,3 +744,70 @@
     var(--border-strong) 50%
   );
 }
+
+/* Signup (app.yeswell.co/start). */
+.account-screen .signup-names {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.account-screen .signup-address {
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-field, 8px);
+  background: var(--surface);
+  overflow: hidden;
+}
+.account-screen .signup-address:has(input:focus-visible) {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-offset);
+}
+.account-screen .field .signup-address input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  outline: none;
+}
+.account-screen .signup-address-domain {
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  border-inline-start: 1px solid var(--border);
+  background: var(--surface-page);
+  color: var(--ink-muted);
+  font-weight: 400;
+  white-space: nowrap;
+}
+.account-screen .signup-address-hint {
+  min-height: 18px;
+  color: var(--ink-muted);
+  font-weight: 400;
+}
+.account-screen .signup-address-hint.ok {
+  color: var(--success);
+}
+.account-screen .signup-address-hint.error {
+  color: var(--danger);
+}
+.account-screen .signup-address-hint .account-forgot,
+.account-screen .signup-legal + * .account-forgot,
+.account-screen p .account-forgot {
+  min-height: 0;
+  margin: 0;
+  display: inline;
+  font: inherit;
+}
+.account-screen .signup-legal {
+  margin: 0;
+  font-size: 13px;
+}
+.account-screen .signup-legal a,
+.account-screen .account-frame p a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
