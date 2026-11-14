@@ -3,6 +3,7 @@ import {
   SignupError,
   addressFromName,
   checkAddress,
+  resendSignup,
   startSignup,
   type SignupDeps,
 } from "../src/lib/signup";
@@ -37,6 +38,7 @@ function fakes(over: Partial<SignupDeps> = {}) {
     updatePendingUser: async (id) => void calls.push("update:" + id),
     reserve: async () => "reserved",
     link: async () => "hash/with+chars",
+    pending: async () => null,
     send: async (m) => void sent.push(m),
     from: () => '"Yeswell" <notifications@example.test>',
     ...over,
@@ -147,6 +149,79 @@ describe("signup", () => {
       startSignup({ ...input, extra: 1 }, "ip", fakes().deps),
     ).rejects.toThrow();
     for (const f of [taken, raced, limited]) expect(f.sent).toHaveLength(0);
+  });
+});
+
+describe("picking up a signup", () => {
+  it("lets the same person continue on their own held address instead of calling it taken", async () => {
+    const f = fakes({
+      addressFree: async () => false, // held by this person's earlier signup
+      identity: async () => ({
+        id: "u9",
+        workspace_id: null,
+        confirmed: false,
+      }),
+    });
+    const result = await startSignup({ ...input, slug: "taken" }, "ip", f.deps);
+    expect(result.email).toBe("dana@northstar.test");
+    expect(f.calls).toEqual(["update:u9"]);
+    expect(f.sent[0].text).toContain("This link works for 24 hours.");
+  });
+  it("resends only to a held signup and answers the same either way", async () => {
+    const held = fakes({
+      identity: async () => ({
+        id: "u9",
+        workspace_id: null,
+        confirmed: false,
+      }),
+      pending: async () => ({
+        slug: "northstar",
+        business_name: "North Star Creative",
+        display_name: "Dana Ruiz",
+      }),
+    });
+    expect(
+      await resendSignup({ email: "Dana@NorthStar.test" }, "ip", held.deps),
+    ).toEqual({ sent: true });
+    expect(held.sent).toHaveLength(1);
+    expect(held.sent[0].text).toContain("Hi Dana,");
+    expect(held.sent[0].text).toContain(
+      "https://northstar.example.test/start/confirm#token_hash=",
+    );
+    for (const over of [
+      { identity: async () => null },
+      {
+        identity: async () => ({
+          id: "u9",
+          workspace_id: "w",
+          confirmed: true,
+        }),
+      },
+      {
+        identity: async () => ({
+          id: "u9",
+          workspace_id: null,
+          confirmed: false,
+        }),
+        pending: async () => null,
+      },
+    ]) {
+      const f = fakes(over as Partial<SignupDeps>);
+      expect(
+        await resendSignup({ email: "dana@northstar.test" }, "ip", f.deps),
+      ).toEqual({ sent: true });
+      expect(f.sent).toHaveLength(0);
+    }
+    const limited = fakes({ admit: async () => false });
+    expect(
+      (
+        await resendSignup(
+          { email: "dana@northstar.test" },
+          "ip",
+          limited.deps,
+        ).catch((x) => x)
+      ).status,
+    ).toBe(429);
   });
 });
 

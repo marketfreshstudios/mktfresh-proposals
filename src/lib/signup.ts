@@ -82,6 +82,14 @@ export type SignupDeps = {
     fullName: string,
   ): Promise<"reserved" | "address_taken" | "member">;
   link(email: string): Promise<string>;
+  /** The person's unexpired signup hold, if any. */
+  pending(
+    user: string,
+  ): Promise<{
+    slug: string;
+    business_name: string;
+    display_name: string;
+  } | null>;
   send(
     message: {
       from: string;
@@ -154,16 +162,58 @@ const emailHasWorkspace = () =>
     "email_has_workspace",
   );
 
-export async function startSignup(raw: unknown, ip: string, deps: SignupDeps) {
-  const input = SignupSchema.parse(raw);
-  const from = deps.from();
-  check(from, "Signup email is not set up yet", 503);
-  if (!(await deps.admit(keyHash("email", input.email), keyHash("ip", ip))))
+async function sendConfirmation(
+  deps: SignupDeps,
+  from: string,
+  p: {
+    user: string;
+    email: string;
+    first_name: string;
+    business_name: string;
+    slug: string;
+  },
+) {
+  const origin = workspaceOrigin(p.slug);
+  const url = `${origin}/start/confirm#token_hash=${encodeURIComponent(await deps.link(p.email))}`;
+  // Name the address only when workspaces have their own; otherwise the business.
+  const address = workspaceDomain() ? new URL(origin).host : null;
+  const email = yeswellEmail({
+    origin,
+    title: "Confirm your email",
+    greeting: `Hi ${p.first_name},`,
+    paragraphs: [
+      `Confirm your email to finish setting up ${address ?? p.business_name}.`,
+      "This link works for 24 hours. If you didn't start a Yeswell trial, you can ignore this email.",
+    ],
+    button: { label: "Confirm email", url },
+    workspace: p.business_name,
+  });
+  await deps.send(
+    {
+      from,
+      to: p.email,
+      subject: `Confirm your email to finish setting up ${p.business_name}`,
+      ...email,
+    },
+    `signup:${p.user}:${Date.now()}`,
+  );
+  return { email: p.email, address, business_name: p.business_name };
+}
+
+async function admitOrRefuse(deps: SignupDeps, email: string, ip: string) {
+  if (!(await deps.admit(keyHash("email", email), keyHash("ip", ip))))
     throw new SignupError(
       429,
       "Too many signup attempts. Try again in an hour.",
       "rate_limited",
     );
+}
+
+export async function startSignup(raw: unknown, ip: string, deps: SignupDeps) {
+  const input = SignupSchema.parse(raw);
+  const from = deps.from();
+  check(from, "Signup email is not set up yet", 503);
+  await admitOrRefuse(deps, input.email, ip);
   const fullName = `${input.first_name} ${input.last_name}`;
   const taken = async () =>
     new SignupError(
@@ -172,9 +222,11 @@ export async function startSignup(raw: unknown, ip: string, deps: SignupDeps) {
       "address_taken",
       await suggestAddress(input.slug, deps),
     );
-  if (!(await deps.addressFree(input.slug))) throw await taken();
   const identity = await deps.identity(input.email);
   if (identity?.workspace_id || identity?.confirmed) throw emailHasWorkspace();
+  // Someone who already started can pick up where they left off: their own
+  // hold on the address isn't "taken". The hold itself decides below.
+  if (!identity && !(await deps.addressFree(input.slug))) throw await taken();
   // An unconfirmed identity has never proven it owns the email; the person who
   // does can always start over, and only they receive the link.
   const user = identity
@@ -189,31 +241,39 @@ export async function startSignup(raw: unknown, ip: string, deps: SignupDeps) {
   );
   if (reserved === "member") throw emailHasWorkspace();
   if (reserved === "address_taken") throw await taken();
-  const origin = workspaceOrigin(input.slug);
-  const url = `${origin}/start/confirm#token_hash=${encodeURIComponent(await deps.link(input.email))}`;
-  // Name the address only when workspaces have their own; otherwise the business.
-  const address = workspaceDomain() ? new URL(origin).host : null;
-  const email = yeswellEmail({
-    origin,
-    title: "Confirm your email",
-    greeting: `Hi ${input.first_name},`,
-    paragraphs: [
-      `Confirm your email to finish setting up ${address ?? input.business_name}.`,
-      "This link works for 1 hour. If you didn't start a Yeswell trial, you can ignore this email.",
-    ],
-    button: { label: "Confirm email", url },
-    workspace: input.business_name,
-  });
-  await deps.send(
-    {
-      from,
-      to: input.email,
-      subject: `Confirm your email to finish setting up ${input.business_name}`,
-      ...email,
-    },
-    `signup:${user}:${Date.now()}`,
-  );
-  return { email: input.email, address, business_name: input.business_name };
+  return sendConfirmation(deps, from!, { user, ...input });
+}
+
+/** Sends a new link to a signup that is still held (under 24 hours old). The
+ * answer is the same either way, so it never reveals who has signed up. */
+export async function resendSignup(raw: unknown, ip: string, deps: SignupDeps) {
+  const { email } = z
+    .object({
+      email: z
+        .string()
+        .trim()
+        .max(254)
+        .pipe(z.email())
+        .transform((e) => e.toLowerCase()),
+    })
+    .strict()
+    .parse(raw);
+  const from = deps.from();
+  check(from, "Signup email is not set up yet", 503);
+  await admitOrRefuse(deps, email, ip);
+  const identity = await deps.identity(email);
+  if (identity && !identity.confirmed && !identity.workspace_id) {
+    const pending = await deps.pending(identity.id);
+    if (pending)
+      await sendConfirmation(deps, from!, {
+        user: identity.id,
+        email,
+        first_name: pending.display_name.split(" ")[0],
+        business_name: pending.business_name,
+        slug: pending.slug,
+      });
+  }
+  return { sent: true };
 }
 
 export async function completeSignup(raw: unknown) {
@@ -306,6 +366,16 @@ export function supabaseSignupDeps(): SignupDeps {
         503,
       );
       return data.properties!.hashed_token;
+    },
+    async pending(user) {
+      const { data, error } = await db
+        .from("workspace_signups")
+        .select("slug,business_name,display_name")
+        .eq("user_id", user)
+        .gt("expires_at", new Date().toISOString())
+        .maybeSingle();
+      if (error) throw new AppError(503, "Signup is unavailable. Try again.");
+      return data;
     },
     send: (message, key) => mailer.send(message, key),
     from: () => yeswellFrom(),

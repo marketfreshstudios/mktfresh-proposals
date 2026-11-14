@@ -39,6 +39,8 @@ export function StartSignup({
     }),
     [error, setError] = useState<{ message: string; signIn?: boolean }>(),
     [busy, setBusy] = useState(false),
+    [resending, setResending] = useState(false),
+    [resent, setResent] = useState(false),
     [sent, setSent] = useState<{
       email: string;
       address: string | null;
@@ -93,15 +95,40 @@ export function StartSignup({
           setting up <strong>{sent.address ?? sent.business_name}</strong>.
         </p>
         <p className="muted">
-          The link works for 1 hour. Wrong email?{" "}
+          The link works for 24 hours. Wrong email?{" "}
           <button
             type="button"
             className="account-forgot"
-            onClick={() => setSent(undefined)}
+            onClick={() => {
+              setSent(undefined);
+              setResent(false);
+            }}
           >
             Start over
           </button>
         </p>
+        <Button
+          busy={resending}
+          disabled={resent}
+          onClick={async () => {
+            setResending(true);
+            try {
+              await post("/api/signup/resend", { email: sent.email });
+              setResent(true);
+            } catch (e) {
+              setError({ message: (e as Error).message });
+            } finally {
+              setResending(false);
+            }
+          }}
+        >
+          {resent ? "Email sent again" : "Resend email"}
+        </Button>
+        {error && (
+          <Banner tone="danger" title="Couldn't resend">
+            {error.message}
+          </Banner>
+        )}
       </StaffAuthFrame>
     );
 
@@ -111,7 +138,10 @@ export function StartSignup({
       : availability.state === "invalid"
         ? { tone: "error", text: "Use 3 to 30 letters, numbers or hyphens." }
         : availability.state === "taken"
-          ? { tone: "error", text: `${slug} is taken.` }
+          ? {
+              tone: "error",
+              text: `${slug} is taken. Started already? Use the same email to continue.`,
+            }
           : null;
 
   return (
@@ -252,9 +282,7 @@ export function StartSignup({
           variant="primary"
           className="action"
           busy={busy}
-          disabled={
-            availability.state === "taken" || availability.state === "invalid"
-          }
+          disabled={availability.state === "invalid"}
         >
           Start free trial
         </Button>

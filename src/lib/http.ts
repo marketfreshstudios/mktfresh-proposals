@@ -243,6 +243,7 @@ import {
   SignupError,
   checkAddress,
   completeSignup,
+  resendSignup,
   signupEnabled,
   signupIp,
   startSignup,
@@ -394,6 +395,22 @@ async function handleRoute(
               },
               400,
             );
+          throw e;
+        }
+      }
+      if (path[1] === "resend" && path.length === 2 && method === "POST") {
+        check(sameOrigin(req), "Same-origin request required", 403);
+        try {
+          return json(
+            await resendSignup(
+              await body(req),
+              signupIp(req.headers),
+              supabaseSignupDeps(),
+            ),
+          );
+        } catch (e) {
+          if (e instanceof SignupError)
+            return json({ error: e.message, code: e.code }, e.status);
           throw e;
         }
       }
