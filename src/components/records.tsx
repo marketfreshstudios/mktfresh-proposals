@@ -4655,12 +4655,8 @@ function ClientDetailHeader({
           {actions}
         </div>
       </div>
+      {/* No initials here: the name says it. A client logo may come later. */}
       <div className="client-identity">
-        {client ? (
-          <ClientInitials company={client.company} />
-        ) : (
-          <span className="client-initials" aria-hidden="true" />
-        )}
         <div className="client-identity-copy">
           <div className="client-detail-name">
             <h1 className="t-page-title">

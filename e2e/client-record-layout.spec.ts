@@ -153,6 +153,10 @@ test("client records put contact first on narrow screens and keep billing histor
     ).toBeVisible();
     await expect(page.getByRole("heading", { name: "Billing" })).toBeVisible();
     await expect(page.locator(".client-detail-header .action")).toHaveCount(1);
+    // No initials square in the header; the name stands alone.
+    await expect(page.locator(".client-identity .client-initials")).toHaveCount(
+      0,
+    );
     // Neither provider is connected here: one short card, no row details.
     await expect(
       page.getByText("Stripe and QuickBooks aren’t connected", { exact: true }),
