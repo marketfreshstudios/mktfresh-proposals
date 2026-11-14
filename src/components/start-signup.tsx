@@ -2,6 +2,7 @@
 import { PasswordInput } from "./form-controls";
 import { useEffect, useRef, useState } from "react";
 import { StaffAuthFrame } from "./staff-auth-frame";
+import { forgetShellIdentity } from "./staff-shell";
 import { post, Field, Button, Banner, ApiError } from "./ui";
 
 const TERMS = "https://yeswell.co/terms";
@@ -312,6 +313,7 @@ export function ConfirmSignup() {
     }
     post("/api/signup/confirm", { token_hash: token })
       .then((result: { origin: string }) => {
+        forgetShellIdentity();
         location.href =
           new URL(result.origin).host === location.host ? "/" : result.origin;
       })

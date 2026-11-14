@@ -1,6 +1,7 @@
 "use client";
 import { PasswordInput } from "./form-controls";
 import { StaffAuthFrame } from "./staff-auth-frame";
+import { forgetShellIdentity } from "./staff-shell";
 import { useEffect, useState } from "react";
 import { post, Field, Button, Banner, ApiError } from "./ui";
 export function SetStaffPassword() {
@@ -66,6 +67,7 @@ export function SetStaffPassword() {
               ...link,
               password: f.get("password"),
             });
+            forgetShellIdentity();
             location.href = "/";
           } catch (e) {
             if (e instanceof ApiError && e.status === 410) setClosed("expired");
