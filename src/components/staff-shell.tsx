@@ -4,7 +4,7 @@ import { WorkspaceMark } from "./workspace-mark";
 import { YeswellBrand } from "./yeswell-brand";
 import { Sheet } from "./foundation";
 import { StaffIconContext, chromeIcons } from "./staff-icons";
-import { useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useState, type ReactNode } from "react";
 import { Icon, Button } from "./ui";
 import { MoneyProvider } from "./money-context";
 import { studioRoutes } from "../lib/staff-routes";
@@ -12,6 +12,23 @@ import { staffPageName } from "../lib/staff-brand";
 import type { WorkspaceSettings } from "../lib/workspace";
 import type { StaffAccount } from "../lib/staff-account-model";
 import { StaffAccountProvider } from "./staff-account-context";
+
+// The sidebar's workspace name, logo and signed-in person, remembered in this
+// browser so they show straight away while a page loads.
+const identityKey = "yeswell:shell-identity";
+type ShellIdentity = {
+  workspace: Pick<WorkspaceSettings, "company_name" | "logo_icon">;
+  name: string;
+  email: string;
+  role?: "owner" | "member";
+};
+const useBeforePaint =
+  typeof window === "undefined" ? useEffect : useLayoutEffect;
+export function forgetShellIdentity() {
+  try {
+    localStorage.removeItem(identityKey);
+  } catch {}
+}
 
 const primary = [
   ["/", "Home", "home"],
@@ -47,6 +64,35 @@ export function StaffShell({
   record?: boolean;
 }) {
   const [drawer, setDrawer] = useState(false);
+  const [remembered, setRemembered] = useState<ShellIdentity | null>(null);
+  useBeforePaint(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(identityKey) ?? "null");
+      if (saved?.workspace?.company_name) setRemembered(saved);
+    } catch {}
+  }, []);
+  useEffect(() => {
+    if (!settings || !name) return;
+    try {
+      localStorage.setItem(
+        identityKey,
+        JSON.stringify({
+          workspace: {
+            company_name: settings.company_name,
+            logo_icon: settings.logo_icon ?? null,
+          },
+          name,
+          email,
+          role,
+        } satisfies ShellIdentity),
+      );
+    } catch {}
+  }, [settings, name, email, role]);
+  // Live values win; the remembered ones only fill the gap while loading.
+  const shownSettings = settings ?? remembered?.workspace ?? null;
+  const shownName = name || remembered?.name || "";
+  const shownEmail = email || remembered?.email || "";
+  const shownRole = role ?? (name ? undefined : remembered?.role);
   const current = "/" + path.join("/");
   const studio = path[0] === "studio";
   const studioPage =
@@ -110,8 +156,8 @@ export function StaffShell({
   }
   const workspace = (
     <>
-      <WorkspaceMark settings={settings} />
-      <strong>{settings?.company_name ?? "Workspace"}</strong>
+      <WorkspaceMark settings={shownSettings} />
+      <strong>{shownSettings?.company_name ?? "Workspace"}</strong>
     </>
   );
   return (
@@ -132,10 +178,13 @@ export function StaffShell({
               {sideNavigation()}
               <footer>
                 <StudioAccount
-                  name={name}
-                  email={email}
-                  role={role}
-                  onSignout={onSignout}
+                  name={shownName}
+                  email={shownEmail}
+                  role={shownRole}
+                  onSignout={() => {
+                    forgetShellIdentity();
+                    onSignout();
+                  }}
                 />
               </footer>
             </aside>
@@ -164,10 +213,13 @@ export function StaffShell({
                     <span className="tablet-workspace-label">{workspace}</span>
                   )}
                   <StudioAccount
-                    name={name}
-                    email={email}
-                    role={role}
-                    onSignout={onSignout}
+                    name={shownName}
+                    email={shownEmail}
+                    role={shownRole}
+                    onSignout={() => {
+                      forgetShellIdentity();
+                      onSignout();
+                    }}
                   />
                 </div>
               )}
