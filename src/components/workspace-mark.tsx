@@ -2,7 +2,7 @@ import type { WorkspaceSettings } from "../lib/workspace";
 export function WorkspaceMark({
   settings,
 }: {
-  settings?: WorkspaceSettings | null;
+  settings?: Pick<WorkspaceSettings, "company_name" | "logo_icon"> | null;
 }) {
   return settings?.logo_icon ? (
     <img

@@ -1061,3 +1061,27 @@ test("Duplicate asks who the proposal is for, and a never-sent draft can change 
     }),
   ).toHaveCount(0);
 });
+
+test("the sidebar keeps the workspace and signed-in person while a page loads", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await scenario(page);
+  await page.goto("/");
+  const workspace = page.locator(".sidebar .workspace-label strong");
+  await expect(workspace).not.toHaveText("Workspace");
+  const company = await workspace.textContent();
+  const person = await page.locator(".sidebar footer").innerText();
+  // Hold the session so the page stays loading, then navigate.
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => (release = resolve));
+  await page.route("**/api/auth/session", async (route) => {
+    await held;
+    await route.continue();
+  });
+  await page.goto("/clients");
+  await expect(workspace).toHaveText(company!);
+  await expect(page.locator(".sidebar footer")).toHaveText(person);
+  release();
+  await page.unroute("**/api/auth/session");
+});
