@@ -10,6 +10,8 @@ test("password fields have an eye button that shows and hides the password", asy
     const field = page.getByLabel("Password", { exact: true });
     await field.fill("correct horse");
     await expect(field).toHaveAttribute("type", "password");
+    // The eye button's name doesn't leak into the field's name.
+    await expect(field).toHaveAccessibleName("Password");
     const eye = page.getByRole("button", { name: "Show password" });
     await eye.click();
     await expect(field).toHaveAttribute("type", "text");
