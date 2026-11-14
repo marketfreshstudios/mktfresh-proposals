@@ -5,7 +5,7 @@ export async function generateMetadata({
   params: Promise<{ screen: string[] }>;
 }) {
   const { screen } = await params;
-  return screen[0] === "billing"
+  return screen[0] === "billing" && screen[1]
     ? { title: "Billing setup" }
     : staffMetadata(staffPageName(screen));
 }

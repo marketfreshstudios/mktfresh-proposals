@@ -1,5 +1,6 @@
 "use client";
 import type { PlanState } from "../lib/plan";
+import { BillingPage } from "./billing-page";
 import { withCount } from "../lib/count-label";
 import { StaffTable, StaffTableEmpty, StaffNativeTable } from "./staff-table";
 import { Select } from "./form-controls";
@@ -306,11 +307,11 @@ function StaffAppContent({
     }
   }
   useEffect(() => {
-    if (section !== "billing")
+    if (section !== "billing" || !id)
       document.title = `${p?.title ?? staffPageName(path)} | Yeswell`;
   }, [section, p?.title, path.join("/")]);
   useEffect(() => {
-    if (section !== "login" && section !== "billing") void load();
+    if (section !== "login" && !(section === "billing" && id)) void load();
   }, [section, id, action, reportShell]);
   // Workspace fixes (e.g. business state) are made in a new tab from the
   // editor's readiness notices; refresh settings when staff come back so the
@@ -361,7 +362,7 @@ function StaffAppContent({
     ) : (
       <Login local={local} initialState={query.state} />
     );
-  if (section === "billing")
+  if (section === "billing" && id)
     return (
       <div className="login card">
         <h1>
@@ -654,6 +655,8 @@ function StaffAppContent({
     await post("/api/auth/logout");
     location.href = "/login";
   }
+  if (section === "billing")
+    content = <BillingPage returned={query.checkout === "done"} />;
   if (section === "account")
     content = (
       <AccountPage
