@@ -90,6 +90,16 @@ describe("workspace addresses", () => {
       lookup,
     ).catch((x) => x);
     expect(none.origin).toBe("https://marketfresh.example.test");
+    // Their own address is judged by the Host header, not request.url.
+    const proxied = await checkStaffWorkspaceHost(
+      new Request("https://internal.vercel.test/proposals", {
+        headers: { host: "acme.example.test" },
+      }),
+      C,
+      { ...lookup, slugForId: async () => "acme", idForSlug: async () => B },
+    ).catch((x) => x);
+    expect(proxied).toBeInstanceOf(WorkspaceHostMismatch);
+    expect(proxied.origin).toBeNull();
     // Hosts that aren't workspace addresses are left alone.
     await expect(
       checkStaffWorkspaceHost(req("app.example.test"), B, lookup),

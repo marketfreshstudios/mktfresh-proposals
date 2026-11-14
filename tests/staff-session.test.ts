@@ -41,6 +41,7 @@ vi.mock("../src/lib/runtime", () => ({
 }));
 import { handle } from "../src/lib/http";
 import { proxy } from "../src/proxy";
+import { forgetWorkspaceAddresses } from "../src/lib/workspace-host";
 import { staff } from "../src/lib/auth";
 import { STAFF_SESSION_AGE, staffCookiePair } from "../src/lib/staff-session";
 const accessToken = (tag: string) =>
@@ -339,4 +340,48 @@ it("staff pages redirect before rendering, preserve query, and refresh without a
     expect(response.status).toBe(200);
     expect(response.headers.get("location")).toBeNull();
   }
+});
+
+it("a sign-in on another workspace's address is cleared there and never redirects to itself", async () => {
+  vi.stubEnv("WORKSPACE_DOMAIN", "example.test");
+  const page = () =>
+    new NextRequest("https://acme.example.test/proposals", {
+      headers: {
+        host: "acme.example.test",
+        cookie: `proposal_session=${validAccess}`,
+      },
+    });
+  const cleared = (r: Response) =>
+    r.headers
+      .getSetCookie()
+      .some(
+        (c) => c.startsWith("proposal_session=;") && c.includes("Max-Age=0"),
+      );
+  vi.stubEnv("APP_URL", "https://app.example.test");
+  // Lookups share the mocked query: the address belongs to another workspace,
+  // and this account's own address is `slug`.
+  const owns = async (slug: string) => {
+    const { data } = await state.member();
+    state.member.mockResolvedValue({
+      data: { ...data, id: "00000000-0000-4000-8000-0000000000ff", slug },
+      error: null,
+    });
+  };
+  // Their own address is this one (stale data): sign-in here, signed out.
+  forgetWorkspaceAddresses();
+  await owns("acme");
+  const here = await proxy(page());
+  expect(here.status).toBe(307);
+  expect(new URL(here.headers.get("location")!).pathname).toBe("/login");
+  expect(new URL(here.headers.get("location")!).host).toBe("acme.example.test");
+  expect(cleared(here)).toBe(true);
+  // Somewhere else to go: sent there, and signed out here.
+  forgetWorkspaceAddresses();
+  await owns("bravo");
+  const away = await proxy(page());
+  expect(away.status).toBe(307);
+  expect(away.headers.get("location")).toBe(
+    "https://bravo.example.test/proposals",
+  );
+  expect(cleared(away)).toBe(true);
 });
