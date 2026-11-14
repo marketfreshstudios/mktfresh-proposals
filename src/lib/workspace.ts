@@ -42,6 +42,8 @@ export const WorkspaceSettingsSchema = z.object({
     .union([z.url({ protocol: /^https?$/ }).max(500), z.literal("")])
     .optional(),
   company_name: z.string().min(1).max(200),
+  // Read from workspaces.slug on load; never saved from settings.
+  workspace_slug: z.string().max(40).nullable().optional(),
   owner: z.string().max(200),
   company_signatory: CompanySignatorySchema.nullable().optional(),
   email: z.email(),

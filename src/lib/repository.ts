@@ -1943,8 +1943,24 @@ export class SupabaseRepository implements Repository {
             : row.data;
         }),
       );
-      if (data.length < 500) return all;
+      if (data.length < 500)
+        return table === "workspace_settings"
+          ? ((await this.withWorkspaceSlug(all as never[])) as T[])
+          : all;
     }
+  }
+  // The address lives on workspaces (unique across workspaces); settings carry
+  // a read-only copy so links can be built without another lookup.
+  private async withWorkspaceSlug(settings: { workspace_slug?: string | null }[]) {
+    if (!settings.length) return settings;
+    const { data, error } = await this.db
+      .from("workspaces")
+      .select("slug")
+      .eq("id", this.workspaceId)
+      .maybeSingle();
+    if (error) throw error;
+    const workspace_slug = (data?.slug as string | null | undefined) ?? null;
+    return settings.map((s) => ({ ...s, workspace_slug }));
   }
   async finishDocumentRefresh<T extends { id: string }>(
     document: T,

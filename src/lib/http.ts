@@ -217,6 +217,7 @@ import {
   type EntityTable,
 } from "./repository";
 import { CONSENT, hashPassword, sha256 } from "./content";
+import { requestHost } from "./workspace-address";
 import {
   readReport,
   reportCsv,
@@ -251,19 +252,22 @@ async function workspaceDefaults(
   repo: Repository,
   user: { staff_name?: string; staff_email?: string },
 ) {
-  let company = "Your workspace";
+  let company = "Your workspace",
+    slug: string | null = null;
   if (repo instanceof SupabaseRepository) {
     const { data, error } = await supabase()
       .from("workspaces")
-      .select("name")
+      .select("name,slug")
       .eq("id", repo.workspaceId)
       .single();
     if (error) throw error;
     company = data.name;
+    slug = data.slug ?? null;
   }
   return WorkspaceSettingsSchema.parse({
     id: repo.workspaceId,
     company_name: company,
+    workspace_slug: slug,
     owner: user.staff_name ?? "",
     email: user.staff_email,
     phone: "",
@@ -481,7 +485,7 @@ async function handleRoute(
       const token = path[1],
         action = path[2],
         password = req.headers.get("x-proposal-password") ?? "",
-        rt = await publicRuntime(token);
+        rt = await publicRuntime(token, requestHost(req));
       resolvedClientLinks.add(req);
       const workspaceBrand = (
         await rt.repo.entities<WorkspaceSettings>("workspace_settings")
