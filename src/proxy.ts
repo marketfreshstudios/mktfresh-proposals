@@ -51,7 +51,10 @@ export async function proxy(request: NextRequest) {
     const status = error instanceof AppError ? error.status : 503;
     if (page && error instanceof WorkspaceHostMismatch && error.origin) {
       const response = NextResponse.redirect(
-        new URL(request.nextUrl.pathname + request.nextUrl.search, error.origin),
+        new URL(
+          request.nextUrl.pathname + request.nextUrl.search,
+          error.origin,
+        ),
         307,
       );
       response.headers.set("Cache-Control", "no-store");

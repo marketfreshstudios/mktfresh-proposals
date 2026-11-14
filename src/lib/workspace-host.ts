@@ -41,12 +41,14 @@ export const databaseAddresses: WorkspaceAddressLookup = {
     }),
 };
 // APP_URL keeps working for workspaces without an address, even when its host
-// looks like one (marketfresh.yeswell.co before that workspace claims it).
+// looks like one.
 function unclaimedAppHost(host: string, owner: string | null) {
   return owner === null && new URL(appOrigin()).host === host.toLowerCase();
 }
 function lookupFor(lookup?: WorkspaceAddressLookup) {
-  return lookup ?? (process.env.APP_MODE === "local" ? null : databaseAddresses);
+  return (
+    lookup ?? (process.env.APP_MODE === "local" ? null : databaseAddresses)
+  );
 }
 // Staff on another workspace's address are sent to their own. `origin` is
 // null when there is nowhere better to send them.

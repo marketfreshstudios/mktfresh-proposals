@@ -1951,7 +1951,9 @@ export class SupabaseRepository implements Repository {
   }
   // The address lives on workspaces (unique across workspaces); settings carry
   // a read-only copy so links can be built without another lookup.
-  private async withWorkspaceSlug(settings: { workspace_slug?: string | null }[]) {
+  private async withWorkspaceSlug(
+    settings: { workspace_slug?: string | null }[],
+  ) {
     if (!settings.length) return settings;
     const { data, error } = await this.db
       .from("workspaces")
