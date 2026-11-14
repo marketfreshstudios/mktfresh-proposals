@@ -40,12 +40,17 @@ test("signup: one card, live address check, confirmation screen", async ({
     const address = page.getByLabel("Your address");
     await expect(address).toHaveValue("north-star");
     await expect(page.getByText("Available")).toBeVisible();
-    // Taken: the suggestion is one tap away and submit waits for a free address.
+    // Taken: the suggestion is one tap away; submit stays on so someone who
+    // already started can continue with the same email.
     await address.fill("northstar");
-    await expect(page.getByText("northstar is taken.")).toBeVisible();
+    await expect(
+      page.getByText(
+        "northstar is taken. Started already? Use the same email to continue.",
+      ),
+    ).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Start free trial" }),
-    ).toBeDisabled();
+    ).toBeEnabled();
     if (out)
       await page.screenshot({
         path: `${out}/signup-taken-${width}.png`,
@@ -78,6 +83,17 @@ test("signup: one card, live address check, confirmation screen", async ({
       page.getByRole("heading", { name: "Check your email" }),
     ).toBeVisible();
     await expect(page.getByText("northstar-2.yeswell.co")).toBeVisible();
+    await expect(page.getByText("The link works for 24 hours.")).toBeVisible();
+    let resent: unknown;
+    await page.route("**/api/signup/resend", (r) => {
+      resent = r.request().postDataJSON();
+      r.fulfill({ json: { sent: true } });
+    });
+    await page.getByRole("button", { name: "Resend email" }).click();
+    await expect(
+      page.getByRole("button", { name: "Email sent again" }),
+    ).toBeDisabled();
+    expect(resent).toEqual({ email: "dana@example.test" });
     expect(sent).toMatchObject({
       business_name: "North Star Creative",
       slug: "northstar-2",
