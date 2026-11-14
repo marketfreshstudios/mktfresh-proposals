@@ -514,11 +514,19 @@ test("R27 proposal details: every state at 1440 and the phone frames at 375", as
       if (["2e", "2c"].includes(fixture.frame)) {
         await expect(questions).toHaveAttribute("data-collapsed", "true");
         await expect(questions.getByText("All resolved")).toBeVisible();
+        // Collapsed, the heading row is a card of its own.
+        await expect(questions).toHaveCSS("border-top-width", "1px");
+        await expect(questions).not.toHaveCSS(
+          "background-color",
+          "rgba(0, 0, 0, 0)",
+        );
         await expect(
           questions.getByText("When can we get started?"),
         ).toHaveCount(0);
       }
       if (fixture.frame === "2b4") {
+        // Open, the heading is plain; only the threads are carded.
+        await expect(questions).toHaveCSS("border-top-width", "0px");
         await expect(questions.getByText("1 waiting on you")).toBeVisible();
         await expect(
           questions.getByText("Can we review the scope in a call?"),
@@ -569,6 +577,22 @@ test("R27 proposal details: every state at 1440 and the phone frames at 375", as
           "overflow-y",
           "auto",
         );
+      }
+      // The client link and its copy button sit centered in the field.
+      const linkField = page.locator(
+        ".record-link-field:has(.record-client-link)",
+      );
+      if (await linkField.count()) {
+        const [field, url, copy] = await Promise.all(
+          [
+            linkField,
+            linkField.locator(".record-client-link .record-link-url"),
+            linkField.locator("button"),
+          ].map((l) => l.first().boundingBox()),
+        );
+        const middle = field!.y + field!.height / 2;
+        expect(Math.abs(url!.y + url!.height / 2 - middle)).toBeLessThan(1.5);
+        expect(Math.abs(copy!.y + copy!.height / 2 - middle)).toBeLessThan(1.5);
       }
       // Details dividers run the full height of the bar.
       if (fixture.frame !== "4a" && fixture.frame !== "4b") {
