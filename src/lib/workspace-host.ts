@@ -12,7 +12,8 @@ async function cached(key: string, load: () => Promise<string | null>) {
   const hit = cache.get(key);
   if (hit && Date.now() - hit.at < ttl) return hit.value;
   const value = await load();
-  cache.set(key, { value, at: Date.now() });
+  // A miss isn't remembered, so a newly claimed address works at once.
+  if (value !== null) cache.set(key, { value, at: Date.now() });
   return value;
 }
 export function forgetWorkspaceAddresses() {
@@ -51,7 +52,7 @@ function lookupFor(lookup?: WorkspaceAddressLookup) {
   );
 }
 // Staff on another workspace's address are sent to their own. `origin` is
-// null when there is nowhere better to send them.
+// null when there is nowhere better to send them (never this same host).
 export class WorkspaceHostMismatch extends AppError {
   constructor(public origin: string | null) {
     super(403, "This account belongs to a different workspace address.");
@@ -69,8 +70,10 @@ export async function checkStaffWorkspaceHost(
   const owner = await addresses.idForSlug(slug);
   if (owner === workspaceId || unclaimedAppHost(host, owner)) return;
   const origin = workspaceOrigin(await addresses.slugForId(workspaceId));
+  // Compare by the host the browser asked for: behind a proxy request.url
+  // can name a different host, and redirecting to this one would loop.
   throw new WorkspaceHostMismatch(
-    origin === new URL(request.url).origin ? null : origin,
+    new URL(origin).host === host.toLowerCase() ? null : origin,
   );
 }
 // A proposal link only opens on its own workspace's address (or on hosts that

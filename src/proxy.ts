@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { staffRequestHeaders, withStaffCookies } from "./lib/staff-session";
+import {
+  clearStaffCookies,
+  staffRequestHeaders,
+  withStaffCookies,
+} from "./lib/staff-session";
 import { AppError } from "./lib/model";
 import { StaffPasswordRequired } from "./lib/staff-access";
 import { cookie, staff } from "./lib/auth";
@@ -49,16 +53,21 @@ export async function proxy(request: NextRequest) {
     return withStaffCookies(request, response);
   } catch (error) {
     const status = error instanceof AppError ? error.status : 503;
-    if (page && error instanceof WorkspaceHostMismatch && error.origin) {
+    if (page && error instanceof WorkspaceHostMismatch) {
+      // This address's sign-in belongs to another workspace. Sign out here so
+      // the next visit starts clean, then send them to their own address, or
+      // to this address's sign-in when there is nowhere else to go.
       const response = NextResponse.redirect(
-        new URL(
-          request.nextUrl.pathname + request.nextUrl.search,
-          error.origin,
-        ),
+        error.origin
+          ? new URL(
+              request.nextUrl.pathname + request.nextUrl.search,
+              error.origin,
+            )
+          : new URL("/login?state=signed-out", request.url),
         307,
       );
       response.headers.set("Cache-Control", "no-store");
-      return response;
+      return clearStaffCookies(response);
     }
     if (
       page &&
