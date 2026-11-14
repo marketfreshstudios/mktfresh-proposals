@@ -1,3 +1,4 @@
+import { assertSeatAvailable } from "./plan-seats";
 import { unfinishedAssignment } from "./proposal-owner";
 import type { User, SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
@@ -144,6 +145,7 @@ export class TeamService {
       "This person already belongs to the workspace",
       409,
     );
+    await assertSeatAvailable(this.repo.workspaceId, people);
     const identity = await this.auth.findByEmail(input.email);
     check(
       !identity?.workspace_id,
@@ -257,6 +259,8 @@ export class TeamService {
       });
       await this.store.change(actor, id, input.action);
     } else if (input.action === "deactivate" || input.action === "reactivate") {
+      if (input.action === "reactivate")
+        await assertSeatAvailable(this.repo.workspaceId, await this.list());
       // Membership revocation is authoritative even if the Auth service is unavailable.
       if (input.action === "deactivate")
         await this.store.change(actor, id, input.action);

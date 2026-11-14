@@ -219,8 +219,11 @@ import {
 import { CONSENT, hashPassword, sha256 } from "./content";
 import { requestHost } from "./workspace-address";
 import { sendTrialEmails } from "./plan-email";
+import { SeatLimitReached, seatsInUse, workspaceSeatLimit } from "./plan-seats";
 import {
   SelectionSchema,
+  addSeat,
+  previewAddSeat,
   billingMailer,
   billingOverview,
   databaseBillingStore,
@@ -1088,6 +1091,21 @@ async function handleRoute(
               )),
         });
       }
+      if (path[1] === "seats" && path.length === 2 && method === "GET") {
+        const limit = await workspaceSeatLimit(user.workspace_id);
+        const plan = await workspacePlan(user.workspace_id);
+        return json({
+          limit,
+          in_use: seatsInUse(
+            members.map((m) => ({
+              status: "status" in m ? m.status : "active",
+            })),
+          ),
+          trial: plan.status === "trial",
+          can_add:
+            limit !== null && plan.status !== "trial" && plan.mode === "full",
+        });
+      }
       check(
         user.staff_role === "owner",
         "Only workspace owners can change billing.",
@@ -1109,6 +1127,22 @@ async function handleRoute(
             user.workspace_id,
             { email: user.staff_email },
             SelectionSchema.parse(await body(req)),
+          ),
+        );
+      if (path[1] === "seats" && path[2] === "preview" && method === "POST")
+        return json(
+          await previewAddSeat(
+            yeswellStripe(),
+            databaseBillingStore(),
+            user.workspace_id,
+          ),
+        );
+      if (path[1] === "seats" && path.length === 2 && method === "POST")
+        return json(
+          await addSeat(
+            yeswellStripe(),
+            databaseBillingStore(),
+            user.workspace_id,
           ),
         );
       if (path[1] === "portal" && method === "POST")
@@ -2918,7 +2952,8 @@ async function handleRoute(
           ...(e instanceof StaffSecurityRequired ? { state: e.state } : {}),
           ...(e instanceof StaffSessionExpired ||
           e instanceof StaffPasswordRequired ||
-          e instanceof WorkspaceReadOnly
+          e instanceof WorkspaceReadOnly ||
+          e instanceof SeatLimitReached
             ? { code: e.code }
             : {}),
         },
