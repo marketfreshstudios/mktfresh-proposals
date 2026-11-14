@@ -1085,3 +1085,34 @@ test("the sidebar keeps the workspace and signed-in person while a page loads", 
   release();
   await page.unroute("**/api/auth/session");
 });
+
+test("search fields show focus on the field, not as an outline around the text", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await scenario(page);
+  for (const [path, label] of [
+    ["/clients", "Search clients"],
+    ["/proposals", "Search proposals"],
+    ["/studio/templates", "Search templates"],
+  ] as const) {
+    await page.goto(path);
+    const input = page
+      .getByRole("searchbox", { name: label })
+      .or(page.getByPlaceholder(label));
+    await input.first().click();
+    await expect(input.first()).toBeFocused();
+    await expect(input.first()).toHaveCSS("outline-style", "none");
+    // The field still shows it has focus: its frame turns dark.
+    const frame = await input.first().evaluate((el) => {
+      const wrap = el.closest(".search-field") ?? el;
+      return getComputedStyle(wrap).boxShadow;
+    });
+    expect(frame).not.toBe("none");
+    if (process.env.CAPTURE_SEARCH)
+      await page.screenshot({
+        path: `${process.env.CAPTURE_SEARCH}/${path.split("/").pop()}.png`,
+        clip: { x: 236, y: 60, width: 1204, height: 120 },
+      });
+  }
+});

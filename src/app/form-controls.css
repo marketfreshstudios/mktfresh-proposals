@@ -117,3 +117,22 @@ input.shared-switch:disabled {
     font-size: 16px;
   }
 }
+
+/* Search fields: no floating outline around the text. Focus shows as a darker
+   border on the field itself (the wrapper when the input sits inside one). */
+:is(.search-field, .studio-search, .field-search) input:focus-visible,
+input[type="search"]:focus-visible {
+  outline: none;
+}
+input[type="search"]:focus-visible {
+  border-color: var(--ink-title);
+  box-shadow: 0 0 0 1px var(--ink-title);
+}
+.search-field:has(input:focus-visible) {
+  border-color: var(--ink-title);
+  box-shadow: 0 0 0 1px var(--ink-title);
+}
+.search-field input[type="search"]:focus-visible {
+  border-color: transparent;
+  box-shadow: none;
+}
