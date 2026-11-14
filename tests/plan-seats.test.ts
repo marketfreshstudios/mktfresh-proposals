@@ -123,7 +123,7 @@ describe("adding a person", () => {
               {
                 id: "si_seat",
                 price: { id: "ps", lookup_key: "yeswell_seat_monthly" },
-                quantity: params.items[0].quantity,
+                quantity: (params as any).items[0].quantity,
               },
             ],
           },
