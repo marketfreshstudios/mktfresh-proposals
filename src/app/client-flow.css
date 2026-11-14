@@ -338,18 +338,6 @@ label.flow-quote-line {
   font-size: 26px;
   color: var(--ink-muted);
 }
-.flow-password {
-  display: flex;
-  gap: 4px;
-  border: 1px solid var(--border-strong);
-  border-radius: 8px;
-  background: var(--surface);
-}
-.client-flow .flow-password input {
-  border: 0;
-  background: transparent;
-  flex: 1;
-}
 .flow-loading {
   max-width: 720px;
   margin: 40px auto;

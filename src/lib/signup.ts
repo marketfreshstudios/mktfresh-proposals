@@ -9,7 +9,8 @@ import { StaffPasswordSchema } from "./team-model";
 import { ResendMailer } from "./jobs";
 import { yeswellFrom } from "./email-identity";
 import { workspaceOrigin } from "./links";
-import { validWorkspaceSlug } from "./workspace-address";
+import { validWorkspaceSlug, workspaceDomain } from "./workspace-address";
+import { yeswellEmail } from "./yeswell-email";
 import { forgetWorkspaceAddresses } from "./workspace-host";
 
 const name = (max: number) =>
@@ -59,9 +60,7 @@ export function addressFromName(value: string) {
 export type SignupDeps = {
   admit(emailHash: string, ipHash: string): Promise<boolean>;
   addressFree(slug: string): Promise<boolean>;
-  identity(
-    email: string,
-  ): Promise<{
+  identity(email: string): Promise<{
     id: string;
     workspace_id: string | null;
     confirmed: boolean;
@@ -192,31 +191,29 @@ export async function startSignup(raw: unknown, ip: string, deps: SignupDeps) {
   if (reserved === "address_taken") throw await taken();
   const origin = workspaceOrigin(input.slug);
   const url = `${origin}/start/confirm#token_hash=${encodeURIComponent(await deps.link(input.email))}`;
-  const host = new URL(origin).host;
+  // Name the address only when workspaces have their own; otherwise the business.
+  const address = workspaceDomain() ? new URL(origin).host : null;
+  const email = yeswellEmail({
+    origin,
+    title: "Confirm your email",
+    greeting: `Hi ${input.first_name},`,
+    paragraphs: [
+      `Confirm your email to finish setting up ${address ?? input.business_name}.`,
+      "This link works for 1 hour. If you didn't start a Yeswell trial, you can ignore this email.",
+    ],
+    button: { label: "Confirm email", url },
+    workspace: input.business_name,
+  });
   await deps.send(
     {
       from,
       to: input.email,
       subject: `Confirm your email to finish setting up ${input.business_name}`,
-      text: `Hi ${input.first_name},\n\nConfirm your email to finish setting up ${host}:\n${url}\n\nThis link works for 1 hour. If you didn't start a Yeswell trial, you can ignore this email.`,
-      html: signupEmailHtml(input.first_name, host, url),
+      ...email,
     },
     `signup:${user}:${Date.now()}`,
   );
-  return { email: input.email, address: host };
-}
-
-const escape = (v: string) =>
-  v.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
-function signupEmailHtml(first: string, host: string, url: string) {
-  return `<!doctype html><html><body style="margin:0;background:#f2efe8;font-family:Helvetica,Arial,sans-serif;color:#13303a">
-<div style="max-width:520px;margin:0 auto;padding:32px 20px">
-<div style="background:#faf8f4;border:1px solid #e2ddd3;border-radius:14px;padding:28px 24px">
-<p style="margin:0 0 16px;font-size:16px">Hi ${escape(first)},</p>
-<p style="margin:0 0 22px;font-size:16px;line-height:24px">Confirm your email to finish setting up <strong>${escape(host)}</strong>.</p>
-<a href="${escape(url)}" style="display:inline-block;background:#bf5f2e;color:#ffffff;text-decoration:none;font-weight:700;padding:11px 20px;border-radius:999px">Confirm email</a>
-<p style="margin:22px 0 0;font-size:13px;line-height:19px;color:#55616a">This link works for 1 hour. If you didn't start a Yeswell trial, you can ignore this email.</p>
-</div></div></body></html>`;
+  return { email: input.email, address, business_name: input.business_name };
 }
 
 export async function completeSignup(raw: unknown) {

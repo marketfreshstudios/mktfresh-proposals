@@ -1,6 +1,6 @@
 "use client";
 import { StaffTable, StaffTableHead } from "./staff-table";
-import { Select } from "./form-controls";
+import { Select, PasswordInput } from "./form-controls";
 import { unfinishedAssignment } from "../lib/proposal-owner";
 import { DialogActions } from "./dialog-actions";
 import { ReassignDialog } from "./reassign-proposal";
@@ -564,8 +564,7 @@ function TeamForm({
   busy: boolean;
   onSubmit: (input: Record<string, unknown>) => Promise<void>;
 }) {
-  const [show, setShow] = useState(false),
-    [validation, setValidation] = useState("");
+  const [validation, setValidation] = useState("");
   const action = dialog.action,
     person = dialog.person;
   return (
@@ -626,9 +625,8 @@ function TeamForm({
       )}
       {action === "own_password" && (
         <Field label="Current password">
-          <input
+          <PasswordInput
             name="current_password"
-            type="password"
             autoComplete="current-password"
             required
           />
@@ -637,9 +635,8 @@ function TeamForm({
       {["password_set", "own_password"].includes(action) && (
         <>
           <Field label="New password">
-            <input
+            <PasswordInput
               name="password"
-              type={show ? "text" : "password"}
               required
               minLength={8}
               maxLength={200}
@@ -647,18 +644,14 @@ function TeamForm({
             />
           </Field>
           <Field label="Type new password again">
-            <input
+            <PasswordInput
               name="confirm"
-              type={show ? "text" : "password"}
               required
               minLength={8}
               maxLength={200}
               autoComplete="new-password"
             />
           </Field>
-          <Button aria-pressed={show} onClick={() => setShow(!show)}>
-            {show ? "Hide passwords" : "Show passwords"}
-          </Button>
           <p className="muted">
             Use at least 8 characters. Your workspace’s authentication password
             rules also apply.

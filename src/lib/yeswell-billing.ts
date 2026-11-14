@@ -7,6 +7,7 @@ import { verifyStripeWebhook } from "./providers/webhook";
 import { workspaceOrigin } from "./links";
 import { ResendMailer } from "./jobs";
 import { yeswellFrom } from "./email-identity";
+import { yeswellEmail } from "./yeswell-email";
 import {
   CATALOG,
   PLANS,
@@ -494,8 +495,17 @@ export async function handleBillingWebhook(
     const url = `${workspaceOrigin(w.slug)}/billing`;
     for (const owner of await deps.store.owners(synced.workspace)) {
       const first = owner.name.split(" ")[0];
-      const text = `Hi ${first},\n\nWe couldn't charge the card on file for ${w.name}'s Yeswell plan. Update your card within 7 days to keep creating and sending proposals. Your proposals and client links keep working.\n\nUpdate your card: ${url}`;
-      const html = `<!doctype html><html><body style="margin:0;background:#f2efe8;font-family:Helvetica,Arial,sans-serif;color:#13303a"><div style="max-width:520px;margin:0 auto;padding:32px 20px"><div style="background:#faf8f4;border:1px solid #e2ddd3;border-radius:14px;padding:28px 24px"><p style="margin:0 0 16px;font-size:16px">Hi ${escapeHtml(first)},</p><p style="margin:0 0 16px;font-size:16px;line-height:24px">We couldn't charge the card on file for ${escapeHtml(w.name)}'s Yeswell plan. Update your card within 7 days to keep creating and sending proposals. Your proposals and client links keep working.</p><a href="${escapeHtml(url)}" style="display:inline-block;background:#bf5f2e;color:#ffffff;text-decoration:none;font-weight:700;padding:11px 20px;border-radius:999px">Update card</a></div></div></body></html>`;
+      const { text, html } = yeswellEmail({
+        origin: workspaceOrigin(w.slug),
+        title: "Your payment didn't go through",
+        greeting: `Hi ${first},`,
+        paragraphs: [
+          `We couldn't charge the card on file for ${w.name}'s Yeswell plan. Update your card within 7 days to keep creating and sending proposals.`,
+          "Your proposals and client links keep working.",
+        ],
+        button: { label: "Update card", url },
+        workspace: w.name,
+      });
       await deps
         .mail(
           owner.email,
@@ -509,8 +519,6 @@ export async function handleBillingWebhook(
   }
   return { received: true, workspace_status: synced.status };
 }
-const escapeHtml = (v: string) =>
-  v.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
 export function billingMailer() {
   const mailer = new ResendMailer();

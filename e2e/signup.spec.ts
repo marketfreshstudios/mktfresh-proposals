@@ -60,7 +60,7 @@ test("signup: one card, live address check, confirmation screen", async ({
     await page.getByLabel("First name").fill("Dana");
     await page.getByLabel("Last name").fill("Ruiz");
     await page.getByLabel("Work email").fill("dana@example.test");
-    await page.getByLabel("Password").fill("correct horse");
+    await page.getByLabel("Password", { exact: true }).fill("correct horse");
     expect(
       (await new AxeBuilder({ page }).include(".account-frame").analyze())
         .violations,
@@ -113,7 +113,7 @@ test("signup: existing email points to sign in; bad links say so", async ({
   await page.getByLabel("First name").fill("A");
   await page.getByLabel("Last name").fill("B");
   await page.getByLabel("Work email").fill("a@example.test");
-  await page.getByLabel("Password").fill("correct horse");
+  await page.getByLabel("Password", { exact: true }).fill("correct horse");
   await page.getByRole("button", { name: "Start free trial" }).click();
   await expect(
     page.getByText("That email already has a workspace."),

@@ -45,6 +45,19 @@ function fakes(over: Partial<SignupDeps> = {}) {
 }
 
 describe("signup", () => {
+  it("names the business, not the main address, while workspace addresses are off", async () => {
+    delete process.env.WORKSPACE_DOMAIN;
+    const { deps, sent } = fakes();
+    const result = await startSignup(input, "ip", deps);
+    expect(result.address).toBeNull();
+    expect(sent[0].text).toContain(
+      "Confirm your email to finish setting up North Star Creative.",
+    );
+    expect(sent[0].text).not.toContain("app.example.test.");
+    expect(sent[0].html).toContain(
+      "Yeswell notification for North Star Creative",
+    );
+  });
   it("suggests an address from the business name", () => {
     expect(addressFromName("North Star Creative")).toBe("north-star-creative");
     expect(addressFromName("Café & Co.")).toBe("cafe-and-co");
@@ -73,7 +86,12 @@ describe("signup", () => {
     expect(result).toEqual({
       email: "dana@northstar.test",
       address: "northstar.example.test",
+      business_name: "North Star Creative",
     });
+    expect(sent[0].html).toContain("/brand/yeswell/yeswell-logo-email.png");
+    expect(sent[0].text).toContain(
+      "Confirm your email to finish setting up northstar.example.test.",
+    );
     expect(calls).toEqual(["create:dana@northstar.test"]);
     expect(sent).toHaveLength(1);
     expect(sent[0].to).toBe("dana@northstar.test");

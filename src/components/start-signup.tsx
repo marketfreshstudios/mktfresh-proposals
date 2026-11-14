@@ -1,4 +1,5 @@
 "use client";
+import { PasswordInput } from "./form-controls";
 import { useEffect, useRef, useState } from "react";
 import { StaffAuthFrame } from "./staff-auth-frame";
 import { post, Field, Button, Banner, ApiError } from "./ui";
@@ -38,7 +39,11 @@ export function StartSignup({
     }),
     [error, setError] = useState<{ message: string; signIn?: boolean }>(),
     [busy, setBusy] = useState(false),
-    [sent, setSent] = useState<{ email: string; address: string }>();
+    [sent, setSent] = useState<{
+      email: string;
+      address: string | null;
+      business_name: string;
+    }>();
   const latest = useRef("");
   useEffect(() => {
     if (!enabled || !slug) {
@@ -85,7 +90,7 @@ export function StartSignup({
         <h1>Check your email</h1>
         <p>
           We sent a link to <strong>{sent.email}</strong>. Open it to finish
-          setting up <strong>{sent.address}</strong>.
+          setting up <strong>{sent.address ?? sent.business_name}</strong>.
         </p>
         <p className="muted">
           The link works for 1 hour. Wrong email?{" "}
@@ -234,8 +239,7 @@ export function StartSignup({
           <input type="email" name="email" required autoComplete="email" />
         </Field>
         <Field label="Password" hint="At least 8 characters.">
-          <input
-            type="password"
+          <PasswordInput
             name="password"
             required
             minLength={8}
