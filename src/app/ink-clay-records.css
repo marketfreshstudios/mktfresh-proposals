@@ -3138,6 +3138,10 @@
   cursor: pointer;
 }
 .record-questions-toggle h2 {
+  /* DM Serif's glyphs sit high in their line box; drop them so the title's
+     visual middle lines up with the chevron and the chip. */
+  position: relative;
+  inset-block-start: 0.15em;
   margin: 0;
 }
 .record-questions-count {
