@@ -1,3 +1,4 @@
+import { assertWorkspaceWritable } from "./plan";
 import { assembleDraftContent } from "./draft-layout";
 import {
   oiotPlan,
@@ -234,6 +235,12 @@ export async function aiTool(
     "AI workspace authorization required",
     403,
   );
+  if (
+    ((WRITE_TOOLS as readonly string[]).includes(name) ||
+      CONNECTOR_STUDIO_WRITES.includes(name)) &&
+    name !== "check_ready"
+  )
+    await assertWorkspaceWritable(repo.workspaceId);
   check(name in schemas, "This action is forbidden for AI assistants", 403);
   const writing =
     (WRITE_TOOLS as readonly string[]).includes(name) && name !== "check_ready";
