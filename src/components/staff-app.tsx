@@ -54,7 +54,7 @@ import {
 import { ClientPicker } from "./client-picker";
 import { ValidityField } from "./validity-field";
 import { defaultValidUntil } from "../lib/validity";
-import { StaffShell } from "./staff-shell";
+import { StaffShell, forgetShellIdentity } from "./staff-shell";
 import { AccountPage } from "./account-page";
 import { staffName, type StaffAccount } from "../lib/staff-account-model";
 import { Sheet, Skeleton } from "./foundation";
@@ -852,6 +852,8 @@ function Login({
           e.preventDefault();
           setBusy(true);
           const f = new FormData(e.currentTarget);
+          // A new sign-in mustn't flash the last person's workspace.
+          forgetShellIdentity();
           try {
             const result = await post("/api/auth/login", {
               email: f.get("email"),
