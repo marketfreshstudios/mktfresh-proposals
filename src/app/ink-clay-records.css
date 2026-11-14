@@ -481,10 +481,6 @@
 .ink-clay .client-side-section > .staff-section-heading {
   align-items: center;
 }
-.client-identity > .client-initials {
-  width: 48px;
-  height: 48px;
-}
 .client-identity-contact {
   flex-wrap: wrap;
 }
