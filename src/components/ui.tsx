@@ -331,6 +331,8 @@ export async function api<T = any>(
           "/api/auth/local",
           "/api/auth/two-step",
           "/api/auth/confirm-email",
+          "/api/signup",
+          "/api/signup/confirm",
         ].includes(path.split("?")[0])
         ? staffErrorMessage(response.status, data)
         : (data.error ?? "Unable to complete request"),

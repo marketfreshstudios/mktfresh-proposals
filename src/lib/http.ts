@@ -219,6 +219,15 @@ import {
 import { CONSENT, hashPassword, sha256 } from "./content";
 import { requestHost } from "./workspace-address";
 import {
+  SignupError,
+  checkAddress,
+  completeSignup,
+  signupEnabled,
+  signupIp,
+  startSignup,
+  supabaseSignupDeps,
+} from "./signup";
+import {
   readReport,
   reportCsv,
   reportDrilldown,
@@ -330,6 +339,53 @@ async function handleRoute(
         `proposal_session=${input.token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=28800`,
       );
       return response;
+    }
+    if (path[0] === "signup") {
+      check(signupEnabled(), "Not found", 404);
+      if (path[1] === "address" && path.length === 2 && method === "GET")
+        return json(
+          await checkAddress(
+            new URL(req.url).searchParams.get("slug") ?? "",
+            supabaseSignupDeps(),
+          ),
+        );
+      if (path.length === 1 && method === "POST") {
+        check(sameOrigin(req), "Same-origin request required", 403);
+        try {
+          return json(
+            await startSignup(
+              await body(req),
+              signupIp(req.headers),
+              supabaseSignupDeps(),
+            ),
+          );
+        } catch (e) {
+          if (e instanceof SignupError)
+            return json(
+              { error: e.message, code: e.code, suggestion: e.suggestion },
+              e.status,
+            );
+          if (e instanceof z.ZodError)
+            return json(
+              {
+                error: e.issues[0]?.message ?? "Check the form and try again.",
+                field: String(e.issues[0]?.path[0] ?? ""),
+              },
+              400,
+            );
+          throw e;
+        }
+      }
+      if (path[1] === "confirm" && path.length === 2 && method === "POST") {
+        check(sameOrigin(req), "Same-origin request required", 403);
+        const done = await completeSignup(await body(req));
+        await recordStaffDevice(req, done.session);
+        const response = json({ authenticated: true, origin: done.origin });
+        const hint = staffIdentityCookie(done.session.user.id);
+        if (hint) response.headers.append("Set-Cookie", hint);
+        return setStaffCookies(response, done.session);
+      }
+      throw new AppError(404, "Not found");
     }
     if (path[0] === "auth" && path[1] === "login" && method === "POST") {
       check(

@@ -5,7 +5,7 @@ import { workspaceStaff } from "./auth";
 import { prepareEmail, logSentEmail } from "./email-templates";
 import { questionExcerpt, questionTargets } from "./question-targets";
 import type { Mailer } from "./jobs";
-import { proposalLink, appOrigin } from "./links";
+import { proposalLink, proposalOrigin } from "./links";
 import { AppError, check, type Actor, type Proposal } from "./model";
 import { proposalOwnerId } from "./proposal-owner";
 import {
@@ -69,7 +69,7 @@ async function questionMail(
       email_template_key: key,
       question_url:
         (key === "staff_question"
-          ? `${appOrigin()}/proposals/${p.id}`
+          ? `${proposalOrigin(p)}/proposals/${p.id}`
           : proposalLink(p)) + anchor,
     },
   });

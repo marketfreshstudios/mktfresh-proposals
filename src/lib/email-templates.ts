@@ -23,7 +23,7 @@ import {
 } from "./email-template-content";
 export * from "./email-template-content";
 import { emailLayout } from "./email-layout";
-import { proposalLink, appOrigin } from "./links";
+import { proposalLink, proposalOrigin } from "./links";
 import { emailIdentity, yeswellFrom } from "./email-identity";
 import { sha256, canonical } from "./content";
 export async function emailTemplates(repo: Repository) {
@@ -251,7 +251,7 @@ export function renderTemplate(
   }
   const s = p.workspace_settings,
     link = t.staff
-      ? `${appOrigin()}/proposals/${p.id}${["staff_signed", "staff_countersign_reminder"].includes(t.key) ? "?action=countersign" : ""}`
+      ? `${proposalOrigin(p)}/proposals/${p.id}${["staff_signed", "staff_countersign_reminder"].includes(t.key) ? "?action=countersign" : ""}`
       : proposalLink(p);
   const layout = emailLayout({
     title:
@@ -284,15 +284,15 @@ export function renderTemplate(
       url:
         options.url ??
         (options.jobFailure
-          ? `${appOrigin()}/proposals/${p.id}?job=${encodeURIComponent(options.jobFailure.job_id)}#${jobRecordAnchor(options.jobFailure.job_id)}`
+          ? `${proposalOrigin(p)}/proposals/${p.id}?job=${encodeURIComponent(options.jobFailure.job_id)}#${jobRecordAnchor(options.jobFailure.job_id)}`
           : link),
     },
     test: options.test,
     staff: t.staff,
-    origin: t.staff ? appOrigin() : undefined,
+    origin: t.staff ? proposalOrigin(p) : undefined,
     poweredBy:
       !t.staff && (options.showPoweredBy ?? s?.show_powered_by !== false)
-        ? { origin: appOrigin() }
+        ? { origin: proposalOrigin(p) }
         : undefined,
   });
   return {
@@ -302,7 +302,7 @@ export function renderTemplate(
     button_url:
       options.url ??
       (options.jobFailure
-        ? `${appOrigin()}/proposals/${p.id}?job=${encodeURIComponent(options.jobFailure.job_id)}#${jobRecordAnchor(options.jobFailure.job_id)}`
+        ? `${proposalOrigin(p)}/proposals/${p.id}?job=${encodeURIComponent(options.jobFailure.job_id)}#${jobRecordAnchor(options.jobFailure.job_id)}`
         : link),
     button_label: t.button_label,
   };

@@ -13,7 +13,7 @@ import {
 } from "./proposal-owner";
 import { event } from "./service";
 import { emailLayout } from "./email-layout";
-import { appOrigin } from "./links";
+import { workspaceOrigin } from "./links";
 import { escape } from "./content";
 import type { WorkspaceSettings } from "./workspace";
 export const ReassignSchema = z
@@ -186,7 +186,7 @@ export class ReassignmentService {
         const text = `${name} assigned you ${p.title}.`;
         const layout = emailLayout({
           staff: true,
-          origin: appOrigin(),
+          origin: workspaceOrigin(settings?.workspace_slug),
           title: p.title,
           workspace: settings.company_name,
           sender: name,
@@ -202,7 +202,7 @@ export class ReassignmentService {
           bodyText: text,
           button: {
             label: "Open proposal",
-            url: `${appOrigin()}/proposals/${p.id}`,
+            url: `${workspaceOrigin(settings?.workspace_slug)}/proposals/${p.id}`,
           },
         });
         // Snapshot and queue once with the normal idempotent email worker.
@@ -226,7 +226,7 @@ export class ReassignmentService {
             email_snapshot: {
               ...payload,
               body_html: `<p>${escape(text)}</p>`,
-              button_url: `${appOrigin()}/proposals/${p.id}`,
+              button_url: `${workspaceOrigin(settings?.workspace_slug)}/proposals/${p.id}`,
               button_label: "Open proposal",
               template_key: "staff_reassigned",
               template_version_id: null,

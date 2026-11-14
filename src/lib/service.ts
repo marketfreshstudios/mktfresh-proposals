@@ -77,7 +77,7 @@ import {
 import { settingsSnapshot, withDraftSettings } from "./proposal-settings";
 import { templateDefaultQuote } from "./template-quote";
 import { workspaceStaff } from "./auth";
-import { proposalLink, appOrigin } from "./links";
+import { proposalLink, proposalOrigin } from "./links";
 import {
   emailIdentity,
   staffFromAddress,
@@ -160,7 +160,7 @@ export function notify(p: Proposal, type: string) {
     queue(p, "email", "notify:" + type + ":" + p.events.length + ":" + to, {
       to,
       subject: `Proposal ${type}: ${p.title}`,
-      text: `${p.title} for ${p.client.company}: ${type}${type === "signed" ? `\n\nReview and countersign: ${appOrigin()}/proposals/${p.id}?action=countersign` : ""}${typeof declineNote === "string" && declineNote ? `\n\nClient note:\n${declineNote}` : ""}`,
+      text: `${p.title} for ${p.client.company}: ${type}${type === "signed" ? `\n\nReview and countersign: ${proposalOrigin(p)}/proposals/${p.id}?action=countersign` : ""}${typeof declineNote === "string" && declineNote ? `\n\nClient note:\n${declineNote}` : ""}`,
     });
 }
 export function publicAccess(p: Proposal, password = "", now = new Date()) {
