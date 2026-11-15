@@ -5,6 +5,12 @@ import { AppUrlSchema, appOrigin } from "../links";
 import { LOCAL_WORKSPACE_ID } from "../workspace";
 import { decryptSecret, encryptSecret } from "./secrets";
 import {
+  oauthCallbackAllowed,
+  oauthOriginAllowed,
+  oauthState,
+  oauthStateSlug,
+} from "../oauth-bounce";
+import {
   STRIPE_VERSION,
   StripeHttp,
   requireTestStripeKey,
@@ -117,7 +123,12 @@ export class StripeConnect {
   cookie(value: string, age: number) {
     return `${stripeConnectCookie}=${value}; HttpOnly; SameSite=Lax; Path=${stripeConnectCallback}; Max-Age=${age}${this.callbackUrl().protocol === "https:" ? "; Secure" : ""}`;
   }
-  async authorize(actor: Actor, origin: string, mode: "test") {
+  async authorize(
+    actor: Actor,
+    origin: string,
+    mode: "test",
+    slug?: string | null,
+  ) {
     check(
       mode === "test",
       "Live Stripe Connect is available after go-live.",
@@ -125,7 +136,7 @@ export class StripeConnect {
     );
     const redirect = this.callbackUrl();
     check(
-      redirect.origin === origin,
+      oauthOriginAllowed(redirect, origin, slug),
       "Open Yeswell on the configured Stripe Connect domain.",
       403,
     );
@@ -135,7 +146,7 @@ export class StripeConnect {
       "Disconnect the current Stripe account before reconnecting.",
       409,
     );
-    const state = randomBytes(32).toString("base64url");
+    const state = oauthState(slug);
     await this.repo.put("provider_credentials", {
       id: this.stateId(actor.actor),
       actor: actor.actor,
@@ -182,17 +193,17 @@ export class StripeConnect {
   }
   async callback(actor: Actor, url: URL, cookieState: string) {
     const redirect = this.callbackUrl();
+    const state = url.searchParams.get("state") ?? "";
     check(
-      url.origin === redirect.origin && url.pathname === redirect.pathname,
+      oauthCallbackAllowed(redirect, url, state),
       "Invalid Stripe callback.",
       400,
     );
-    const state = url.searchParams.get("state") ?? "";
     const record = await this.repo.providerCredential<OAuthState>(
       this.stateId(actor.actor),
     );
     check(
-      /^[\w-]{43}$/.test(state) &&
+      oauthStateSlug(state) !== undefined &&
         state === cookieState &&
         record?.actor === actor.actor &&
         record.expires > Date.now() &&

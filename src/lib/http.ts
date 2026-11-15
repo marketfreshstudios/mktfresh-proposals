@@ -217,7 +217,8 @@ import {
   type EntityTable,
 } from "./repository";
 import { CONSENT, hashPassword, sha256 } from "./content";
-import { requestHost } from "./workspace-address";
+import { requestHost, workspaceDomain } from "./workspace-address";
+import { databaseAddresses } from "./workspace-host";
 import { sendTrialEmails } from "./plan-email";
 import { SeatLimitReached, seatsInUse, workspaceSeatLimit } from "./plan-seats";
 import {
@@ -268,6 +269,9 @@ function iconRequestSize(req: Request, fallback: number): number | "original" {
   const raw = new URL(req.url).searchParams.get("size");
   return raw === "original" ? "original" : Number(raw ?? fallback);
 }
+/** The workspace's own address, when workspaces have their own. */
+const ownAddress = async (id: string) =>
+  workspaceDomain() ? databaseAddresses.slugForId(id) : null;
 async function body(req: Request) {
   const text = await req.text();
   check(Buffer.byteLength(text) < 2000000, "Request too large", 413);
@@ -1410,6 +1414,7 @@ async function handleRoute(
             user,
             new URL(req.url).origin,
             input.mode,
+            await ownAddress(user.workspace_id),
           );
           const response = json({ url: started.url });
           response.headers.append("Set-Cookie", started.cookie);
@@ -1470,6 +1475,7 @@ async function handleRoute(
         const result = await qbo.connection.authorize(
           user.actor,
           new URL(req.url).origin,
+          await ownAddress(user.workspace_id),
         );
         const response = json({ url: result.url });
         response.headers.append("Set-Cookie", result.cookie);
