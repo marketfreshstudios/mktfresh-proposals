@@ -9,7 +9,7 @@ async function handler(
   req: Request,
   context: { params: Promise<{ action: string }> },
 ) {
-  const s = oauthServer(),
+  const s = oauthServer(req),
     action = (await context.params).action;
   try {
     if (action === "register" && req.method === "POST") {
