@@ -6,7 +6,7 @@ import { supabase, SupabaseRepository } from "./repository";
 import { workspaceSecuritySender, yeswellFrom } from "./email-identity";
 import { emailLayout } from "./email-layout";
 import { escape } from "./presentation";
-import { appOrigin } from "./links";
+import { workspaceOrigin } from "./links";
 import type { WorkspaceSettings } from "./workspace";
 import {
   admitStaffSecurityAttempt,
@@ -160,7 +160,7 @@ export async function staffEmailAction(
         ...emailLayout({
           title,
           staff: true,
-          origin: appOrigin(),
+          origin: workspaceOrigin(settings.workspace_slug),
           bodyHtml: `<p>${escape(message)}</p>`,
           bodyText: message,
           button,
@@ -173,7 +173,10 @@ export async function staffEmailAction(
       `staff-email-change:${next.token_hash}:${kind}`,
     );
 
-  const url = new URL("/login/confirm-email", appOrigin());
+  const url = new URL(
+    "/login/confirm-email",
+    workspaceOrigin(settings.workspace_slug),
+  );
   url.hash = new URLSearchParams({ token }).toString();
   try {
     await Promise.all([
@@ -188,7 +191,10 @@ export async function staffEmailAction(
         old,
         "A change was requested for your Yeswell email",
         `A request was made to change your sign-in email to ${email}. If this wasn't you, sign in to cancel it or contact your workspace admin.`,
-        { label: "Review your account", url: `${appOrigin()}/account` },
+        {
+          label: "Review your account",
+          url: `${workspaceOrigin(settings.workspace_slug)}/account`,
+        },
         "notice",
       ),
     ]);
