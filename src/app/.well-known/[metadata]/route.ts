@@ -5,7 +5,7 @@ export async function GET(
   context: { params: Promise<{ metadata: string }> },
 ) {
   const name = (await context.params).metadata,
-    s = oauthServer();
+    s = oauthServer(req);
   if (name === "oauth-authorization-server") return Response.json(s.metadata());
   if (name === "oauth-protected-resource")
     return Response.json({
