@@ -178,7 +178,17 @@ describe("Yeswell billing", () => {
       client_reference_id: W,
       success_url: "https://northstar.example.test/billing?checkout=done",
       cancel_url: "https://northstar.example.test/billing",
-      branding_settings: { display_name: "Yeswell" },
+      branding_settings: {
+        display_name: "Yeswell",
+        icon: {
+          type: "url",
+          url: expect.stringMatching(
+            /\/brand\/yeswell\/yeswell-icon-512\.png$/,
+          ),
+        },
+        button_color: "#b4532a",
+        border_style: "pill",
+      },
       subscription_data: { metadata: { workspace_id: W } },
     });
     expect(session.subscription_data.trial_end).toBe(

@@ -294,6 +294,14 @@ export function databaseBillingStore(): BillingStore {
 }
 
 const MIN_TRIAL_LEAD = 2 * 86400000; // Stripe needs trial_end at least 48h out.
+/** Yeswell's mark, clay buttons and pill corners on Stripe Checkout. */
+export const yeswellCheckoutBranding = (origin: string) => ({
+  display_name: "Yeswell",
+  icon: { type: "url", url: `${origin}/brand/yeswell/yeswell-icon-512.png` },
+  button_color: "#b4532a",
+  border_style: "pill",
+});
+
 export async function startCheckout(
   stripe: StripeApi,
   store: BillingStore,
@@ -334,7 +342,8 @@ export async function startCheckout(
       line_items: await stripeItems(stripe, s),
       success_url: `${origin}/billing?checkout=done`,
       cancel_url: `${origin}/billing`,
-      branding_settings: { display_name: "Yeswell" },
+      // Checkout otherwise shows the Stripe account's own logo and colors.
+      branding_settings: yeswellCheckoutBranding(origin),
       subscription_data: {
         metadata: { workspace_id: w.id },
         ...(trialEnd - now > MIN_TRIAL_LEAD
