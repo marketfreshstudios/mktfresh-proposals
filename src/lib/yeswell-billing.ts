@@ -552,6 +552,7 @@ export async function billingOverview(
 ) {
   const w = await store.workspace(workspaceId);
   let card: { brand: string; last4: string } | null = null;
+  let nextChargeCents: number | null = null;
   if (stripe && w.stripe_subscription_id && w.plan_status !== "canceled") {
     const sub = await stripe
       .get<{
@@ -565,6 +566,16 @@ export async function billingOverview(
       .catch(() => null);
     const c = sub?.default_payment_method?.card;
     if (c) card = { brand: c.brand, last4: c.last4 };
+    // The next charge comes from Stripe's own preview, never app arithmetic.
+    if (!w.subscription?.cancel_at_period_end) {
+      const next = await stripe
+        .post<{ amount_due: number }>("/v1/invoices/create_preview", {
+          customer: w.stripe_customer_id,
+          subscription: w.stripe_subscription_id,
+        })
+        .catch(() => null);
+      if (next) nextChargeCents = next.amount_due;
+    }
   }
   return {
     subscribed: !!w.stripe_subscription_id && w.plan_status !== "canceled",
@@ -574,6 +585,7 @@ export async function billingOverview(
     launch_price: w.launch_price,
     launch_spots_left: await store.launchSpotsLeft(),
     card,
+    next_charge_cents: nextChargeCents,
     billing_ready: !!stripe,
   };
 }

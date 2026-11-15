@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createHmac } from "node:crypto";
 import {
+  billingOverview,
   forgetPrices,
   handleBillingWebhook,
   openPortal,
@@ -54,7 +55,12 @@ function fakeStripe(sub?: any) {
       if (path === "/v1/billing_portal/sessions")
         return { url: "https://billing.stripe.com/p/session/1" } as any;
       if (path === "/v1/invoices/create_preview")
-        return { total: 5400, currency: "usd", lines: { data: [] } } as any;
+        return {
+          total: 5400,
+          amount_due: 3900,
+          currency: "usd",
+          lines: { data: [] },
+        } as any;
       throw new Error("unexpected " + path);
     },
   };
@@ -417,5 +423,35 @@ describe("billing database", () => {
       ).rows[0].c;
     expect(await claim("evt_1")).toBe(true);
     expect(await claim("evt_1")).toBe(false);
+  });
+
+  it("shows the next charge from Stripe's preview of the subscription", async () => {
+    const { api, posts } = fakeStripe({
+      default_payment_method: { card: { brand: "visa", last4: "4242" } },
+    });
+    const { store } = fakeStore({
+      plan_status: "active",
+      stripe_customer_id: "cus_1",
+      stripe_subscription_id: "sub_1",
+      subscription: { plan: "studio", cancel_at_period_end: false },
+    });
+    const o = await billingOverview(api, store, W);
+    expect(o.next_charge_cents).toBe(3900);
+    expect(o.card).toEqual({ brand: "visa", last4: "4242" });
+    expect(posts.at(-1)).toEqual({
+      path: "/v1/invoices/create_preview",
+      params: { customer: "cus_1", subscription: "sub_1" },
+      key: undefined,
+    });
+    // Ending at period end: no next charge to show.
+    const ending = fakeStore({
+      plan_status: "active",
+      stripe_customer_id: "cus_1",
+      stripe_subscription_id: "sub_1",
+      subscription: { plan: "studio", cancel_at_period_end: true },
+    });
+    expect(
+      (await billingOverview(api, ending.store, W)).next_charge_cents,
+    ).toBeNull();
   });
 });

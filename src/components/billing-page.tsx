@@ -25,6 +25,7 @@ type Overview =
       launch_price: boolean;
       launch_spots_left: number;
       card: { brand: string; last4: string } | null;
+      next_charge_cents: number | null;
       billing_ready: boolean;
     };
 type Plan = "studio" | "agency";
@@ -172,6 +173,9 @@ function CurrentPlan({ data }: { data: Extract<Overview, { owner: true }> }) {
           <dd>{sub.domain ? "On" : "Off"}</dd>
           <dt>{sub.cancel_at_period_end ? "Ends" : "Next charge"}</dt>
           <dd>
+            {data.next_charge_cents !== null && !sub.cancel_at_period_end
+              ? `${money(data.next_charge_cents)} on `
+              : ""}
             {longDate(sub.current_period_end)}
             {data.card && !sub.cancel_at_period_end
               ? ` | ${data.card.brand[0].toUpperCase()}${data.card.brand.slice(1)} ending ${data.card.last4}`
