@@ -112,6 +112,17 @@ test("billing: choose a plan with Stripe's total, then current plan and member v
       people: 5,
       domain: false,
     });
+    // Back to Studio drops to its own starting point, not Agency's five;
+    // people they added themselves carry across.
+    const studio = page.locator(".billing-plan").first();
+    const agency = page.locator(".billing-plan").filter({ hasText: "Agency" });
+    await studio.click();
+    await expect(page.locator(".billing-stepper output")).toHaveText("3");
+    await page.getByRole("button", { name: "More people" }).click();
+    await agency.click();
+    await expect(page.locator(".billing-stepper output")).toHaveText("6");
+    await page.getByRole("button", { name: "Fewer people" }).click();
+    await expect(page.locator(".billing-stepper output")).toHaveText("5");
     expect(
       (await new AxeBuilder({ page }).include(".billing-page").analyze())
         .violations,
