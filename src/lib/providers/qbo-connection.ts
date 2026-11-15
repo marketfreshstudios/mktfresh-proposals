@@ -1,4 +1,4 @@
-import { randomBytes, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { setTimeout as pause } from "node:timers/promises";
 import { AppError, check } from "../model";
 import { sha256 } from "../content";
@@ -6,6 +6,12 @@ import { AppUrlSchema, appOrigin } from "../links";
 import type { Repository } from "../repository";
 import { workspaceEvent } from "../studio";
 import { decryptSecret, encryptSecret } from "./secrets";
+import {
+  oauthCallbackAllowed,
+  oauthOriginAllowed,
+  oauthState,
+  oauthStateSlug,
+} from "../oauth-bounce";
 
 export const QBO_CALLBACK = "/api/connections/qbo/callback";
 export const QBO_STATE_COOKIE = "yeswell_qbo_state";
@@ -143,15 +149,15 @@ export class QboConnection {
     return qboUuid(this.id + ":qbo-state:" + actor);
   }
 
-  async authorize(actor: string, origin: string) {
+  async authorize(actor: string, origin: string, slug?: string | null) {
     this.headers("application/x-www-form-urlencoded");
     const redirect = this.redirectUri();
     check(
-      redirect.origin === origin,
+      oauthOriginAllowed(redirect, origin, slug),
       "Open Yeswell on the configured QuickBooks callback domain",
       400,
     );
-    const state = randomBytes(32).toString("base64url");
+    const state = oauthState(slug);
     const id = this.stateId(actor);
     await this.repo.put("provider_credentials", {
       id,
@@ -175,17 +181,17 @@ export class QboConnection {
 
   async callback(actor: string, url: URL, cookieState: string) {
     const redirect = this.redirectUri();
+    const state = url.searchParams.get("state") ?? "";
     check(
-      url.origin === redirect.origin && url.pathname === redirect.pathname,
+      oauthCallbackAllowed(redirect, url, state),
       "Invalid QuickBooks callback",
       400,
     );
-    const state = url.searchParams.get("state") ?? "";
     const record = await this.repo.providerCredential<OAuthState>(
       this.stateId(actor),
     );
     check(
-      /^[\w-]{43}$/.test(state) &&
+      oauthStateSlug(state) !== undefined &&
         state === cookieState &&
         record?.actor === actor &&
         record.hash === sha256(state) &&

@@ -727,3 +727,35 @@ it("QuickBooks line descriptions name the item, the detail and the project", asy
     invoiceLineDescription({ name: "Care", description: "Care" }, undefined),
   ).toBe("Care");
 });
+
+it("connects QuickBooks from a workspace's own address through the registered callback", async () => {
+  vi.stubEnv("APP_URL", origin);
+  vi.stubEnv("WORKSPACE_DOMAIN", "example.test");
+  try {
+    const { repo } = await setup();
+    const mock = sandbox(),
+      qbo = new QboProvider(repo, config, mock.fetcher);
+    const own = "https://harbor.example.test";
+    await expect(qbo.connection.authorize(staff.actor, own)).rejects.toThrow(
+      /configured QuickBooks callback domain/,
+    );
+    const start = await qbo.connection.authorize(staff.actor, own, "harbor");
+    const authorize = new URL(start.url);
+    expect(authorize.searchParams.get("redirect_uri")).toBe(config.redirectUri);
+    const state = authorize.searchParams.get("state")!;
+    expect(state).toMatch(/\.harbor$/);
+    const callback = new URL(own + QBO_CALLBACK);
+    callback.search = new URLSearchParams({
+      state,
+      code: "fake-authorization-code",
+      realmId: "123",
+    }).toString();
+    await qbo.connection.callback(staff.actor, callback, state);
+    // The exchange names the registered callback, as QuickBooks requires.
+    expect(mock.tokenBodies.at(-1)?.get("redirect_uri")).toBe(
+      config.redirectUri,
+    );
+  } finally {
+    vi.unstubAllEnvs();
+  }
+});
