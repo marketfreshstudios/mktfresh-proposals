@@ -23,6 +23,7 @@ const base = {
   launch_price: false,
   launch_spots_left: 20,
   card: null,
+  next_charge_cents: null,
   billing_ready: true,
 };
 async function mock(page: Page, overview: object) {
@@ -150,6 +151,7 @@ test("billing: choose a plan with Stripe's total, then current plan and member v
         cancel_at_period_end: false,
       },
       card: { brand: "visa", last4: "4242" },
+      next_charge_cents: 5400,
     });
     await page.goto("/billing");
     await expect(
@@ -157,7 +159,18 @@ test("billing: choose a plan with Stripe's total, then current plan and member v
     ).toBeVisible();
     await expect(page.getByText("Monthly | Launch price")).toBeVisible();
     await expect(page.getByText("3 of 3 in use")).toBeVisible();
-    await expect(page.getByText("Visa ending 4242")).toBeVisible();
+    await expect(
+      page.getByText(/\$54 on December 1[34], 2026 \| Visa ending 4242/),
+    ).toBeVisible();
+    // Owners can always get back here from the account menu.
+    if (width === 1440) {
+      await page.getByRole("button", { name: /Account menu/ }).click();
+      await expect(page.getByRole("link", { name: "Billing" })).toHaveAttribute(
+        "href",
+        "/billing",
+      );
+      await page.keyboard.press("Escape");
+    }
     if (out)
       await page.screenshot({
         path: `${out}/current-${width}.png`,
