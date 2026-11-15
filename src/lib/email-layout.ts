@@ -85,6 +85,8 @@ img{border:0;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic}a{
 .email-test-tag{color:#f2f5f5!important;background-color:#303d43!important}
 .email-action{background-color:${darkAction}!important;border-color:${darkAction}!important}
 .email-cta{color:${accentText(darkAction)}!important}
+.email-logo-light{display:none!important}
+.email-logo-dark{display:block!important;max-height:none!important;overflow:visible!important}
 }
 </style>
 <!--[if mso]><style>body,table,td,p,a,h1{font-family:Arial,sans-serif!important}</style><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml><![endif]-->
@@ -95,7 +97,7 @@ img{border:0;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic}a{
 <!--[if mso]><table role="presentation" width="600" align="center"><tr><td><![endif]-->
 <table class="email-card" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;table-layout:fixed;word-wrap:break-word;overflow-wrap:anywhere;background-color:#ffffff;border-top:6px solid ${band}">
 <tr><td class="email-pad" style="padding:36px 40px;font-family:${e(bodyFont)}">
-${c.staff ? (c.origin ? `<img src="${e(c.origin)}/brand/yeswell/yeswell-logo-email.png" alt="Yeswell" width="148" height="25" style="display:block;width:148px;height:25px;margin:0 0 26px;background:#ffffff;border-radius:4px">` : `<p class="email-ink" style="font-size:16px;font-weight:700;line-height:23px;color:${headingInk};margin:0 0 26px">Yeswell</p>`) : c.logo ? `<img src="${e(c.logo)}" alt="${e(c.workspace)}" width="160" style="display:block;max-width:160px;width:auto;max-height:64px;height:auto;margin:0 0 26px;background:#ffffff;border-radius:4px">` : `<p class="email-ink" style="font-size:16px;font-weight:700;line-height:23px;color:${headingInk};margin:0 0 26px">${e(c.workspace)}</p>`}
+${c.staff ? (c.origin ? `<img class="email-logo-light" src="${e(c.origin)}/brand/yeswell/yeswell-logo-email.png" alt="Yeswell" width="148" height="25" style="display:block;width:148px;height:25px;margin:0 0 26px;background:#ffffff;border-radius:4px"><!--[if !mso]><!--><div class="email-logo-dark" style="display:none;max-height:0;overflow:hidden;mso-hide:all"><img src="${e(c.origin)}/brand/yeswell/yeswell-logo-email-dark.png" alt="Yeswell" width="148" height="25" style="display:block;width:148px;height:25px;margin:0 0 26px"></div><!--<![endif]-->` : `<p class="email-ink" style="font-size:16px;font-weight:700;line-height:23px;color:${headingInk};margin:0 0 26px">Yeswell</p>`) : c.logo ? `<img src="${e(c.logo)}" alt="${e(c.workspace)}" width="160" style="display:block;max-width:160px;width:auto;max-height:64px;height:auto;margin:0 0 26px;background:#ffffff;border-radius:4px">` : `<p class="email-ink" style="font-size:16px;font-weight:700;line-height:23px;color:${headingInk};margin:0 0 26px">${e(c.workspace)}</p>`}
 ${c.test ? '<p style="margin:0 0 12px"><span class="email-test-tag" style="display:inline-block;border-radius:6px;padding:3px 8px;font-size:12px;line-height:18px;color:#3c4a50;background-color:#e4eaed">TEST EMAIL | SENT ONLY TO YOU</span></p>' : ""}
 <h1 class="email-title email-ink" style="font-family:${e(titleFont)};font-size:34px;line-height:40px;font-weight:${c.staff ? 400 : 650};color:${headingInk};margin:0 0 20px">${e(c.title)}</h1>
 <div class="email-body email-ink" style="font-size:16px;line-height:26px;color:#1c1b18">${c.bodyHtml}</div>

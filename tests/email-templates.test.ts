@@ -54,6 +54,11 @@ it("all client and read-only staff defaults render one primary action, automatic
       // Team notifications are Yeswell's, not the agency's.
       expect(r.text).toContain("Yeswell notification for Example Studio");
       expect(r.html).toContain("/brand/yeswell/yeswell-logo-email.png");
+      // Dark mode swaps in the light-ink logo.
+      expect(r.html).toContain("/brand/yeswell/yeswell-logo-email-dark.png");
+      expect(r.html).toMatch(
+        /prefers-color-scheme:dark[^}]*\{[\s\S]*\.email-logo-dark\{display:block!important/,
+      );
       expect(r.text).not.toContain(settings.phone);
     } else {
       expect(r.text).toContain("Sent by Alex Morgan at Example Studio");
