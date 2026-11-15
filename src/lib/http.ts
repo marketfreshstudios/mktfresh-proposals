@@ -220,6 +220,7 @@ import { CONSENT, hashPassword, sha256 } from "./content";
 import { requestHost, workspaceDomain } from "./workspace-address";
 import { databaseAddresses } from "./workspace-host";
 import { sendTrialEmails } from "./plan-email";
+import { earlyAccessBody, receiveEarlyAccess } from "./early-access";
 import { SeatLimitReached, seatsInUse, workspaceSeatLimit } from "./plan-seats";
 import {
   SelectionSchema,
@@ -518,6 +519,16 @@ async function handleRoute(
       if (hint) response.headers.append("Set-Cookie", hint);
       await recordStaffDevice(req, session);
       return setStaffCookies(response, session);
+    }
+    if (path.join("/") === "early-access" && method === "POST") {
+      const raw = await req.text();
+      check(Buffer.byteLength(raw) < 20000, "Request too large", 413);
+      return json(
+        await receiveEarlyAccess(
+          new URL(req.url).searchParams.get("key") ?? "",
+          earlyAccessBody(raw),
+        ),
+      );
     }
     if (path.join("/") === "billing/webhook" && method === "POST") {
       const raw = await req.text();
