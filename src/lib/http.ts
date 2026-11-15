@@ -219,6 +219,7 @@ import {
 import { CONSENT, hashPassword, sha256 } from "./content";
 import { requestHost } from "./workspace-address";
 import { sendTrialEmails } from "./plan-email";
+import { deleteClosedWorkspaces } from "./workspace-deletion";
 import { SeatLimitReached, seatsInUse, workspaceSeatLimit } from "./plan-seats";
 import {
   SelectionSchema,
@@ -982,6 +983,10 @@ async function handleRoute(
       await sendTrialEmails().catch(() => {
         console.error("Unable to send trial emails");
       });
+      if (process.env.APP_MODE !== "local")
+        await deleteClosedWorkspaces().catch(() => {
+          console.error("Unable to delete closed workspaces");
+        });
       const results = [];
       for (const rt of await allRuntimes()) {
         const cutoff = new Date();
