@@ -280,8 +280,12 @@ function ChoosePlan({
               name="plan"
               checked={plan === p}
               onChange={() => {
+                // Keep only the people they added beyond the old plan's
+                // starting point; the new plan starts from its own.
+                const start = (q: Plan) =>
+                  Math.max(minPeople, PLANS[q].included);
+                setPeople((n) => start(p) + Math.max(0, n - start(plan)));
                 setPlan(p);
-                setPeople((n) => Math.max(n, PLANS[p].included, minPeople));
               }}
             />
             <span className="billing-plan-name">{PLANS[p].name}</span>
