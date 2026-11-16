@@ -217,9 +217,11 @@ import {
   type EntityTable,
 } from "./repository";
 import { CONSENT, hashPassword, sha256 } from "./content";
-import { rememberWorkspaceCookie, requestHost } from "./workspace-address";
+import { rememberWorkspaceCookie, requestHost, workspaceDomain } from "./workspace-address";
+import { databaseAddresses } from "./workspace-host";
 import { findWorkspace, supabaseFindWorkspaceDeps } from "./find-workspace";
 import { sendTrialEmails } from "./plan-email";
+import { earlyAccessBody, receiveEarlyAccess } from "./early-access";
 import { SeatLimitReached, seatsInUse, workspaceSeatLimit } from "./plan-seats";
 import {
   SelectionSchema,
@@ -269,6 +271,9 @@ function iconRequestSize(req: Request, fallback: number): number | "original" {
   const raw = new URL(req.url).searchParams.get("size");
   return raw === "original" ? "original" : Number(raw ?? fallback);
 }
+/** The workspace's own address, when workspaces have their own. */
+const ownAddress = async (id: string) =>
+  workspaceDomain() ? databaseAddresses.slugForId(id) : null;
 async function body(req: Request) {
   const text = await req.text();
   check(Buffer.byteLength(text) < 2000000, "Request too large", 413);
@@ -533,6 +538,16 @@ async function handleRoute(
       if (remembered) response.headers.append("Set-Cookie", remembered);
       await recordStaffDevice(req, session);
       return setStaffCookies(response, session);
+    }
+    if (path.join("/") === "early-access" && method === "POST") {
+      const raw = await req.text();
+      check(Buffer.byteLength(raw) < 20000, "Request too large", 413);
+      return json(
+        await receiveEarlyAccess(
+          new URL(req.url).searchParams.get("key") ?? "",
+          earlyAccessBody(raw),
+        ),
+      );
     }
     if (path.join("/") === "billing/webhook" && method === "POST") {
       const raw = await req.text();
@@ -1429,6 +1444,7 @@ async function handleRoute(
             user,
             new URL(req.url).origin,
             input.mode,
+            await ownAddress(user.workspace_id),
           );
           const response = json({ url: started.url });
           response.headers.append("Set-Cookie", started.cookie);
@@ -1489,6 +1505,7 @@ async function handleRoute(
         const result = await qbo.connection.authorize(
           user.actor,
           new URL(req.url).origin,
+          await ownAddress(user.workspace_id),
         );
         const response = json({ url: result.url });
         response.headers.append("Set-Cookie", result.cookie);

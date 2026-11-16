@@ -318,3 +318,44 @@ it("enforces one workspace per Stripe account in service-only credential storage
     await db.close();
   }
 });
+
+it("connects from a workspace's own address through the registered callback", async () => {
+  vi.stubEnv("APP_URL", origin);
+  vi.stubEnv("WORKSPACE_DOMAIN", "example.test");
+  try {
+    const { connect } = fixture();
+    const own = "https://harbor.example.test";
+    await expect(connect.authorize(staff, own, "test")).rejects.toThrow(
+      "configured Stripe Connect domain",
+    );
+    await expect(
+      connect.authorize(staff, "https://other.example.test", "test", "harbor"),
+    ).rejects.toThrow("configured Stripe Connect domain");
+    const started = await connect.authorize(staff, own, "test", "harbor");
+    const url = new URL(started.url);
+    // Stripe still sees only the registered callback.
+    expect(url.searchParams.get("redirect_uri")).toBe(redirectUri);
+    const state = url.searchParams.get("state")!;
+    expect(state).toMatch(/\.harbor$/);
+    // The callback must land on that address (bounced) or the registered one.
+    const elsewhere = new URL(
+      "https://other.example.test" +
+        stripeConnectCallback +
+        "?" +
+        new URLSearchParams({ state, code: "fixture-code" }),
+    );
+    await expect(connect.callback(staff, elsewhere, state)).rejects.toThrow(
+      "Invalid Stripe callback",
+    );
+    const bounced = new URL(
+      own +
+        stripeConnectCallback +
+        "?" +
+        new URLSearchParams({ state, code: "fixture-code" }),
+    );
+    await connect.callback(staff, bounced, state);
+    expect((await connect.status()).state).toBe("setting_up");
+  } finally {
+    vi.unstubAllEnvs();
+  }
+});

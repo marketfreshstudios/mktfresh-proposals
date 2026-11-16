@@ -8,6 +8,7 @@ import { AppError } from "./lib/model";
 import { StaffPasswordRequired } from "./lib/staff-access";
 import { cookie, staff } from "./lib/auth";
 import { WorkspaceHostMismatch } from "./lib/workspace-host";
+import { bounceOAuthCallback } from "./lib/oauth-bounce";
 import {
   priorStaffState,
   staffIdentityCookie,
@@ -35,6 +36,9 @@ export function staffPagePath(path: string) {
   );
 }
 export async function proxy(request: NextRequest) {
+  // A connection started on a workspace's own address finishes there.
+  const bounced = bounceOAuthCallback(request);
+  if (bounced) return bounced;
   const page = staffPagePath(request.nextUrl.pathname);
   if (!page && !request.nextUrl.pathname.startsWith("/api/"))
     return NextResponse.next();
