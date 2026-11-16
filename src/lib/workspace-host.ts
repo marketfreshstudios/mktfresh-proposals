@@ -1,7 +1,11 @@
 import { AppError } from "./model";
 import { supabase } from "./repository";
 import { appOrigin, workspaceOrigin } from "./links";
-import { requestHost, workspaceSlugFromHost } from "./workspace-address";
+import {
+  requestHost,
+  workspaceDomainHost,
+  workspaceSlugFromHost,
+} from "./workspace-address";
 export type WorkspaceAddressLookup = {
   idForSlug(slug: string): Promise<string | null>;
   slugForId(id: string): Promise<string | null>;
@@ -66,7 +70,16 @@ export async function checkStaffWorkspaceHost(
   const host = requestHost(request);
   const slug = workspaceSlugFromHost(host);
   const addresses = lookupFor(lookup);
-  if (!slug || !addresses) return;
+  if (!addresses) return;
+  if (!slug) {
+    // app.yeswell.co and the like aren't anyone's workspace: send a sign-in
+    // that turns up there to its own address.
+    if (!workspaceDomainHost(host) || unclaimedAppHost(host, null)) return;
+    const own = workspaceOrigin(await addresses.slugForId(workspaceId));
+    throw new WorkspaceHostMismatch(
+      new URL(own).host === host.toLowerCase() ? null : own,
+    );
+  }
   const owner = await addresses.idForSlug(slug);
   if (owner === workspaceId || unclaimedAppHost(host, owner)) return;
   const origin = workspaceOrigin(await addresses.slugForId(workspaceId));
@@ -88,4 +101,24 @@ export async function publicHostAllows(
   if (!host || !slug || !addresses) return true;
   const owner = await addresses.idForSlug(slug);
   return owner === workspaceId || unclaimedAppHost(host, owner);
+}
+
+/** What a sign-in page on this host should be. Hosts on the workspace domain
+ * that no workspace owns (app.yeswell.co, an unclaimed address) help people
+ * find their own workspace instead of taking a password. `unknown` names an
+ * unclaimed workspace address. */
+export async function signInHost(
+  host: string | null | undefined,
+  lookup?: WorkspaceAddressLookup,
+): Promise<{ find: false } | { find: true; unknown: string | null }> {
+  const addresses = lookupFor(lookup);
+  if (!host || !addresses || !workspaceDomainHost(host)) return { find: false };
+  const slug = workspaceSlugFromHost(host);
+  if (unclaimedAppHost(host, null)) return { find: false };
+  if (!slug) return { find: true, unknown: null };
+  if (await addresses.idForSlug(slug)) return { find: false };
+  return {
+    find: true,
+    unknown: host.trim().toLowerCase().replace(/:\d+$/, ""),
+  };
 }

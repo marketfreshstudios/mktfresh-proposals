@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
+  rememberWorkspaceCookie,
   validWorkspaceSlug,
+  workspaceDomainHost,
   workspaceSlugFromHost,
 } from "../src/lib/workspace-address";
 import { proposalOrigin, workspaceOrigin } from "../src/lib/links";
@@ -8,6 +10,7 @@ import {
   WorkspaceHostMismatch,
   checkStaffWorkspaceHost,
   publicHostAllows,
+  signInHost,
   type WorkspaceAddressLookup,
 } from "../src/lib/workspace-host";
 import { postgresFixture } from "./postgres-fixture";
@@ -100,9 +103,24 @@ describe("workspace addresses", () => {
     ).catch((x) => x);
     expect(proxied).toBeInstanceOf(WorkspaceHostMismatch);
     expect(proxied.origin).toBeNull();
-    // Hosts that aren't workspace addresses are left alone.
+    // A sign-in on app.example.test (no one's workspace) goes to its own address.
+    const app = await checkStaffWorkspaceHost(
+      req("app.example.test"),
+      B,
+      lookup,
+    ).catch((x) => x);
+    expect(app).toBeInstanceOf(WorkspaceHostMismatch);
+    expect(app.origin).toBe("https://bravo.example.test");
+    expect(
+      (
+        await checkStaffWorkspaceHost(req("example.test"), B, lookup).catch(
+          (x) => x,
+        )
+      ).origin,
+    ).toBe("https://bravo.example.test");
+    // Hosts off the workspace domain are left alone.
     await expect(
-      checkStaffWorkspaceHost(req("app.example.test"), B, lookup),
+      checkStaffWorkspaceHost(req("proposals.other.test"), B, lookup),
     ).resolves.toBeUndefined();
   });
   it("keeps APP_URL working until its name is claimed", async () => {
@@ -146,5 +164,52 @@ describe("workspace addresses", () => {
         db.exec(`update public.workspaces set slug='${bad}' where id='${B}'`),
       ).rejects.toThrow();
     await db.exec(`update public.workspaces set slug=null where id='${B}'`);
+  });
+  it("takes passwords only on a workspace's own address", async () => {
+    expect(await signInHost("acme.example.test", lookup)).toEqual({
+      find: false,
+    });
+    expect(await signInHost("app.example.test", lookup)).toEqual({
+      find: true,
+      unknown: null,
+    });
+    expect(await signInHost("example.test", lookup)).toEqual({
+      find: true,
+      unknown: null,
+    });
+    expect(await signInHost("nobody.example.test:443", lookup)).toEqual({
+      find: true,
+      unknown: "nobody.example.test",
+    });
+    // APP_URL before its name is claimed, and hosts off the domain, sign in.
+    expect(await signInHost("marketfresh.example.test", lookup)).toEqual({
+      find: false,
+    });
+    expect(await signInHost("proposals.other.test", lookup)).toEqual({
+      find: false,
+    });
+    delete process.env.WORKSPACE_DOMAIN;
+    expect(await signInHost("app.example.test", lookup)).toEqual({
+      find: false,
+    });
+    expect(workspaceDomainHost("app.example.test")).toBe(false);
+  });
+  it("remembers the workspace address across the domain, and nothing else", () => {
+    expect(
+      rememberWorkspaceCookie(
+        new Request("https://acme.example.test/api/auth/login", {
+          headers: { host: "acme.example.test" },
+        }),
+      ),
+    ).toBe(
+      "yeswell_workspace=acme; Domain=example.test; Path=/; Max-Age=31536000; SameSite=Lax; Secure",
+    );
+    expect(
+      rememberWorkspaceCookie(
+        new Request("https://app.example.test/api/auth/login", {
+          headers: { host: "app.example.test" },
+        }),
+      ),
+    ).toBeNull();
   });
 });

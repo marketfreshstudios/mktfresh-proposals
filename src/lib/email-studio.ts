@@ -14,7 +14,7 @@ import {
 import { editableEmail, validateTemplate } from "./email-template-content";
 import { emailIdentity, staffFromAddress } from "./email-identity";
 import { defaultValidUntil } from "./validity";
-import { appOrigin, proposalOrigin } from "./links";
+import { proposalOrigin, workspaceOrigin } from "./links";
 const PreviewSchema = z
   .object({
     proposal_id: z.string().uuid().nullable().optional(),
@@ -136,7 +136,7 @@ export async function emailStudioPreview(
     logo: logo ?? "",
     url: options.proposal_id
       ? `${proposalOrigin(p)}/p/${p.id}?preview=1`
-      : `${appOrigin()}/studio/emails/${key}`,
+      : `${workspaceOrigin(settings.workspace_slug)}/studio/emails/${key}`,
   });
   return {
     p,

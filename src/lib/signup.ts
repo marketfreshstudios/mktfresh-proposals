@@ -114,7 +114,7 @@ export class SignupError extends AppError {
   }
 }
 
-function keyHash(kind: string, value: string) {
+export function keyHash(kind: string, value: string) {
   const salt = process.env.INTEGRATION_ENCRYPTION_KEY;
   if (!salt || salt.length < 32)
     throw new AppError(503, "Signup is unavailable");

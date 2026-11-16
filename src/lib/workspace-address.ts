@@ -58,3 +58,23 @@ export function workspaceSlugFromHost(host: string | null | undefined) {
 export function requestHost(request: Request) {
   return request.headers.get("host") ?? new URL(request.url).host;
 }
+
+/** Hosts on the workspace domain that aren't a workspace's own address, such
+ * as app.yeswell.co or yeswell.co itself. False without WORKSPACE_DOMAIN. */
+export function workspaceDomainHost(host: string | null | undefined) {
+  const domain = workspaceDomain();
+  if (!domain || !host) return false;
+  const name = host.trim().toLowerCase().replace(/:\d+$/, "");
+  return name === domain || name.endsWith("." + domain);
+}
+
+// The last workspace address signed in to in this browser, shared across the
+// workspace domain so app.yeswell.co can offer it. Holds only the address.
+export const REMEMBERED_WORKSPACE_COOKIE = "yeswell_workspace";
+export function rememberWorkspaceCookie(request: Request) {
+  const domain = workspaceDomain();
+  const slug = workspaceSlugFromHost(requestHost(request));
+  if (!domain || !slug) return null;
+  const secure = new URL(request.url).protocol === "https:" ? "; Secure" : "";
+  return `${REMEMBERED_WORKSPACE_COOKIE}=${slug}; Domain=${domain}; Path=/; Max-Age=31536000; SameSite=Lax${secure}`;
+}

@@ -217,8 +217,9 @@ import {
   type EntityTable,
 } from "./repository";
 import { CONSENT, hashPassword, sha256 } from "./content";
-import { requestHost, workspaceDomain } from "./workspace-address";
+import { rememberWorkspaceCookie, requestHost, workspaceDomain } from "./workspace-address";
 import { databaseAddresses } from "./workspace-host";
+import { findWorkspace, supabaseFindWorkspaceDeps } from "./find-workspace";
 import { sendTrialEmails } from "./plan-email";
 import { deleteClosedWorkspaces } from "./workspace-deletion";
 import { earlyAccessBody, receiveEarlyAccess } from "./early-access";
@@ -427,9 +428,21 @@ async function handleRoute(
         const response = json({ authenticated: true, origin: done.origin });
         const hint = staffIdentityCookie(done.session.user.id);
         if (hint) response.headers.append("Set-Cookie", hint);
+        const remembered = rememberWorkspaceCookie(req);
+        if (remembered) response.headers.append("Set-Cookie", remembered);
         return setStaffCookies(response, done.session);
       }
       throw new AppError(404, "Not found");
+    }
+    if (path.join("/") === "auth/find-workspace" && method === "POST") {
+      check(sameOrigin(req), "Same-origin request required", 403);
+      return json(
+        await findWorkspace(
+          await body(req),
+          signupIp(req.headers),
+          supabaseFindWorkspaceDeps(),
+        ),
+      );
     }
     if (path[0] === "auth" && path[1] === "login" && method === "POST") {
       check(
@@ -465,6 +478,8 @@ async function handleRoute(
       if (!membership.two_step_required) {
         const identity = staffIdentityCookie(session.user.id);
         if (identity) response.headers.append("Set-Cookie", identity);
+        const remembered = rememberWorkspaceCookie(req);
+        if (remembered) response.headers.append("Set-Cookie", remembered);
       }
       return setStaffCookies(
         response,
@@ -483,6 +498,8 @@ async function handleRoute(
       });
       const hint = staffIdentityCookie(identity.user.id);
       if (hint) response.headers.append("Set-Cookie", hint);
+      const remembered = rememberWorkspaceCookie(req);
+      if (remembered) response.headers.append("Set-Cookie", remembered);
       return setStaffCookies(response, identity);
     }
     if (path.join("/") === "auth/confirm-email" && method === "POST") {
@@ -518,6 +535,8 @@ async function handleRoute(
       const response = json({ authenticated: true });
       const hint = staffIdentityCookie(session.user.id);
       if (hint) response.headers.append("Set-Cookie", hint);
+      const remembered = rememberWorkspaceCookie(req);
+      if (remembered) response.headers.append("Set-Cookie", remembered);
       await recordStaffDevice(req, session);
       return setStaffCookies(response, session);
     }
