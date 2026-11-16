@@ -221,6 +221,7 @@ import { rememberWorkspaceCookie, requestHost, workspaceDomain } from "./workspa
 import { databaseAddresses } from "./workspace-host";
 import { findWorkspace, supabaseFindWorkspaceDeps } from "./find-workspace";
 import { sendTrialEmails } from "./plan-email";
+import { deleteClosedWorkspaces } from "./workspace-deletion";
 import { earlyAccessBody, receiveEarlyAccess } from "./early-access";
 import { SeatLimitReached, seatsInUse, workspaceSeatLimit } from "./plan-seats";
 import {
@@ -1016,6 +1017,10 @@ async function handleRoute(
       await sendTrialEmails().catch(() => {
         console.error("Unable to send trial emails");
       });
+      if (process.env.APP_MODE !== "local")
+        await deleteClosedWorkspaces().catch(() => {
+          console.error("Unable to delete closed workspaces");
+        });
       const results = [];
       for (const rt of await allRuntimes()) {
         const cutoff = new Date();
