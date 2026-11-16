@@ -6,6 +6,9 @@ export type PlanRow = {
   plan_status: PlanStatus;
   trial_ends_at: string | null;
   past_due_since: string | null;
+  canceled_at?: string | null;
+  closed_at?: string | null;
+  closure_warning_sent_at?: string | null;
 };
 export type PlanState = {
   status: PlanStatus;
@@ -19,16 +22,53 @@ export type PlanState = {
     | "trial_ended"
     | "payment_failed"
     | "payment_overdue"
-    | "canceled";
+    | "canceled"
+    | "closed";
   trial_ends_at: string | null;
   days_left: number | null;
   /** When a past-due workspace becomes read-only. */
   grace_ends_at: string | null;
+  /** When a read-only workspace closes, once its owners have been warned. */
+  closes_at: string | null;
+  /** When a closed workspace is deleted. */
+  deletes_at: string | null;
 };
 
 const DAY = 86400000;
 export const PAST_DUE_GRACE_DAYS = 7;
 export const TRIAL_WARNING_DAYS = 3;
+export const CLOSE_AFTER_MONTHS = 12;
+export const CLOSURE_NOTICE_DAYS = 30;
+export const DELETE_AFTER_DAYS = 90;
+
+const addMonths = (iso: string, months: number) => {
+  const d = new Date(iso);
+  d.setUTCMonth(d.getUTCMonth() + months);
+  return d.toISOString();
+};
+const addDays = (iso: string, days: number) =>
+  new Date(Date.parse(iso) + days * DAY).toISOString();
+
+/** When the workspace became read-only (as the database counts it), or null. */
+export function readOnlySince(row: PlanRow): string | null {
+  if (row.plan_status === "trial") return row.trial_ends_at;
+  if (row.plan_status === "past_due")
+    return row.past_due_since
+      ? addDays(row.past_due_since, PAST_DUE_GRACE_DAYS)
+      : null;
+  if (row.plan_status === "canceled") return row.canceled_at ?? null;
+  return null;
+}
+
+/** The closing date shown once owners were warned: 12 months read-only, and
+ * never sooner than 30 days after the warning. */
+export function closesAt(row: PlanRow): string | null {
+  const since = readOnlySince(row);
+  if (row.closed_at || !row.closure_warning_sent_at || !since) return null;
+  const a = addMonths(since, CLOSE_AFTER_MONTHS);
+  const b = addDays(row.closure_warning_sent_at, CLOSURE_NOTICE_DAYS);
+  return Date.parse(a) > Date.parse(b) ? a : b;
+}
 
 export function planState(row: PlanRow, now = new Date()): PlanState {
   const base = {
@@ -36,7 +76,13 @@ export function planState(row: PlanRow, now = new Date()): PlanState {
     trial_ends_at: row.trial_ends_at,
     days_left: null,
     grace_ends_at: null,
+    closes_at: closesAt(row),
+    deletes_at: row.closed_at
+      ? addDays(row.closed_at, DELETE_AFTER_DAYS)
+      : null,
   };
+  if (row.closed_at && row.plan_status !== "active")
+    return { ...base, mode: "read_only", notice: "closed" };
   if (row.plan_status === "trial") {
     const ends = Date.parse(row.trial_ends_at ?? "");
     if (!Number.isFinite(ends) || ends <= now.getTime())
@@ -83,14 +129,17 @@ export async function workspacePlan(workspaceId: string): Promise<PlanState> {
     return planState(localPlan());
   const { data, error } = await supabase()
     .from("workspaces")
-    .select("plan_status,trial_ends_at,past_due_since")
+    .select(
+      "plan_status,trial_ends_at,past_due_since,canceled_at,closed_at,closure_warning_sent_at",
+    )
     .eq("id", workspaceId)
     .maybeSingle();
   if (error) throw new AppError(503, "Workspace plan is unavailable");
   return planState((data as PlanRow | null) ?? ACTIVE);
 }
 // Local and e2e runs can preview any state, e.g. LOCAL_PLAN=trial:2 (days
-// left), trial:0, past_due:3 (days since the failed payment), canceled.
+// left), trial:0, past_due:3 (days since the failed payment), canceled,
+// closing:20 (warned; days until it closes), closed:10 (days since closing).
 function localPlan(): PlanRow {
   const [status, n] = (process.env.LOCAL_PLAN ?? "active").split(":");
   const days = Number(n ?? 0);
@@ -107,6 +156,23 @@ function localPlan(): PlanRow {
       past_due_since: new Date(Date.now() - days * DAY).toISOString(),
     };
   if (status === "canceled") return { ...ACTIVE, plan_status: "canceled" };
+  if (status === "closing")
+    return {
+      plan_status: "trial",
+      trial_ends_at: new Date(
+        Date.now() + days * DAY - 365 * DAY,
+      ).toISOString(),
+      past_due_since: null,
+      closure_warning_sent_at: new Date(
+        Date.now() - (CLOSURE_NOTICE_DAYS - days) * DAY,
+      ).toISOString(),
+    };
+  if (status === "closed")
+    return {
+      ...ACTIVE,
+      plan_status: "canceled",
+      closed_at: new Date(Date.now() - days * DAY).toISOString(),
+    };
   return ACTIVE;
 }
 
@@ -115,11 +181,13 @@ export class WorkspaceReadOnly extends AppError {
   constructor(public notice: PlanState["notice"]) {
     super(
       402,
-      notice === "canceled"
-        ? "Your plan was canceled. Choose a plan to create and send again."
-        : notice === "payment_overdue"
-          ? "Your payment is overdue. Update your card to create and send again."
-          : "Your trial has ended. Choose a plan to create and send again.",
+      notice === "closed"
+        ? "This workspace is closed. Choose a plan to keep it."
+        : notice === "canceled"
+          ? "Your plan was canceled. Choose a plan to create and send again."
+          : notice === "payment_overdue"
+            ? "Your payment is overdue. Update your card to create and send again."
+            : "Your trial has ended. Choose a plan to create and send again.",
     );
   }
 }
