@@ -190,11 +190,13 @@ function fakeDeps(over: Partial<ClosingDeps> = {}) {
     dueForWarning: async () => [
       {
         id: "w1",
+        plan_status: "trial",
         read_only_since: "2025-12-01T00:00:00Z",
         closes_at: "2026-12-16T00:00:00Z",
       },
       {
         id: LOCAL_WORKSPACE_ID,
+        plan_status: "trial",
         read_only_since: "2025-12-01T00:00:00Z",
         closes_at: "2026-12-16T00:00:00Z",
       },
@@ -252,22 +254,37 @@ describe("closing job", () => {
   it("writes the warning in Yeswell's voice with both dates", () => {
     vi.stubEnv("APP_URL", "https://app.yeswell.co");
     vi.stubEnv("WORKSPACE_DOMAIN", "yeswell.co");
-    const m = closureWarningEmail(
-      { id: "w1", name: "Acme Studio", slug: "acme" },
-      { email: "ann@acme.test", first_name: "Ann" },
-      {
-        read_only_since: "2025-12-01T00:00:00Z",
-        closes_at: "2026-12-16T00:00:00Z",
-      },
-    );
+    const email = (plan_status: string) =>
+      closureWarningEmail(
+        { id: "w1", name: "Acme Studio", slug: "acme" },
+        { email: "ann@acme.test", first_name: "Ann" },
+        {
+          plan_status,
+          read_only_since: "2025-12-01T00:00:00Z",
+          closes_at: "2026-12-16T00:00:00Z",
+        },
+      );
+    const m = email("trial");
     expect(m.subject).toBe(
       "Your Yeswell workspace closes on December 16, 2026",
     );
     expect(m.text).toContain("Hi Ann,");
     expect(m.text).toContain(
-      "acme.yeswell.co has been read-only since December 1, 2025, so we'll close it on December 16, 2026. Its proposals, clients and files will be deleted on March 16, 2027.",
+      "Your free trial of acme.yeswell.co ended on December 1, 2025. You can still view and download your proposals, but you can't create or send new ones.",
+    );
+    expect(m.text).toContain(
+      "We'll close the workspace on December 16, 2026 and delete its proposals, clients and files on March 16, 2027.",
     );
     expect(m.text).toContain("https://acme.yeswell.co/billing");
+    expect(email("canceled").text).toContain(
+      "Your Yeswell plan for acme.yeswell.co was canceled on December 1, 2025.",
+    );
+    // Read-only began 7 days after the failed payment.
+    expect(email("past_due").text).toContain(
+      "A Yeswell payment for acme.yeswell.co didn't go through on November 24, 2025, and it hasn't been paid since.",
+    );
+    for (const kind of ["trial", "canceled", "past_due"])
+      expect(email(kind).text.toLowerCase()).not.toContain("read-only");
     expect(m.html).toContain("Choose a plan");
   });
 });

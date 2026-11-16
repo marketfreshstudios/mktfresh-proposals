@@ -43,9 +43,10 @@ $$;
 -- Read-only workspaces that close within 30 days and haven't been warned.
 -- closes_at is never sooner than 30 days from now.
 create or replace function public.workspaces_due_for_closure_warning()
-returns table (id uuid, read_only_since timestamptz, closes_at timestamptz)
+returns table (id uuid, plan_status text, read_only_since timestamptz, closes_at timestamptz)
 language sql stable security definer set search_path to '' as $$
   select w.id,
+         w.plan_status,
          public.workspace_read_only_since(w),
          greatest(public.workspace_read_only_since(w) + interval '12 months',
                   now() + interval '30 days')
@@ -53,7 +54,7 @@ language sql stable security definer set search_path to '' as $$
    where w.closed_at is null
      and w.closure_warning_sent_at is null
      and public.workspace_read_only_since(w) <= now() - interval '12 months' + interval '30 days'
-   order by 3;
+   order by 4;
 $$;
 
 -- Records that the owners were warned. False if the workspace changed since.
