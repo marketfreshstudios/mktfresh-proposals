@@ -13,7 +13,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 async function handler(req: Request) {
-  const oauth = oauthServer();
+  const oauth = oauthServer(req);
   try {
     const origin = req.headers.get("origin");
     check(
