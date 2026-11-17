@@ -72,6 +72,17 @@ export function PlanBanner({ plan }: { plan: PlanState | null }) {
           Update your card by {shortDate(plan.grace_ends_at)} to keep sending.
         </Banner>
       );
+    case "closed":
+      return (
+        <Banner
+          tone="danger"
+          title="This workspace is closed"
+          action={choose(true)}
+        >
+          Its proposals, clients and files will be deleted on{" "}
+          {shortDate(plan.deletes_at)}. Choose a plan to keep them.
+        </Banner>
+      );
     case "trial_ended":
     case "payment_overdue":
     case "canceled":
@@ -87,8 +98,9 @@ export function PlanBanner({ plan }: { plan: PlanState | null }) {
           }
           action={choose(true)}
         >
-          Your proposals and client links still work. Choose a plan to create
-          and send again.
+          {plan.closes_at
+            ? `This workspace closes on ${shortDate(plan.closes_at)}. Choose a plan to keep it.`
+            : "Your proposals and client links still work. Choose a plan to create and send again."}
         </Banner>
       );
     default:
