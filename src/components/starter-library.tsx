@@ -1,4 +1,5 @@
 "use client";
+import { NewLink, useReadOnly } from "./workspace-plan";
 import { useEffect, useRef, useState, type ButtonHTMLAttributes } from "react";
 import { Ellipsis } from "lucide-react";
 import type { Template } from "../lib/model";
@@ -37,6 +38,7 @@ export function useStarterActions(
   beforeNavigate?: () => void,
   beforeChange?: () => Promise<boolean>,
 ) {
+  const readOnly = useReadOnly();
   const [copyOpen, setCopyOpen] = useState(false),
     [name, setName] = useState(""),
     [busy, setBusy] = useState(false),
@@ -176,7 +178,12 @@ export function useStarterActions(
     ),
     items: (
       <>
-        <button type="button" role="menuitem" onClick={copy}>
+        <button
+          type="button"
+          role="menuitem"
+          onClick={copy}
+          disabled={readOnly}
+        >
           Duplicate
         </button>
         {owner && template?.starter_edited && (
@@ -247,12 +254,12 @@ export function StarterCardMenu({
             >
               Preview
             </a>
-            <a
+            <NewLink
               role="menuitem"
               href={`/proposals?new=1&template=${template.id}`}
             >
               New proposal from this
-            </a>
+            </NewLink>
             {template.starter_key && actions.items}
             {onDelete && (
               <button type="button" role="menuitem" onClick={onDelete}>

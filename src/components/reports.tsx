@@ -1,5 +1,6 @@
 "use client";
 
+import { NewLink } from "./workspace-plan";
 import { StaffSectionHeading } from "./staff-section-heading";
 import { withCount } from "../lib/count-label";
 import { StaffNativeTable } from "./staff-table";
@@ -386,9 +387,9 @@ export function ReportsPage({ query }: { query: StaffQuery }) {
                 After you send a proposal, you’ll see who viewed it, how long it
                 took to sign, and the one-time and monthly value signed.
               </p>
-              <a className="btn action" href="/proposals?new=1">
+              <NewLink className="btn action" href="/proposals?new=1">
                 New proposal
-              </a>
+              </NewLink>
             </section>
           ) : (
             <>
