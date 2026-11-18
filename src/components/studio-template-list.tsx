@@ -1,5 +1,6 @@
 "use client";
 import { CountChip } from "./count-chip";
+import { useReadOnly } from "./workspace-plan";
 import { workspaceBusinessName } from "../lib/business-details";
 import { StaffSectionHeading } from "./staff-section-heading";
 import {
@@ -92,6 +93,7 @@ export function StudioTemplateList({
   data: Data | null;
   blocks?: boolean;
 }) {
+  const readOnly = useReadOnly();
   const savedTemplates = data?.templates;
   const { date: staffDate, personal } = useStaffDates(data?.settings?.timezone);
   const [refreshed, setRefreshed] = useState<{
@@ -224,9 +226,9 @@ export function StudioTemplateList({
         </p>
         <Button
           variant="primary"
-          className="action"
+          className={readOnly ? "action locked" : "action"}
           busy={busy}
-          disabled={!data}
+          disabled={!data || readOnly}
           onClick={create}
         >
           {blocks ? "New block" : "New template"}

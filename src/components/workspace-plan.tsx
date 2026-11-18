@@ -8,6 +8,31 @@ export const WorkspacePlanProvider = PlanContext.Provider;
 export const useWorkspacePlan = () => useContext(PlanContext);
 export const useReadOnly = () => useContext(PlanContext)?.mode === "read_only";
 
+/** A link that starts something new. Without an active plan it shows as a
+ * disabled button, since nothing new can be created. */
+export function NewLink({
+  href,
+  className,
+  role,
+  children,
+}: {
+  href: string;
+  className?: string;
+  role?: string;
+  children: React.ReactNode;
+}) {
+  const readOnly = useReadOnly();
+  return readOnly ? (
+    <button type="button" className={className} role={role} disabled>
+      {children}
+    </button>
+  ) : (
+    <a className={className} href={href} role={role}>
+      {children}
+    </a>
+  );
+}
+
 const shortDay = (iso: string | null) =>
   iso ? new Date(iso).toLocaleDateString("en-US", { weekday: "long" }) : "soon";
 const shortDate = (iso: string | null) =>

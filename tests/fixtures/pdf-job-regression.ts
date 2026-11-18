@@ -3,6 +3,18 @@ import { mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execFileSync } from "node:child_process";
+
+// Serverless Chromium adds its own libraries to LD_LIBRARY_PATH, which can
+// shadow the system ones Poppler needs. Run pdftotext with the system path.
+function pdftotext(args: string[]) {
+  const env = { ...process.env };
+  const paths = (env.LD_LIBRARY_PATH ?? "")
+    .split(":")
+    .filter((p) => p && !p.startsWith("/tmp/"));
+  if (paths.length) env.LD_LIBRARY_PATH = paths.join(":");
+  else delete env.LD_LIBRARY_PATH;
+  return execFileSync("pdftotext", args, { encoding: "utf8", env });
+}
 import { PDFDocument } from "pdf-lib";
 import {
   setup,
@@ -158,7 +170,7 @@ export async function verifyPdfJobs(kind: (typeof regressionKinds)[number]) {
     assert.equal(pdf.getPageCount(), previewCount + 1);
     const file = join(dir, `${f.stage}.pdf`);
     await writeFile(file, bytes);
-    const text = execFileSync("pdftotext", [file, "-"], { encoding: "utf8" });
+    const text = pdftotext([file, "-"]);
     assert(text.includes("Certificate of completion"));
     assert(
       !text.includes("Yeswell"),
@@ -175,11 +187,7 @@ export async function verifyPdfJobs(kind: (typeof regressionKinds)[number]) {
     }
     if (version.pagination) {
       assert.equal(previewCount, version.pagination.pages);
-      const page2 = execFileSync(
-        "pdftotext",
-        ["-f", "2", "-l", "2", file, "-"],
-        { encoding: "utf8" },
-      );
+      const page2 = pdftotext(["-f", "2", "-l", "2", file, "-"]);
       assert(page2.includes("Second page:"));
     }
   }

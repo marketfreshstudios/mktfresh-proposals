@@ -1,4 +1,5 @@
 "use client";
+import { useReadOnly } from "./workspace-plan";
 import { StaffTable, StaffTableHead } from "./staff-table";
 import { Select, PasswordInput } from "./form-controls";
 import { unfinishedAssignment } from "../lib/proposal-owner";
@@ -39,6 +40,7 @@ export function TeamStudio({
   embedded?: boolean;
   run: (fn: () => Promise<unknown>, success?: string) => Promise<void>;
 }) {
+  const readOnly = useReadOnly();
   const { date: staffDate, personal } = useStaffDates(data.settings?.timezone);
   const [people, setPeople] = useState<TeamPerson[]>([]),
     [recent, setRecent] = useState<TeamAudit[]>([]),
@@ -118,6 +120,7 @@ export function TeamStudio({
           <Button
             variant="primary"
             className="action"
+            disabled={readOnly}
             onClick={() => {
               setError("");
               if (seatsFull(seats)) setAddSeat(true);

@@ -1,4 +1,5 @@
 "use client";
+import { useReadOnly } from "./workspace-plan";
 import { BillingCategoryForm } from "./billing-category-form";
 import { PanelCard } from "./editor/tools-panel";
 import { PanelHeading } from "./editor/panel-heading";
@@ -200,6 +201,7 @@ export function CatalogStudio({
   data: Data | null;
   run: Runner;
 }) {
+  const readOnly = useReadOnly();
   const [selected, setSelected] = useState<string | null>(() =>
       typeof window !== "undefined"
         ? new URLSearchParams(location.search).get("item")
@@ -285,7 +287,7 @@ export function CatalogStudio({
         {!beforeStripe && (
           <Button
             className="action"
-            disabled={!data}
+            disabled={!data || readOnly}
             onClick={() => setFamily(true)}
           >
             New billing category
@@ -373,7 +375,7 @@ export function CatalogStudio({
                   ? "Connect Stripe"
                   : "View Stripe connection"}
               </a>
-              <Button onClick={() => setAdding(true)}>
+              <Button onClick={() => setAdding(true)} disabled={readOnly}>
                 Add one-time product
               </Button>
             </div>
@@ -473,7 +475,7 @@ export function CatalogStudio({
                 </StaffTableEmpty>
               )}
             </StaffTable>
-            <Button onClick={() => setAdding(true)}>
+            <Button onClick={() => setAdding(true)} disabled={readOnly}>
               Add one-time product
             </Button>
           </div>
@@ -904,6 +906,7 @@ function TemplatesStudioContent({
   selected?: string;
   blocksOnly?: boolean;
 }) {
+  const readOnly = useReadOnly();
   const blockFeedback = useBlockFeedback();
   const [insertAnchor, setInsertAnchor] = useState<HTMLElement | null>(null);
   const fieldInsertion = useBlockToolbar();
@@ -2103,6 +2106,7 @@ function TemplatesStudioContent({
               <Button
                 className="studio-desktop-action"
                 onClick={() => void duplicateSaved()}
+                disabled={readOnly}
               >
                 Duplicate
               </Button>

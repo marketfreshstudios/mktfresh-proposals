@@ -433,6 +433,7 @@ function StaffAppContent({
           variant={pageData?.total === 0 ? undefined : "primary"}
           className={pageData?.total === 0 ? undefined : "action"}
           onClick={openNew}
+          disabled={data?.plan?.mode === "read_only"}
         >
           New proposal
         </Button>

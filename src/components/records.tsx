@@ -1,5 +1,5 @@
 "use client";
-import { useReadOnly } from "./workspace-plan";
+import { NewLink, useReadOnly } from "./workspace-plan";
 import { ToastSurface } from "./toast-surface";
 import { timelineEvents } from "../lib/timeline";
 import { StaffSectionHeading } from "./staff-section-heading";
@@ -262,6 +262,7 @@ export function ProposalMenu({
   tableRow?: boolean;
   mobileRecord?: boolean;
 }) {
+  const readOnly = useReadOnly();
   const anchor = useRef<HTMLButtonElement>(null);
   const [reassign, setReassign] = useState(false);
   const [replaceBlock, setReplaceBlock] = useState(false);
@@ -602,7 +603,7 @@ export function ProposalMenu({
                 ))}
               {!listRow && (
                 <button
-                  disabled={busy || imported}
+                  disabled={busy || imported || readOnly}
                   onClick={() => {
                     setOpen(false);
                     setDuplicating(true);
@@ -1273,13 +1274,13 @@ export function ProposalListV4({
             title="No proposals yet"
             action={
               <div className="first-run-actions">
-                <a className="btn action" href="/proposals?new=1">
+                <NewLink className="btn action" href="/proposals?new=1">
                   New proposal
-                </a>
+                </NewLink>
                 {data.user.staff_role === "owner" && (
-                  <a className="btn" href="/studio/connections/imports">
+                  <NewLink className="btn" href="/studio/connections/imports">
                     Import from Proposify
-                  </a>
+                  </NewLink>
                 )}
               </div>
             }
@@ -4634,12 +4635,12 @@ function ClientDetailHeader({
             Edit client
           </Button>
           {!client?.archived_at && (
-            <a
+            <NewLink
               className="btn action"
               href={`/proposals?new=1&client=${selected}`}
             >
               New proposal
-            </a>
+            </NewLink>
           )}
           {actions}
         </div>
@@ -4687,6 +4688,7 @@ export function ClientsV4({
   initialView?: string;
   onRefresh: () => Promise<void>;
 }) {
+  const readOnly = useReadOnly();
   const client = data?.clients.find((c) => c.id === selected),
     [linkChoice, setLinkChoice] = useState<string | null | undefined>(
       undefined,
@@ -4753,7 +4755,11 @@ export function ClientsV4({
       <section className="clients-v4 clients-directory-v4 stack">
         <header className="directory-heading">
           <h1 className="t-page-title">Clients</h1>
-          <Button className="action" onClick={() => setNewClient(true)}>
+          <Button
+            className="action"
+            onClick={() => setNewClient(true)}
+            disabled={readOnly}
+          >
             New client
           </Button>
         </header>
@@ -4794,9 +4800,9 @@ export function ClientsV4({
             title={data.clients.length ? "No active clients" : "No clients yet"}
             action={
               data.user.staff_role === "owner" ? (
-                <a className="btn" href="/studio/connections/imports">
+                <NewLink className="btn" href="/studio/connections/imports">
                   Import from Proposify
-                </a>
+                </NewLink>
               ) : undefined
             }
           >

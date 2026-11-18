@@ -256,7 +256,8 @@
 .staff-foundation.ink-clay .studio-list-intro .btn {
   transition: none;
 }
-.staff-foundation.ink-clay .studio-list-intro .btn:disabled {
+/* While loading; without an active plan it dims like other New buttons. */
+.staff-foundation.ink-clay .studio-list-intro .btn:disabled:not(.locked) {
   --button-fill: var(--surface);
   --button-label: var(--ink-muted);
   opacity: 1;
