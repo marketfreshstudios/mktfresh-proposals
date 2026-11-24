@@ -3,24 +3,15 @@ import { useEffect, useState } from "react";
 import { StaffAuthFrame } from "./staff-auth-frame";
 import { post, Field, Button, Banner } from "./ui";
 
-/** Sign-in on a host that isn't a workspace's own address (app.yeswell.co):
- * offer the workspace used last in this browser, or email a sign-in link. */
-export function FindWorkspace({
-  remembered,
-  unknown,
-}: {
-  /** Origin of the workspace this browser signed in to last. */
-  remembered: string | null;
-  /** The unclaimed address this page was opened on, if any. */
-  unknown: string | null;
-}) {
+/** From the sign-in on app.yeswell.co: email the person a link to their
+ * workspace's own address. */
+export function FindWorkspace({ onBack }: { onBack: () => void }) {
   // Never let the form submit natively before the handler is installed.
   const [ready, setReady] = useState(false);
   useEffect(() => setReady(true), []);
   const [sent, setSent] = useState(""),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
-  const rememberedHost = remembered ? new URL(remembered).host : "";
 
   if (sent)
     return (
@@ -31,13 +22,8 @@ export function FindWorkspace({
           a link to sign in.
         </p>
         <p className="muted">
-          Wrong email?{" "}
-          <button
-            type="button"
-            className="account-forgot"
-            onClick={() => setSent("")}
-          >
-            Start over
+          <button type="button" className="account-forgot" onClick={onBack}>
+            Back to sign in
           </button>
         </p>
       </StaffAuthFrame>
@@ -45,20 +31,8 @@ export function FindWorkspace({
 
   return (
     <StaffAuthFrame workspace="Yeswell">
-      <h1>{remembered ? "Sign in" : "Find your workspace"}</h1>
-      {remembered ? (
-        <>
-          <a className="btn primary action" href={`${remembered}/login`}>
-            Continue to {rememberedHost}
-          </a>
-          <p className="muted">Or get a link to your workspace by email.</p>
-        </>
-      ) : (
-        <p>
-          {unknown ? `There's no workspace at ${unknown}. ` : ""}
-          Enter your email and we'll send you a link to your workspace.
-        </p>
-      )}
+      <h1>Find your workspace</h1>
+      <p>Enter your email and we'll send you a link to your workspace.</p>
       {error && (
         <Banner tone="danger" title="Couldn't send the link">
           {error}
@@ -89,8 +63,8 @@ export function FindWorkspace({
         </Field>
         <Button
           type="submit"
-          variant={remembered ? "secondary" : "primary"}
-          className={remembered ? "" : "action"}
+          variant="primary"
+          className="action"
           busy={busy}
           disabled={!ready}
         >
@@ -98,8 +72,52 @@ export function FindWorkspace({
         </Button>
       </form>
       <p className="muted">
-        New to Yeswell? <a href="/start">Start a free trial</a>
+        <button type="button" className="account-forgot" onClick={onBack}>
+          Back to sign in
+        </button>
       </p>
+    </StaffAuthFrame>
+  );
+}
+
+/** /login/continue on a workspace's address: finishes a sign-in started on
+ * app.yeswell.co. The one-time pass arrives in the address fragment. */
+export function SignInContinue() {
+  const [failed, setFailed] = useState("");
+  useEffect(() => {
+    const pass = decodeURIComponent(location.hash.slice(1));
+    // Drop the pass from the address bar and history right away.
+    history.replaceState(null, "", location.pathname);
+    if (!pass) {
+      setFailed("This sign-in expired or was already used.");
+      return;
+    }
+    post<{ next: string }>("/api/auth/handoff", { pass })
+      .then((r) => location.replace(r.next))
+      .catch((e) =>
+        setFailed(
+          (e as Error).message || "This sign-in expired or was already used.",
+        ),
+      );
+  }, []);
+  return (
+    <StaffAuthFrame>
+      {failed ? (
+        <>
+          <h1>Sign in again</h1>
+          <p>{failed}</p>
+          <a className="btn primary action" href="/login">
+            Sign in
+          </a>
+        </>
+      ) : (
+        <>
+          <h1>Signing you in</h1>
+          <p className="muted" role="status">
+            Opening your workspace.
+          </p>
+        </>
+      )}
     </StaffAuthFrame>
   );
 }
