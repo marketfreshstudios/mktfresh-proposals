@@ -330,6 +330,7 @@ export async function api<T = any>(
           "/api/auth/login",
           "/api/auth/local",
           "/api/auth/two-step",
+          "/api/auth/handoff",
           "/api/auth/confirm-email",
           "/api/signup",
           "/api/signup/confirm",

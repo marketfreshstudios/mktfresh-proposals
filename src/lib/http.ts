@@ -222,7 +222,8 @@ import {
   requestHost,
   workspaceDomain,
 } from "./workspace-address";
-import { databaseAddresses } from "./workspace-host";
+import { databaseAddresses, signInHost } from "./workspace-host";
+import { createHandoff, handoffNext, redeemHandoff } from "./sign-in-handoff";
 import { findWorkspace, supabaseFindWorkspaceDeps } from "./find-workspace";
 import { sendTrialEmails } from "./plan-email";
 import { deleteClosedWorkspaces } from "./workspace-deletion";
@@ -473,6 +474,28 @@ async function handleRoute(
         { passwordChange: true, twoStep: true },
       );
       await recordStaffDevice(req, session);
+      // On app.yeswell.co (no workspace of its own) the sign-in is carried to
+      // the workspace's own address; no sign-in cookie is set here.
+      if ((await signInHost(requestHost(req))).find) {
+        const handoff = createHandoff(
+          req,
+          workspaceOrigin(
+            await databaseAddresses.slugForId(membership.workspace_id),
+          ),
+          {
+            access_token: session.access_token,
+            refresh_token: session.refresh_token,
+            user_id: session.user.id,
+          },
+          {
+            two_step: membership.two_step_required === true,
+            password_change: membership.password_change_required === true,
+          },
+        );
+        const response = json({ authenticated: false, handoff: handoff.url });
+        response.headers.append("Set-Cookie", handoff.cookie);
+        return response;
+      }
       const response = json({
         authenticated: !membership.two_step_required,
         ...(membership.two_step_required ? { two_step_required: true } : {}),
@@ -490,6 +513,26 @@ async function handleRoute(
         response,
         session,
         membership.two_step_required ? 600 : undefined,
+      );
+    }
+    if (path.join("/") === "auth/handoff" && method === "POST") {
+      check(sameOrigin(req), "Same-origin request required", 403);
+      const input = z
+        .object({ pass: z.string().min(1).max(8000) })
+        .parse(await body(req));
+      const { session, flags, clear } = redeemHandoff(req, input.pass);
+      const response = json({ next: handoffNext(flags) });
+      response.headers.append("Set-Cookie", clear);
+      if (!flags.two_step) {
+        const identity = staffIdentityCookie(session.user_id);
+        if (identity) response.headers.append("Set-Cookie", identity);
+        const remembered = rememberWorkspaceCookie(req);
+        if (remembered) response.headers.append("Set-Cookie", remembered);
+      }
+      return setStaffCookies(
+        response,
+        session,
+        flags.two_step ? 600 : undefined,
       );
     }
     if (path.join("/") === "auth/account-state" && method === "GET")

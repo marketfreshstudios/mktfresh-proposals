@@ -8,6 +8,7 @@ import { ReloadSafetyProvider } from "./reload-safety";
 import { DeploymentNotice } from "./deployment-notice";
 import { staffPageName } from "../lib/staff-brand";
 import { StaffResetForm } from "./staff-reset-form";
+import { FindWorkspace } from "./find-workspace";
 import { StaffAuthFrame } from "./staff-auth-frame";
 import {
   ConfirmStaffEmail,
@@ -791,12 +792,19 @@ async function allProposals(clientId?: string) {
   }
   return first;
 }
-function Login({
+export function Login({
   local,
   initialState,
+  appHost = false,
+  unknown = null,
 }: {
   local: boolean;
   initialState?: string | string[];
+  /** Signing in on app.yeswell.co, which carries the sign-in to the
+   * person's own workspace address. */
+  appHost?: boolean;
+  /** The unclaimed workspace address this page was opened on, if any. */
+  unknown?: string | null;
 }) {
   // Server HTML is visible before hydration. Never let the browser submit the
   // form natively (GET /login) before the credential POST handler is installed.
@@ -805,7 +813,8 @@ function Login({
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [resumed, setResumed] = useState(false),
-    [forgot, setForgot] = useState(false);
+    [forgot, setForgot] = useState(false),
+    [findByEmail, setFindByEmail] = useState(false);
   const [state, setState] = useState(initialState);
   function continueSignIn(passwordChange?: boolean) {
     if (passwordChange) {
@@ -827,6 +836,8 @@ function Login({
       </StaffAuthFrame>
     );
   if (forgot) return <StaffResetForm onBack={() => setForgot(false)} />;
+  if (findByEmail)
+    return <FindWorkspace onBack={() => setFindByEmail(false)} />;
   if (state === "two-step") return <TwoStepSignIn done={continueSignIn} />;
   if (state === "paused" || state === "removed")
     return (
@@ -839,8 +850,14 @@ function Login({
       />
     );
   return (
-    <StaffAuthFrame>
+    <StaffAuthFrame workspace={appHost ? "Yeswell" : undefined}>
       {state === "signed-out" ? <SignedOutHeading /> : <h1>Sign in</h1>}
+      {unknown && (
+        <p>
+          There's no workspace at {unknown}. Sign in and we'll take you to
+          yours.
+        </p>
+      )}
       {error && (
         <Banner tone="danger" title="Unable to sign in">
           {error}
@@ -860,6 +877,11 @@ function Login({
               email: f.get("email"),
               password: f.get("password"),
             });
+            if (result.handoff) {
+              // Keep the button busy while the workspace address loads.
+              location.href = result.handoff;
+              await new Promise(() => {});
+            }
             if (result.two_step_required) {
               setError("");
               setState("two-step");
@@ -911,6 +933,20 @@ function Login({
           Sign in
         </Button>
       </form>
+      {appHost && (
+        <p className="muted">
+          Don't know your workspace address?{" "}
+          <button
+            type="button"
+            className="account-forgot"
+            onClick={() => setFindByEmail(true)}
+          >
+            Email it to me
+          </button>
+          <br />
+          New to Yeswell? <a href="/start">Start a free trial</a>
+        </p>
+      )}
       {local && (
         <details>
           <Disclosure>Local development sign-in</Disclosure>

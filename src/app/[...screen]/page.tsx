@@ -11,15 +11,10 @@ export async function generateMetadata({
 }
 import { redirect } from "next/navigation";
 import { legacyStaffRedirect, type StaffQuery } from "../../lib/staff-routes";
-import { StaffApp } from "../../components/staff-app";
-import { FindWorkspace } from "../../components/find-workspace";
-import { cookies, headers } from "next/headers";
-import { databaseAddresses, signInHost } from "../../lib/workspace-host";
-import {
-  REMEMBERED_WORKSPACE_COOKIE,
-  validWorkspaceSlug,
-} from "../../lib/workspace-address";
-import { workspaceOrigin } from "../../lib/links";
+import { Login, StaffApp } from "../../components/staff-app";
+import { SignInContinue } from "../../components/find-workspace";
+import { headers } from "next/headers";
+import { signInHost } from "../../lib/workspace-host";
 export default async function Page({
   params,
   searchParams,
@@ -46,18 +41,19 @@ export default async function Page({
     );
   const destination = legacyStaffRedirect(screen);
   if (destination) redirect(destination);
+  if (screen[0] === "login" && screen[1] === "continue" && screen.length === 2)
+    return <SignInContinue />;
   if (screen[0] === "login" && screen.length === 1) {
     const host = await signInHost((await headers()).get("host"));
-    if (host.find) {
-      const last = (await cookies()).get(REMEMBERED_WORKSPACE_COOKIE)?.value;
-      const remembered =
-        last &&
-        validWorkspaceSlug(last) &&
-        (await databaseAddresses.idForSlug(last).catch(() => null))
-          ? workspaceOrigin(last)
-          : null;
-      return <FindWorkspace remembered={remembered} unknown={host.unknown} />;
-    }
+    if (host.find)
+      return (
+        <Login
+          local={false}
+          appHost
+          unknown={host.unknown}
+          initialState={query.state}
+        />
+      );
   }
   return (
     <StaffApp
