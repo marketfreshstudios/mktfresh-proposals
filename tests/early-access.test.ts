@@ -1,8 +1,9 @@
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   earlyAccessBody,
   earlyAccessFields,
   receiveEarlyAccess,
+  resendEarlyAccess,
 } from "../src/lib/early-access";
 
 const KEY = "k".repeat(32);
@@ -61,4 +62,34 @@ it("adds the signup to the list only with the shared key", async () => {
   await expect(
     receiveEarlyAccess(KEY, new URLSearchParams("Name=Dana"), { add }),
   ).rejects.toThrow("email address is required");
+});
+
+describe("Resend key for the signup list", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+  });
+  async function keyUsed() {
+    const seen: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init: RequestInit) => {
+        seen.push(new Headers(init.headers).get("authorization") ?? "");
+        return new Response("{}", { status: 200 });
+      }),
+    );
+    vi.stubEnv("EARLY_ACCESS_SEGMENT_ID", "seg_1");
+    await resendEarlyAccess().add({ email: "ann@acme.test" });
+    return seen[0];
+  }
+  it("uses the separate Full access key when it's set", async () => {
+    vi.stubEnv("RESEND_API_KEY", "re_sending");
+    vi.stubEnv("RESEND_CONTACTS_API_KEY", "re_full");
+    expect(await keyUsed()).toBe("Bearer re_full");
+  });
+  it("falls back to the sending key", async () => {
+    vi.stubEnv("RESEND_API_KEY", "re_sending");
+    vi.stubEnv("RESEND_CONTACTS_API_KEY", "");
+    expect(await keyUsed()).toBe("Bearer re_sending");
+  });
 });
