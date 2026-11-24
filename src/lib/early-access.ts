@@ -77,7 +77,10 @@ export async function receiveEarlyAccess(
 export function resendEarlyAccess(): EarlyAccessDeps {
   return {
     async add(contact) {
-      const key = process.env.RESEND_API_KEY,
+      // A separate Full access key, so the key that sends email can stay
+      // limited to sending. The sending key works if it has Full access.
+      const key =
+          process.env.RESEND_CONTACTS_API_KEY || process.env.RESEND_API_KEY,
         segment = process.env.EARLY_ACCESS_SEGMENT_ID;
       if (!key || !segment)
         throw new AppError(503, "Early access isn't set up");
