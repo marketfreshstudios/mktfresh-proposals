@@ -5,6 +5,8 @@ import { mutate, type Repository } from "./repository";
 import { event, queue, system } from "./service";
 import type { BillingApproval, StripeProvider } from "./providers/stripe";
 import { NeedsReview } from "./billing";
+import { deferBilling } from "./billing-nudges";
+import type { Actor } from "./model";
 
 type PendingCheckout = {
   id: string;
@@ -239,6 +241,20 @@ export async function approveBilling(
       email_template_key: "billing_updated",
     });
   });
+}
+
+/** The client chose "I'll do this later": returns whether an email is due. */
+export async function deferClientBilling(
+  repo: Repository,
+  p: Proposal,
+  actor: Actor,
+) {
+  check(!!p.client_signed_at, "This proposal isn't signed yet", 409);
+  let due = false;
+  await mutate(repo, p.id, (current) => {
+    due = deferBilling(current, actor);
+  });
+  return due;
 }
 
 /** Starts entering a different card for a pending approval. */

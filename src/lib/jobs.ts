@@ -12,6 +12,11 @@ import { styleFonts } from "./proposal-styles";
 import { readFont } from "./studio";
 import { emailIdentity, staffRecipients } from "./email-identity";
 import { accountNotification } from "./staff-account-model";
+import {
+  billingAwaitsClient,
+  isBillingNudge,
+  scheduleBillingEmails,
+} from "./billing-nudges";
 import { allowStaffNotification } from "./staff-account";
 import { proposalLink } from "./links";
 import {
@@ -211,6 +216,8 @@ export class Worker {
       return;
     }
     if (j.kind === "email") {
+      // Billing emails are only for billing the client still has to finish.
+      if (isBillingNudge(p, j) && !billingAwaitsClient(p)) return;
       if (j.id.startsWith(`${p.id}:notify:viewed:`)) {
         const current = (
           await this.repo.entities<NonNullable<Proposal["workspace_settings"]>>(
@@ -444,12 +451,7 @@ export class Worker {
               yearly_total?: number;
             }[];
             const approval = (link.metadata?.approval ?? []) as unknown[];
-            if (checkout.length || approval.length)
-              queue(p, "email", "billing-setup", {
-                to: p.client.email,
-                subject: `Billing setup: ${p.title}`,
-                text: `Your proposal is signed. Complete billing setup: ${checkout.map((s) => s.url).join("\n")}`,
-              });
+            if (checkout.length || approval.length) scheduleBillingEmails(p);
             if (added.length)
               queue(p, "email", "billing-added", {
                 to: p.client.email,

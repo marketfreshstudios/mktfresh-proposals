@@ -345,9 +345,21 @@ function NewClientFlow({
     step === "read",
   );
   const firstName = p?.recipient.name.split(" ")[0] ?? "";
+  // Billing is set up a few seconds after signing. Until then the billing
+  // step shows as being prepared, so the page doesn't show "all set" and then
+  // jump to billing. After two minutes it falls back to the emailed link.
+  const clientSignedAt = p?.signers.find((s) => s.role === "client")?.signed_at;
+  const billingPreparing =
+    !preview &&
+    recurring &&
+    !!clientSignedAt &&
+    p?.status !== "completed" &&
+    !billing.some((b) => b.status !== "pending" || b.requires_checkout) &&
+    Date.now() - Date.parse(clientSignedAt) < 120_000;
   const afterView = afterSigningView({
     completed: p?.status === "completed",
     step: step === "done" ? "done" : "billing",
+    preparing: billingPreparing,
     requiresCheckout,
     billingProblem: billing.some(
       (b) => b.status === "failed" || b.status === "needs_review",
@@ -1138,6 +1150,7 @@ function NewClientFlow({
                         });
                     }}
                     startCard={startCard}
+                    onClearError={() => setCheckoutError("")}
                     onApprove={(a, setupIntent) => {
                       setApproving(a.id);
                       setCheckoutError("");
@@ -1159,7 +1172,16 @@ function NewClientFlow({
                         )
                         .finally(() => setApproving(""));
                     }}
-                    onLater={() => go("done")}
+                    onLater={() => {
+                      go("done");
+                      // Emails the link to finish later (only the first time).
+                      if (!preview)
+                        void api(`/api/public/${token}/billing/later`, {
+                          method: "POST",
+                          headers,
+                          body: "{}",
+                        }).catch(() => {});
+                    }}
                     onFinishBilling={() => go("billing")}
                     onCheckAgain={() => {
                       setReturnTimedOut(false);

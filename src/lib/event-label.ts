@@ -108,6 +108,7 @@ export function eventLabel(
     document_version: "Pricing reference saved",
     webhook_received: "Billing update received",
     billing_link_resent: "Billing link emailed again",
+    billing_deferred: "Client chose to finish billing later",
     billing_payment_processing: "Bank payment processing",
     billing_payment_failed: "Bank payment failed",
     billing_payment_paid: "Bank payment confirmed",

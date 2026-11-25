@@ -275,6 +275,12 @@ test("client completion: exact charges, one contact footer, reading width, email
     })),
     added_existing: [],
   });
+  // "I'll do this later" asks the server to email the link (once).
+  let later = 0;
+  await page.route("**/api/public/*/billing/later", (route) => {
+    later++;
+    return route.fulfill({ json: { ok: true } });
+  });
   // Stripe.js can't load in tests; this stand-in mounts plain fields where
   // Stripe's card fields go and answers confirmSetup like Stripe does.
   await page.addInitScript(() => {
@@ -448,6 +454,22 @@ test("client completion: exact charges, one contact footer, reading width, email
         page.getByRole("link", { name: /Continue to secure payment/ }),
       ).toHaveCount(0);
       await capture("existing-subscriber", "1f", width, theme, true);
+      // Signed seconds ago, billing not set up yet: the billing step shows
+      // as being prepared beside what was signed, never "all set" first.
+      const preparing = structuredClone(accepted);
+      preparing.billing = [];
+      for (const signer of preparing.signers)
+        if (signer.role === "client")
+          signer.signed_at = new Date().toISOString();
+      await open(preparing);
+      await expect(
+        page.getByRole("region", { name: "Preparing" }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("heading", { name: /You’re all set/ }),
+      ).toHaveCount(0);
+      await expect(page.locator(".flow-result-split")).toHaveCount(1);
+      await capture("billing-preparing", "1a", width, theme, true);
       // A client who already pays a subscription approves the add first.
       const approving = structuredClone(accepted);
       approving.billing = [
@@ -513,11 +535,17 @@ test("client completion: exact charges, one contact footer, reading width, email
       ).toBeVisible();
       await capture("existing-subscriber-new-card", "1f", width, theme, true);
       if (width === 1440 && theme === "light") {
+        // Stripe refuses the card: the card is outlined and headed by the error.
         await page.evaluate(() => ((window as any).__decline = true));
         await approve.click();
-        await expect(page.locator(".new-card").getByRole("alert")).toHaveText(
-          "Your card was declined.",
+        const failure = page.locator(".after-card-error");
+        await expect(failure).toContainText("Your card was declined.");
+        await expect(failure).toContainText(
+          "Check the details or try a different card.",
         );
+        await expect(failure).not.toContainText("Nothing was added");
+        const retry = page.getByRole("button", { name: "Try again" });
+        await expect(retry).toBeVisible();
         await capture(
           "existing-subscriber-new-card-declined",
           "1f",
@@ -526,12 +554,40 @@ test("client completion: exact charges, one contact footer, reading width, email
           true,
         );
         await page.evaluate(() => ((window as any).__decline = false));
+        // The bank declines the charge after the card was saved: same error,
+        // and the card fields start over so another card can be tried.
+        await page.route("**/api/public/*/billing/approve", (route) =>
+          route.fulfill({
+            status: 402,
+            json: {
+              error: "Your card was declined, so nothing was added or charged.",
+            },
+          }),
+        );
+        let setups = 0;
+        await page.route("**/api/public/*/billing/card", (route) => {
+          setups++;
+          return route.fulfill({
+            json: {
+              client_secret: "seti_test_secret",
+              publishable_key: "pk_test_x",
+            },
+          });
+        });
+        await retry.click();
+        await expect(failure).toHaveText(
+          /^Your card was declined\.Check the details or try a different card\.$/,
+        );
+        // A fresh setup was requested (dev Strict Mode may ask twice).
+        await expect.poll(() => setups).toBeGreaterThan(0);
+        await page.unroute("**/api/public/*/billing/approve");
         let sent: Record<string, string> = {};
         await page.route("**/api/public/*/billing/approve", async (route) => {
           sent = route.request().postDataJSON();
           await route.fulfill({ json: { approved: true } });
         });
-        await approve.click();
+        await expect(page.locator(".new-card .stand-in")).toBeVisible();
+        await page.getByRole("button", { name: "Try again" }).click();
         await expect.poll(() => sent.setup_intent).toBe("seti_test");
         expect(sent.approval_id).toBe("approve:month");
         await page.unroute("**/api/public/*/billing/approve");
@@ -628,6 +684,7 @@ test("client completion: exact charges, one contact footer, reading width, email
       await capture("completion-certificate", "1g", width, theme, true);
     }
   expect(writes).toBe(0);
+  expect(later).toBeGreaterThan(0);
   expect(verifies).toBe(0);
   expect(JSON.stringify(completed)).toBe(before);
   if (process.env.CAPTURE_EDITOR_EVIDENCE !== "1") return;

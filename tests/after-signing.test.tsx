@@ -21,6 +21,15 @@ describe("afterSigningView", () => {
     expect(afterSigningView({ ...base, requiresCheckout: true })).toBe(
       "billing",
     );
+    // Just signed, billing still being set up: stay on the billing step
+    // instead of showing "all set" and then jumping.
+    expect(afterSigningView({ ...base, preparing: true })).toBe("billing");
+    expect(afterSigningView({ ...base, preparing: true, step: "done" })).toBe(
+      "all_set",
+    );
+    expect(
+      afterSigningView({ ...base, preparing: true, completed: true }),
+    ).toBe("completed");
     expect(
       afterSigningView({ ...base, requiresCheckout: true, step: "done" }),
     ).toBe("one_step_left");
