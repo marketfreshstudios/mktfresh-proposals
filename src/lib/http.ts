@@ -162,6 +162,7 @@ import { StripeProvider } from "./providers/stripe";
 import {
   approveBilling,
   startApprovalCard,
+  deferClientBilling,
   confirmCheckout,
   freshCheckoutUrl,
   openCheckouts,
@@ -863,6 +864,20 @@ async function handleRoute(
           setup_intent,
         );
         return json({ approved: true });
+      }
+      if (
+        action === "billing" &&
+        path[3] === "later" &&
+        !path[4] &&
+        method === "POST"
+      ) {
+        check(sameOrigin(req), "Same-origin request required", 403);
+        const p = await rt.service.byToken(token, password);
+        if (await deferClientBilling(rt.repo, p, actor(req)))
+          afterResponse?.(async () => {
+            await rt.worker.drain(p.id);
+          });
+        return json({ ok: true });
       }
       if (
         action === "billing" &&

@@ -1,5 +1,11 @@
 "use client";
-import { useCallback, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import {
   Check,
   CircleAlert,
@@ -62,6 +68,8 @@ export type AfterSigningView =
 export function afterSigningView(s: {
   completed: boolean;
   step: "billing" | "done";
+  /** Signed moments ago; billing is still being set up. */
+  preparing?: boolean;
   requiresCheckout: boolean;
   billingProblem: boolean;
   bankState?: "processing" | "failed";
@@ -74,6 +82,7 @@ export function afterSigningView(s: {
   if (s.returned && !s.returnConfirmed)
     return s.returnTimedOut ? "still_confirming" : "confirming";
   if (s.billingProblem && !s.completed) return "billing_review";
+  if (s.preparing && !s.completed && s.step !== "done") return "billing";
   if (s.requiresCheckout)
     return s.step === "done" ? "one_step_left" : "billing";
   return s.completed ? "completed" : "all_set";
@@ -109,6 +118,8 @@ export type AfterSigningProps = {
   showCopy: boolean;
   onOpen: (session: AfterSession) => void;
   onApprove: (approval: AfterApproval, setupIntent?: string) => void;
+  /** Clears an approval error once the client changes something. */
+  onClearError?: () => void;
   /** Starts Stripe's card fields for a different card on this approval. */
   startCard?: (approvalId: string) => Promise<CardSetup>;
   onLater: () => void;
@@ -133,7 +144,31 @@ export function AfterSigning(props: AfterSigningProps) {
   const [cardReady, setCardReady] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const card = useRef<NewCardHandle>(null);
+  // Stripe's own message when it refuses the card before we charge it.
+  const [cardError, setCardError] = useState("");
+  // A card that was charged and declined can't be confirmed again, so each
+  // failure starts the card fields over with a fresh setup.
+  const [cardRound, setCardRound] = useState(0);
+  const failedCharge = useRef("");
+  if (props.checkoutError && props.checkoutError !== failedCharge.current) {
+    failedCharge.current = props.checkoutError;
+    if (newCard) setCardRound((n) => n + 1);
+  } else if (!props.checkoutError) failedCharge.current = "";
   const onCardReady = useCallback((ready: boolean) => setCardReady(ready), []);
+  const { onClearError } = props;
+  const clearFailure = useCallback(() => {
+    setCardError("");
+    onClearError?.();
+  }, [onClearError]);
+  const errorRef = useRef<HTMLDivElement>(null);
+  const failureShown = !!(cardError || props.checkoutError);
+  useEffect(() => {
+    if (failureShown)
+      errorRef.current?.scrollIntoView({
+        block: "nearest",
+        behavior: "smooth",
+      });
+  }, [failureShown, cardError, props.checkoutError]);
   const { startCard } = props;
   const start = useCallback((id: string) => startCard!(id), [startCard]);
   const { view, firstName, currency, cents, studio, contact, timezone } = props;
@@ -518,24 +553,26 @@ export function AfterSigning(props: AfterSigningProps) {
       ? "Save a card"
       : "Continue to secure payment";
     const single = sessions.length === 1 ? sessions[0] : undefined;
+    // Shown across the top of the card: what went wrong, then what to do.
+    const failure = !approval
+      ? ""
+      : cardError
+        ? cardError
+        : props.checkoutError
+          ? /declined/i.test(props.checkoutError)
+            ? "Your card was declined."
+            : props.checkoutError
+          : "";
     return (
       <div className="after-signing" data-view="billing">
         {success}
         {props.checkoutError &&
-          !(approval && newCard) &&
-          (approval
-            ? note(
-                "danger",
-                /declined/i.test(props.checkoutError)
-                  ? "Your card was declined."
-                  : "Your approval wasn’t saved.",
-                `Nothing was added or charged. Try again, or email ${contactFirst} to use a different card.`,
-              )
-            : note(
-                "danger",
-                "The secure payment page didn’t open.",
-                `Nothing was charged. Try again, or email ${contactFirst} for a new link.`,
-              ))}
+          !approval &&
+          note(
+            "danger",
+            "The secure payment page didn’t open.",
+            `Nothing was charged. Try again, or email ${contactFirst} for a new link.`,
+          )}
         {props.leftCheckout &&
           !props.checkoutError &&
           note(
@@ -546,7 +583,24 @@ export function AfterSigning(props: AfterSigningProps) {
         <h1>{heading}</h1>
         <div className="after-cards">
           {approval ? (
-            <section className="after-card" aria-label="New service">
+            <section
+              className="after-card"
+              aria-label="New service"
+              data-error={failure ? "" : undefined}
+            >
+              {failure && (
+                <div className="after-card-error" role="alert" ref={errorRef}>
+                  <CircleAlert size={20} aria-hidden="true" />
+                  <p>
+                    <strong>{failure}</strong>
+                    {newCard
+                      ? "Check the details or try a different card."
+                      : approval.new_card && props.startCard
+                        ? "Try again or use a different card."
+                        : `Try again, or email ${contactFirst} to use a different card.`}
+                  </p>
+                </div>
+              )}
               <header className="after-card-head">
                 <h2 className="after-eyebrow">
                   {intervalWord(approval.lines) === "yearly"
@@ -568,11 +622,12 @@ export function AfterSigning(props: AfterSigningProps) {
               )}
               {newCard && (
                 <NewCardForm
+                  key={cardRound}
                   ref={card}
                   approvalId={approval.id}
                   start={start}
-                  error={props.checkoutError}
                   onReady={onCardReady}
+                  onEdit={clearFailure}
                 />
               )}
               <p className="after-small">
@@ -582,7 +637,10 @@ export function AfterSigning(props: AfterSigningProps) {
                     type="button"
                     className="flow-text-link"
                     disabled={!!props.approving || confirming}
-                    onClick={() => setNewCard(!newCard)}
+                    onClick={() => {
+                      clearFailure();
+                      setNewCard(!newCard);
+                    }}
                   >
                     {newCard
                       ? `Use ${approval.card ? cardLabel(approval.card) : "your card on file"} instead`
@@ -632,10 +690,6 @@ export function AfterSigning(props: AfterSigningProps) {
                 <span className="after-tag">Stripe</span>
               </header>
               {items(props.recurring)}
-              <p className="after-total">
-                <strong>First payment today</strong>
-                <strong>{money(sum(props.recurring))}</strong>
-              </p>
             </section>
           )}
           {addedCard}
@@ -651,19 +705,26 @@ export function AfterSigning(props: AfterSigningProps) {
                     !!props.approving || confirming || (newCard && !cardReady)
                   }
                   onClick={async () => {
+                    clearFailure();
                     if (!newCard) return props.onApprove(approval);
                     setConfirming(true);
                     try {
                       props.onApprove(approval, await card.current!.confirm());
-                    } catch {
-                      // Stripe's message is already shown under the fields.
+                    } catch (error) {
+                      setCardError(
+                        error instanceof Error
+                          ? error.message
+                          : "That card couldn’t be saved.",
+                      );
                     } finally {
                       setConfirming(false);
                     }
                   }}
                 >
                   <Lock size={16} aria-hidden="true" />
-                  {`Approve and add ${money(sum(approval.lines))}/${per(approval.interval)}`}
+                  {failure
+                    ? "Try again"
+                    : `Approve and add ${money(sum(approval.lines))}/${per(approval.interval)}`}
                 </Button>
               ),
             )
@@ -846,7 +907,7 @@ export function AfterSigning(props: AfterSigningProps) {
         <h1>One step left: billing</h1>
         <p>
           Your proposal is signed. Set up your {word} billing whenever you’re
-          ready; we also emailed you this link.
+          ready. We’ve emailed you a link back to this page.
         </p>
         {checklist(
           "What happens next",

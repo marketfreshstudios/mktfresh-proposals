@@ -1156,6 +1156,36 @@ label.flow-quote-line {
   color: var(--danger);
   font-size: 14px;
 }
+/* A failed approval: the card is outlined and headed by the error, so it
+   can't be missed (owner choice C). */
+.client-flow .after-card[data-error] {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 1px var(--danger);
+  overflow: hidden;
+}
+.client-flow .after-card-error {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin: -16px -18px 8px;
+  padding: 14px 18px;
+  color: var(--danger);
+  background: var(--danger-soft);
+  border-bottom: 1px solid var(--danger);
+}
+.client-flow .after-card-error svg {
+  flex: none;
+  margin-top: 1px;
+}
+.client-flow .after-card-error p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.45;
+}
+.client-flow .after-card-error strong {
+  display: block;
+  font-size: 16px;
+}
 .client-flow .new-card-secure {
   display: flex;
   align-items: center;

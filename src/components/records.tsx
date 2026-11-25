@@ -1391,6 +1391,22 @@ export function HomeV4({
       label: "Billing issue",
       rows: active.filter(billingIssues),
     },
+    {
+      // Signed a week ago or more and the client still hasn't set up
+      // billing (the reminder emails have gone out).
+      kind: "billing_waiting",
+      label: "Billing waiting",
+      rows: active.filter(
+        (p) =>
+          !billingIssues(p) &&
+          p.billing_links.some(
+            (l) =>
+              l.provider === "stripe" && l.metadata?.requires_checkout === true,
+          ) &&
+          !!p.client_signed_at &&
+          now.getTime() - Date.parse(p.client_signed_at) >= 7 * 86_400_000,
+      ),
+    },
   ];
   const expiry = (p: Proposal) =>
     p.published_state ? p.published_state.valid_until : p.valid_until;
@@ -1533,7 +1549,9 @@ export function HomeV4({
                       ? `Opened ${shortDate.format(new Date(p.first_viewed_at))}`
                       : kind === "billing"
                         ? "Review the billing handoff"
-                        : "The client is deciding";
+                        : kind === "billing_waiting" && client
+                          ? `Signed ${shortDate.format(new Date(client.signed_at))} | billing not set up yet`
+                          : "The client is deciding";
               const amounts = totals(p.quote);
               const summary = [
                 amounts.one_time_total

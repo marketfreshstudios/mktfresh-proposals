@@ -91,16 +91,17 @@ export const NewCardForm = forwardRef<
   {
     approvalId: string;
     start: (approvalId: string) => Promise<CardSetup>;
-    /** A decline from the charge itself, shown under the fields. */
-    error?: string;
     onReady?: (ready: boolean) => void;
+    /** The client changed the card details. */
+    onEdit?: () => void;
   }
 >(function NewCardForm(props, ref) {
   const host = useRef<HTMLDivElement>(null);
   const stripe = useRef<{ js: StripeJs; elements: StripeElements }>(undefined);
   const [state, setState] = useState<"loading" | "ready" | "failed">("loading");
-  const [cardError, setCardError] = useState("");
   const { approvalId, start, onReady } = props;
+  const onEdit = useRef(props.onEdit);
+  onEdit.current = props.onEdit;
 
   useEffect(() => {
     let live = true;
@@ -147,7 +148,7 @@ export const NewCardForm = forwardRef<
           setState("ready");
           onReady?.(true);
         });
-        element.on("change", () => setCardError(""));
+        element.on("change", () => onEdit.current?.());
         element.mount(node);
         stripe.current = { js, elements };
       } catch {
@@ -170,18 +171,14 @@ export const NewCardForm = forwardRef<
         elements: s.elements,
         redirect: "if_required",
       });
-      if (result.error || result.setupIntent?.status !== "succeeded") {
-        const message =
-          result.error?.message ??
-          "That card couldn’t be saved. Try another card.";
-        setCardError(message);
-        throw new Error(message);
-      }
+      if (result.error || result.setupIntent?.status !== "succeeded")
+        throw new Error(
+          result.error?.message ?? "That card couldn’t be saved.",
+        );
       return result.setupIntent.id;
     },
   }));
 
-  const shown = cardError || props.error;
   return (
     <div className="new-card">
       {state === "loading" && (
@@ -195,11 +192,6 @@ export const NewCardForm = forwardRef<
         </p>
       ) : (
         <div ref={host} className="new-card-fields" />
-      )}
-      {shown && (
-        <p className="new-card-error" role="alert">
-          {shown}
-        </p>
       )}
       <p className="new-card-secure">
         <Lock size={14} aria-hidden="true" />

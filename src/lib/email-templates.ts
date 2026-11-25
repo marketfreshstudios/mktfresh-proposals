@@ -146,6 +146,7 @@ export function emailKey(p: Proposal, j: Pick<Job, "id" | "payload">) {
     return p.first_viewed_at ? "reminder_viewed" : "reminder_unopened";
   if (
     id.includes(":billing-setup") ||
+    id.includes(":billing-reminder:") ||
     id.includes(":billing-resend:") ||
     id.includes(":billing-link:")
   )
