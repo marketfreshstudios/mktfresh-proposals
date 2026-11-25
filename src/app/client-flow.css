@@ -1167,4 +1167,55 @@ label.flow-quote-line {
 .client-flow .flow-text-link:disabled {
   opacity: 0.5;
   cursor: default;
+/* Signed, billing still open: what was signed stays on the left and the
+   billing step slides in on the right. Phones stack it, billing first. */
+.flow-result.flow-result-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 28px 48px;
+  align-items: start;
+  max-width: 1020px;
+  margin-inline: auto;
+}
+.client-flow .flow-result-split > .flow-result-summary:has(> .after-signing),
+.client-flow .flow-result-split > .flow-result-summary {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  animation: flow-billing-in 360ms ease-out both;
+}
+.flow-result-split > :not(.flow-signed, .flow-result-summary) {
+  grid-column: 1 / -1;
+}
+@keyframes flow-billing-in {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .client-flow .flow-result-split > .flow-result-summary {
+    animation: none;
+  }
+}
+@media (max-width: 860px) {
+  .flow-result.flow-result-split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .flow-result-split > .flow-signed {
+    order: 1;
+  }
+  .flow-result-split > :not(.flow-signed, .flow-result-summary) {
+    order: 2;
+  }
+  @keyframes flow-billing-in {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+  }
+}
+/* The billing column is half width: its cards stack. */
+.flow-result-split .after-cards:has(> .after-card + .after-card) {
+  grid-template-columns: minmax(0, 1fr);
 }

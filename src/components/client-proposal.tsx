@@ -345,6 +345,21 @@ function NewClientFlow({
     step === "read",
   );
   const firstName = p?.recipient.name.split(" ")[0] ?? "";
+  const afterView = afterSigningView({
+    completed: p?.status === "completed",
+    step: step === "done" ? "done" : "billing",
+    requiresCheckout,
+    billingProblem: billing.some(
+      (b) => b.status === "failed" || b.status === "needs_review",
+    ),
+    bankState: bankState && !requiresCheckout ? bankState : undefined,
+    returned: finishingReturn,
+    returnConfirmed,
+    returnTimedOut,
+  });
+  // While billing is still open, what was signed stays on the left and the
+  // billing step sits beside it, so signing never jumps to a new screen.
+  const billingOpen = !["all_set", "completed"].includes(afterView);
   const review = step === "read" && !signed;
   const activeStep = signed ? (step === "done" ? "done" : "billing") : step;
   const fonts = p?.proposal_fonts ?? brand.proposal_fonts;
@@ -1043,7 +1058,20 @@ function NewClientFlow({
               </div>
             )}
             {signed || step === "billing" || step === "done" ? (
-              <section className="flow-result stack">
+              <section
+                className={`flow-result stack${billingOpen ? " flow-result-split" : ""}`}
+              >
+                {billingOpen && (
+                  <section
+                    className="flow-acceptance flow-signed"
+                    aria-label="What you agreed to"
+                  >
+                    <h2>What you agreed to</h2>
+                    <p>{p.title}</p>
+                    <ChosenItems proposal={p} terms />
+                    <FlowTotals proposal={p} />
+                  </section>
+                )}
                 <div className="flow-result-summary stack">
                   {preview && (
                     <p className="after-small">
@@ -1052,20 +1080,7 @@ function NewClientFlow({
                     </p>
                   )}
                   <AfterSigning
-                    view={afterSigningView({
-                      completed: p.status === "completed",
-                      step: step === "done" ? "done" : "billing",
-                      requiresCheckout,
-                      billingProblem: billing.some(
-                        (b) =>
-                          b.status === "failed" || b.status === "needs_review",
-                      ),
-                      bankState:
-                        bankState && !requiresCheckout ? bankState : undefined,
-                      returned: finishingReturn,
-                      returnConfirmed,
-                      returnTimedOut,
-                    })}
+                    view={afterView}
                     preview={preview}
                     firstName={firstName}
                     email={p.recipient.email}

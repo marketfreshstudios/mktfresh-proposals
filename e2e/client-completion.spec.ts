@@ -253,7 +253,11 @@ test("client completion: exact charges, one contact footer, reading width, email
     ).toBe(true);
     const file = `${name}-${width}-${theme}.png`;
     if (process.env.CAPTURE_EDITOR_EVIDENCE === "1")
-      await page.screenshot({ path: `${dir}/${file}`, fullPage });
+      await page.screenshot({
+        path: `${dir}/${file}`,
+        fullPage,
+        animations: "disabled",
+      });
     captures.push({ file, frame, width, theme });
   }
   const line = (i: QuoteItem) => i.sublines[0].id;
@@ -375,7 +379,9 @@ test("client completion: exact charges, one contact footer, reading width, email
       });
       await expect(separate).toContainText("Website setup");
       await expect(separate).not.toContainText("Nothing to pay here.");
-      await expect(page.locator(".flow-totals")).toHaveCount(0);
+      await expect(
+        page.locator(".flow-result-summary .flow-totals"),
+      ).toHaveCount(0);
       await capture("billing-monthly-manual", "1e", width, theme, true);
       // The billing step keeps one task; the proposal is a step away.
       await page
