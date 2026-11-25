@@ -389,11 +389,22 @@ label.flow-quote-line {
   margin-top: 8px;
 }
 .flow-acceptance-terms {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
   margin: 20px 0 0;
+}
+.client-flow .flow-text-link {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent-text);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.client-flow .flow-text-link:hover {
+  text-decoration-thickness: 2px;
 }
 .flow-signature fieldset {
   padding: 0;
@@ -428,8 +439,22 @@ label.flow-quote-line {
 .client-flow .signature-pad input[hidden] {
   display: none;
 }
-.client-flow .signature-pad .tabs {
+.client-flow .signature-pad .signature-method {
+  justify-content: space-between;
+  padding-right: 10px;
   background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.client-flow .signature-pad .tabs {
+  background: transparent;
+  border-bottom: 0;
+}
+.client-flow .signature-pad .signature-method > .btn.ghost {
+  color: var(--ink-muted);
+}
+.client-flow .signature-pad .signature-method > .btn.ghost:hover {
+  color: var(--ink);
+  background: var(--surface-sunken);
 }
 .client-flow .signature-pad .tabs .active {
   background: var(--accent-soft);

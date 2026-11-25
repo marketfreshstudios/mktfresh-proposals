@@ -1181,9 +1181,10 @@ function NewClientFlow({
                       <span>
                         You’re also agreeing to the {contractTitle}
                         {p.sent_at ? `, dated ${date(p.sent_at)}` : ""}.
-                      </span>
-                      <Button
-                        variant="ghost"
+                      </span>{" "}
+                      <button
+                        type="button"
+                        className="flow-text-link"
                         onClick={() => {
                           setReadSection(
                             p.content.findIndex(
@@ -1199,7 +1200,7 @@ function NewClientFlow({
                         }}
                       >
                         Read the {contractTitle}
-                      </Button>
+                      </button>
                     </p>
                   )}
                 </section>
