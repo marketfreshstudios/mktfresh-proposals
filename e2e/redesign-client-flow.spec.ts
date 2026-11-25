@@ -265,9 +265,14 @@ test("client redesign: every responsive state, safe preview and signature retrie
       expect(signPosts).toBe(submitted);
       await capture("sealing", width, theme, "1d");
       release?.();
+      // Just signed and billing isn't set up yet: the billing step shows as
+      // being prepared, never "all set" first (owner, 25 Nov).
+      await expect(
+        page.getByRole("region", { name: "Preparing" }),
+      ).toBeVisible();
       await expect(
         page.getByRole("heading", { name: /^You’re all set/ }),
-      ).toBeVisible();
+      ).toHaveCount(0);
       const newBilling = structuredClone(accepted);
       newBilling.billing = [
         {
