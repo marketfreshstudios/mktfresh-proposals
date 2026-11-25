@@ -2,7 +2,7 @@ import { formatMoney } from "../money";
 import { stripeCustomerMatches } from "../client-billing";
 import { stripeAddress, normalizedPhone } from "../client-contact";
 import { appOrigin, AppUrlSchema } from "../links";
-import { check, type Client, type BillingLine, type Item } from "../model";
+import { AppError, check, type Client, type BillingLine, type Item } from "../model";
 import {
   NeedsReview,
   type BillingProvider,
@@ -32,6 +32,7 @@ type Subscription = {
   default_payment_method: string | null;
   currency: string;
   latest_invoice: string | null;
+  collection_method?: "send_invoice" | "charge_automatically";
   current_period_start: number;
   current_period_end: number;
   items: {
@@ -45,14 +46,16 @@ type Subscription = {
         lookup_key: string | null;
         recurring: { interval: string };
         currency: string;
+        nickname?: string | null;
         product?: string | { id: string };
       };
     }[];
   };
   metadata: Record<string, string>;
 };
-/** Recurring lines that would join a subscription the client already pays.
- * Nothing is added or charged until the client approves on the proposal. */
+/** Recurring lines for a client who already pays by card. Each approved line
+ * becomes its own subscription on that card, charged in full the day the
+ * client approves. Nothing is charged until they approve on the proposal. */
 export type BillingApproval = {
   id: string;
   kind: "add" | "own";
@@ -62,7 +65,7 @@ export type BillingApproval = {
   line_ids: string[];
   items: { line_id: string; name: string }[];
   interval: "month" | "year";
-  /** Unix seconds of the first charge: the next invoice, or now for "own". */
+  /** Kept for proposals approved before charges started on approval. */
   first_charge: number | null;
 };
 const productOf = (price: { product?: string | { id: string } }) =>
@@ -261,6 +264,7 @@ export class StripeProvider implements BillingProvider {
     lines: BillingLine[],
     key: string,
     metadata: Record<string, unknown>,
+    options?: { declineAddsNothing?: boolean },
   ) {
     const settings = (
       await this.repo.entities<WorkspaceSettings>("workspace_settings")
@@ -351,14 +355,10 @@ export class StripeProvider implements BillingProvider {
     for (const interval of ["month", "year"] as const) {
       const group = ordinary.filter((l) => l.interval === interval);
       if (!group.length) continue;
-      const candidates = all.filter(
-        (s) =>
-          !s.schedule &&
-          s.currency === currency &&
-          s.items.data.every((i) => i.price.recurring.interval === interval),
-      );
+      // Any active subscription's working card will do: the new line gets
+      // its own subscription, so interval and schedule don't matter.
       let existing: Subscription | undefined;
-      for (const sub of candidates)
+      for (const sub of all)
         if (await this.workingCard(sub, sc)) {
           existing = sub;
           break;
@@ -378,7 +378,7 @@ export class StripeProvider implements BillingProvider {
           line_ids: group.map((l) => l.id),
           items: displayItems(group),
           interval,
-          first_charge: existing.current_period_end ?? null,
+          first_charge: null,
         });
       } else {
         const session = await this.api.post<{
@@ -527,6 +527,7 @@ export class StripeProvider implements BillingProvider {
     approval: BillingApproval,
     key: string,
     metadata: Record<string, unknown>,
+    options?: { declineAddsNothing?: boolean },
   ) {
     const settings = (
       await this.repo.entities<WorkspaceSettings>("workspace_settings")
@@ -576,6 +577,7 @@ export class StripeProvider implements BillingProvider {
         approval.payment_method,
         key + ":own:" + line.id,
         { ...metadata, collection_method: settings.collection_method },
+        { declineAddsNothing: true },
       );
       return {
         id: subscriptions[0],
@@ -590,76 +592,28 @@ export class StripeProvider implements BillingProvider {
       throw new NeedsReview(
         "The subscription or card on file changed; the client needs to check out instead",
       );
-    const group = lines;
-    const interval = approval.interval;
-    const items = await Promise.all(
-      group.map((l) => this.item(l, currency, names)),
+    // Each line gets its own subscription on the card, charged in full today
+    // and renewing on this date. The client's other subscriptions are untouched.
+    await Promise.all(lines.map((l) => this.item(l, currency, names)));
+    const subscriptions = await this.finishSetup(
+      c.id,
+      lines,
+      approval.payment_method,
+      key + ":add:" + approval.interval,
+      { ...metadata, collection_method: "charge_automatically" },
+      { declineAddsNothing: true },
     );
-    const added: {
-      id: string;
-      line_ids: string[];
-      items: { line_id: string; name: string }[];
-      monthly_total: number;
-      yearly_total: number;
-    }[] = [];
-    const priorPlan = existing.metadata.plan;
-    const priorKeys =
-      priorPlan === "multi"
-        ? (existing.metadata.plan_items ?? "")
-            .split(",")
-            .map((k) => k.trim())
-            .filter(Boolean)
-        : priorPlan
-          ? [priorPlan]
-          : [];
-    const keys = [
-      ...new Set([
-        ...priorKeys,
-        ...existing.items.data
-          .map((i) => i.price.lookup_key)
-          .filter((k): k is string => !!k),
-        ...group.map((l) => this.plan(l)),
-      ]),
-    ].filter((k) => k !== "multi");
-    for (let i = 0; i < group.length; i++)
-      await this.api.post(
-        "/v1/subscription_items",
-        {
-          subscription: existing.id,
-          ...items[i],
-          proration_behavior: "none",
-          metadata: { proposal_id: proposal, line_id: group[i].id },
-        },
-        key + ":add:" + group[i].id,
-      );
-    await this.api.post(
-      `/v1/subscriptions/${existing.id}`,
-      {
-        metadata: {
-          plan: keys.length > 1 ? "multi" : keys[0],
-          plan_items: keys.join(","),
-        },
-      },
-      key + ":metadata:" + interval,
-    );
-    // Query after writes rather than adding to a potentially stale pre-write total on retry.
-    const current = await this.api.get<Subscription>(
-      `/v1/subscriptions/${existing.id}`,
-      {},
-    );
-    const total = current.items.data
-      .filter((i) => i.price.recurring.interval === "month")
-      .reduce((sum, i) => sum + i.price.unit_amount * i.quantity, 0);
-    added.push({
-      id: existing.id,
-      line_ids: group.map((l) => l.id),
-      items: displayItems(group),
-      monthly_total: total,
-      yearly_total: current.items.data
-        .filter((i) => i.price.recurring.interval === "year")
-        .reduce((sum, i) => sum + i.price.unit_amount * i.quantity, 0),
-    });
-    return added[0];
+    const total = (interval: "month" | "year") =>
+      lines
+        .filter((l) => l.interval === interval)
+        .reduce((sum, l) => sum + l.amount * l.qty, 0);
+    return {
+      id: subscriptions[0],
+      line_ids: lines.map((l) => l.id),
+      items: displayItems(lines),
+      monthly_total: total("month"),
+      yearly_total: total("year"),
+    };
   }
   async finishSetup(
     c: string,
@@ -667,6 +621,7 @@ export class StripeProvider implements BillingProvider {
     pm: string,
     key: string,
     metadata: Record<string, unknown>,
+    options?: { declineAddsNothing?: boolean },
   ) {
     const settings = (
       await this.repo.entities<WorkspaceSettings>("workspace_settings")
@@ -680,20 +635,39 @@ export class StripeProvider implements BillingProvider {
     const subscriptions: string[] = [];
     for (const line of lines) {
       const item = await this.item(line, String(metadata.currency));
-      const sub = await this.api.post<Subscription>(
-        "/v1/subscriptions",
-        {
-          customer: c,
-          default_payment_method: pm,
-          items: [item],
-          description: metadata.proposal_title,
-          metadata: this.terms(line, String(metadata.proposal_id)),
-          collection_method: collection,
-          ...(collection === "send_invoice" ? { days_until_due: 30 } : {}),
-          proration_behavior: "none",
-        },
-        key + ":subscription:" + line.id,
-      );
+      let sub: Subscription;
+      try {
+        sub = await this.api.post<Subscription>(
+          "/v1/subscriptions",
+          {
+            customer: c,
+            default_payment_method: pm,
+            items: [item],
+            description: metadata.proposal_title,
+            metadata: this.terms(line, String(metadata.proposal_id)),
+            collection_method: collection,
+            ...(collection === "send_invoice" ? { days_until_due: 30 } : {}),
+            proration_behavior: "none",
+            // On an approval, a declined card creates no subscription at all.
+            ...(options?.declineAddsNothing &&
+            collection === "charge_automatically"
+              ? { payment_behavior: "error_if_incomplete" }
+              : {}),
+          },
+          key + ":subscription:" + line.id,
+        );
+      } catch (error) {
+        if (
+          options?.declineAddsNothing &&
+          error instanceof AppError &&
+          /\(402;/.test(error.message)
+        )
+          throw new AppError(
+            402,
+            "Your card was declined, so nothing was added or charged.",
+          );
+        throw error;
+      }
       if (collection === "send_invoice" && sub.latest_invoice) {
         await this.api.post(
           `/v1/invoices/${sub.latest_invoice}/finalize`,

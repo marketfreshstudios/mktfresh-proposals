@@ -349,7 +349,7 @@ test("client completion: exact charges, one contact footer, reading width, email
         name: "Invoiced separately",
       });
       await expect(separate).toContainText("Website setup");
-      await expect(separate).toContainText("Nothing to pay here.");
+      await expect(separate).not.toContainText("Nothing to pay here.");
       await expect(page.locator(".flow-totals")).toHaveCount(0);
       await capture("billing-monthly-manual", "1e", width, theme, true);
       // The billing step keeps one task; the proposal is a step away.
@@ -388,7 +388,7 @@ test("client completion: exact charges, one contact footer, reading width, email
       ).toBeVisible();
       await expect(page.getByRole("region", { name: /^Step / })).toHaveCount(2);
       await expect(
-        page.getByRole("region", { name: "Added to your plan" }),
+        page.getByRole("region", { name: "Billing set up" }),
       ).toContainText("Additional support");
       await expect(
         page.getByRole("link", { name: "Continue to secure payment" }),
@@ -411,7 +411,7 @@ test("client completion: exact charges, one contact footer, reading width, email
       ];
       await open(existing);
       await expect(
-        page.getByRole("heading", { name: "Added to your plan", exact: true }),
+        page.getByRole("heading", { name: "Billing set up", exact: true }),
       ).toBeVisible();
       await expect(
         page.getByRole("link", { name: /Continue to secure payment/ }),
@@ -433,7 +433,7 @@ test("client completion: exact charges, one contact footer, reading width, email
               line_ids: [line(monthly)],
               items: [{ line_id: line(monthly), name: monthly.name }],
               interval: "month",
-              first_charge: 1_900_000_000,
+              first_charge: null,
             },
           ],
         },
@@ -446,10 +446,9 @@ test("client completion: exact charges, one contact footer, reading width, email
         }),
       ).toBeVisible();
       await expect(
-        page.getByText(/Charged to your Visa ending 4242\./),
-      ).toBeVisible();
-      await expect(
-        page.getByText(/Nothing is added until you approve\./),
+        page.getByText(
+          /is charged \$325 today, then on the \d+(st|nd|rd|th) of each month\./,
+        ),
       ).toBeVisible();
       const approve = page.getByRole("button", {
         name: /^Approve and add \$/,
@@ -466,7 +465,7 @@ test("client completion: exact charges, one contact footer, reading width, email
         await approve.click();
         await expect(
           page.getByRole("heading", {
-            name: "Added to your plan",
+            name: "Billing set up",
             exact: true,
           }),
         ).toBeVisible();

@@ -319,8 +319,7 @@ export function AfterSigning(props: AfterSigningProps) {
         ))}
       </ul>
       <p className="after-small">
-        We’ll email an invoice for this after both sides sign. Nothing to pay
-        here.
+        We’ll email an invoice for this after both sides sign.
       </p>
     </section>
   ) : null;
@@ -368,14 +367,18 @@ export function AfterSigning(props: AfterSigningProps) {
     );
   };
   const addedCard = props.added.length ? (
-    <section className="after-card" aria-label="Added to your plan">
+    <section className="after-card" aria-label="Billing set up">
       <h2 className="after-confirmed">
         <Check size={16} strokeWidth={3} aria-hidden="true" />
-        Added to your plan
+        Billing set up
       </h2>
-      {items(props.added, "+ ")}
+      {items(props.added)}
       <p className="after-small">
-        Nothing is charged today. It appears on your next invoice.
+        {props.added.every((l) => l.interval === "year")
+          ? "Charged to your card today. It renews on this date each year."
+          : props.added.some((l) => l.interval === "year")
+            ? "Charged to your card today. Each renews on this date, monthly or yearly as shown."
+            : "Charged to your card today. It renews on this date each month."}
       </p>
     </section>
   ) : null;
@@ -474,6 +477,14 @@ export function AfterSigning(props: AfterSigningProps) {
     const sessions = props.sessions;
     const scheduled = props.recurring.find((l) => l.schedule);
     const approval = !sessions.length ? props.approvals[0] : undefined;
+    // Each approved line is its own subscription, charged in full today and
+    // renewing on this date, so the client sees the exact price every time.
+    const renews = (a: AfterApproval) => {
+      const today = new Date();
+      return a.interval === "year"
+        ? `every year on ${today.toLocaleDateString("en-US", { month: "long", day: "numeric" })}`
+        : `on the ${ordinal(today.getDate())} of each month`;
+    };
     const allSetup =
       sessions.length > 0 &&
       sessions.every(
@@ -498,11 +509,19 @@ export function AfterSigning(props: AfterSigningProps) {
       <div className="after-signing" data-view="billing">
         {success}
         {props.checkoutError &&
-          note(
-            "danger",
-            "The secure payment page didn’t open.",
-            `Nothing was charged. Try again, or email ${contactFirst} for a new link.`,
-          )}
+          (approval
+            ? note(
+                "danger",
+                /declined/i.test(props.checkoutError)
+                  ? "Your card was declined."
+                  : "Your approval wasn’t saved.",
+                `Nothing was added or charged. Try again, or email ${contactFirst} to use a different card.`,
+              )
+            : note(
+                "danger",
+                "The secure payment page didn’t open.",
+                `Nothing was charged. Try again, or email ${contactFirst} for a new link.`,
+              ))}
         {props.leftCheckout &&
           !props.checkoutError &&
           note(
@@ -515,33 +534,29 @@ export function AfterSigning(props: AfterSigningProps) {
           {approval ? (
             <section
               className="after-card"
-              aria-label="Added to your current plan"
+              aria-label="New service"
             >
               <header className="after-card-head">
                 <h2 className="after-eyebrow">
-                  {approval.kind === "add"
-                    ? "Added to your current plan"
-                    : "On your card on file"}
+                  {intervalWord(approval.lines) === "yearly"
+                    ? "Yearly"
+                    : "Monthly"}
                 </h2>
                 <span className="after-tag">Stripe</span>
               </header>
-              {items(approval.lines, approval.kind === "add" ? "+ " : "")}
+              {items(approval.lines)}
               {scheduleTerms(approval.lines)}
-              <p className="after-total">
-                <strong>
-                  {approval.kind === "add" && approval.first_charge
-                    ? `From your next invoice, ${day(approval.first_charge * 1000).replace(/, \d{4}$/, "")}`
-                    : "First payment when you approve"}
-                </strong>
-                <strong>
-                  {money(sum(approval.lines))}/{per(approval.interval)}
-                </strong>
-              </p>
+              {/* One line already shows its price; a total only adds up two or more. */}
+              {approval.lines.length > 1 && (
+                <p className="after-total">
+                  <strong>Total</strong>
+                  <strong>
+                    {money(sum(approval.lines))}/{per(approval.interval)}
+                  </strong>
+                </p>
+              )}
               <p className="after-small">
-                {approval.card
-                  ? `Charged to your ${cardLabel(approval.card)}.`
-                  : "Charged to your card on file."}{" "}
-                Nothing is added until you approve.
+                {`When you approve, your ${approval.card ? cardLabel(approval.card) : "card on file"} is charged ${money(sum(approval.lines))} today, then ${renews(approval)}.`}
                 {contact.email ? (
                   <>
                     {" "}
@@ -836,10 +851,7 @@ export function AfterSigning(props: AfterSigningProps) {
               ? props.confirmations.length || props.added.length
                 ? {
                     state: "done",
-                    title:
-                      props.added.length && !props.confirmations.length
-                        ? `${props.added.map((l) => l.name).join(", ")} added to your plan`
-                        : `${word === "yearly" ? "Yearly" : "Monthly"} billing set up`,
+                    title: `${word === "yearly" ? "Yearly" : "Monthly"} billing set up`,
                     note: props.confirmations[0]?.next_billing_at
                       ? `Next payment ${money(sum(props.confirmations[0].items))} on ${day(props.confirmations[0].next_billing_at)}`
                       : undefined,

@@ -20,7 +20,11 @@ import {
 } from "../src/lib/providers/webhook";
 import { encryptSecret, decryptSecret } from "../src/lib/providers/secrets";
 import { type StripeTransport } from "../src/lib/catalog";
-import { type BillingLine, BillingLineSchema } from "../src/lib/model";
+import {
+  AppError,
+  type BillingLine,
+  BillingLineSchema,
+} from "../src/lib/model";
 import { setup, staff, signature, clientActor } from "./helpers";
 import { bill } from "../src/lib/billing";
 function transport(existing = false, multi = false, ownedProduct?: string) {
@@ -47,6 +51,7 @@ function transport(existing = false, multi = false, ownedProduct?: string) {
           quantity: 1,
           price: {
             id: "price_old",
+            nickname: "Old plan",
             unit_amount: 10000,
             lookup_key: multi ? null : "old-plan",
             recurring: { interval: "month" },
@@ -119,12 +124,15 @@ function transport(existing = false, multi = false, ownedProduct?: string) {
     },
     async post<T>(path: string, params: Record<string, unknown>, key: string) {
       calls.push({ path, params, key });
-      if (path === "/v1/subscription_items")
+      if (path === `/v1/subscriptions/${sub.id}` && params.items)
         sub.items.data.push({
           id: "si_new",
-          quantity: Number(params.quantity),
+          quantity: Number(
+            (params.items as { quantity: number }[])[0].quantity,
+          ),
           price: {
             id: "price_new",
+            nickname: "New",
             unit_amount: 2500,
             lookup_key: "new",
             recurring: { interval: "month" },
@@ -186,7 +194,7 @@ it("refuses live Stripe keys and non-sandbox QBO before any request", async () =
   ).toThrow("sandbox");
   expect(fetcher).not.toHaveBeenCalled();
 });
-it("D2 adds individual items with no proration or replacement array; D3 uses customer Checkout", async () => {
+it("D2 bills an approved line as its own subscription on the saved card, charged in full today; D3 uses customer Checkout", async () => {
   for (const existing of [true, false]) {
     const { repo, service, draft } = await setup();
     let p = await service.send(draft.id, staff);
@@ -198,29 +206,25 @@ it("D2 adds individual items with no proration or replacement array; D3 uses cus
     const result = await bill(p, "stripe", new StripeProvider(api, repo));
     expect(result.status).toBe("succeeded");
     if (existing) {
-      // Signing adds nothing: the client approves the add on the proposal.
-      expect(calls.some((c) => c.path === "/v1/subscription_items")).toBe(
-        false,
-      );
+      // Signing adds nothing: the client approves on the proposal.
+      expect(calls.some((c) => c.path === "/v1/subscriptions")).toBe(false);
       expect(result.metadata!.requires_checkout).toBe(true);
       await approveFirst(p, result, new StripeProvider(api, repo));
+      // The existing subscription is never changed.
       expect(
-        calls.find((c) => c.path === "/v1/subscription_items")?.params,
-      ).toMatchObject({
+        calls.some((c) => c.path === "/v1/subscriptions/sub_existing"),
+      ).toBe(false);
+      const created = calls.filter((c) => c.path === "/v1/subscriptions");
+      expect(created).toHaveLength(1);
+      expect(created[0].params).toMatchObject({
+        customer: "cus_test",
+        default_payment_method: "pm_test",
+        collection_method: "charge_automatically",
         proration_behavior: "none",
-        subscription: "sub_existing",
+        payment_behavior: "error_if_incomplete",
       });
-      const update = calls.find(
-        (c) => c.path === "/v1/subscriptions/sub_existing",
-      )!.params;
-      expect(Object.keys(update)).toEqual(["metadata"]);
-      expect(Object.keys(update.metadata).sort()).toEqual([
-        "plan",
-        "plan_items",
-      ]);
-      expect(update).not.toHaveProperty("description");
-      expect(update).not.toHaveProperty("collection_method");
-      expect(update.metadata.plan_items).toBe("old-plan,hosting-essentials-25");
+      expect(created[0].params.items).toHaveLength(1);
+      expect(created[0].params).not.toHaveProperty("billing_cycle_anchor");
       expect(calls.some((c) => c.path.includes("checkout"))).toBe(false);
     } else
       expect(
@@ -476,13 +480,13 @@ it("never bills a product the client already pays for in an active subscription"
   expect(
     calls.some(
       (c) =>
-        c.path === "/v1/subscription_items" ||
+        c.path.startsWith("/v1/subscriptions/") ||
         c.path === "/v1/checkout/sessions" ||
         c.path === "/v1/subscriptions",
     ),
   ).toBe(false);
 });
-it("D2 preserves existing multi plan keys without a multi sentinel or JSON", async () => {
+it("D2 leaves a multi-item subscription and its plan keys untouched on approval", async () => {
   const { repo, service, draft } = await setup();
   let p = await service.send(draft.id, staff);
   p = await service.sign(p.id, signature(p.revision), "client", clientActor, {
@@ -493,16 +497,12 @@ it("D2 preserves existing multi plan keys without a multi sentinel or JSON", asy
   const result = await bill(p, "stripe", new StripeProvider(api, repo));
   expect(result.status).toBe("succeeded");
   await approveFirst(p, result, new StripeProvider(api, repo));
-  const update = calls.find(
-    (c) => c.path === "/v1/subscriptions/sub_existing",
-  )!.params;
-  expect(update).toEqual({
-    metadata: {
-      plan: "multi",
-      plan_items:
-        "hosted-standard-100,hosting-upgrade-60,hosting-essentials-25",
-    },
-  });
+  expect(
+    calls.some((c) => c.path === "/v1/subscriptions/sub_existing"),
+  ).toBe(false);
+  expect(
+    calls.filter((c) => c.path === "/v1/subscriptions"),
+  ).toHaveLength(1);
 });
 
 it("Checkout permits only the configured methods in subscription, invoice-setup and scheduled-setup modes", async () => {
@@ -609,4 +609,44 @@ it("accepts snapshot webhooks on newer API versions, reading only IDs", async ()
     "sub_obj",
   );
   expect(invoiceSubscription({})).toBeNull();
+});
+
+it("D2 creates nothing when the saved card is declined on approval", async () => {
+  const { repo, service, draft } = await setup();
+  let p = await service.send(draft.id, staff);
+  p = await service.sign(p.id, signature(p.revision), "client", clientActor, {
+    token: p.token!,
+    password: "",
+  });
+  const { api, calls } = transport(true);
+  const get = api.get.bind(api);
+  api.get = async <T,>(path: string, params: Record<string, string>) => {
+    const result = (await get(path, params)) as any;
+    for (const s of result?.data ?? [result])
+      if (s?.object === undefined && s?.items)
+        s.collection_method = "charge_automatically";
+    return result as T;
+  };
+  const result = await bill(p, "stripe", new StripeProvider(api, repo));
+  const post = api.post.bind(api);
+  api.post = async <T,>(
+    path: string,
+    params: Record<string, unknown>,
+    key: string,
+  ) => {
+    if (path === "/v1/subscriptions") {
+      calls.push({ path, params, key });
+      throw new AppError(502, "Stripe request failed (402; card_declined)");
+    }
+    return post<T>(path, params, key);
+  };
+  await expect(
+    approveFirst(p, result, new StripeProvider(api, repo)),
+  ).rejects.toMatchObject({
+    status: 402,
+    message: "Your card was declined, so nothing was added or charged.",
+  });
+  expect(
+    calls.find((c) => c.path === "/v1/subscriptions")?.params,
+  ).toMatchObject({ payment_behavior: "error_if_incomplete" });
 });

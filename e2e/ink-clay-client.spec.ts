@@ -526,7 +526,7 @@ for (const width of [1440, 1024, 768, 375]) {
       page.getByRole("heading", { name: /You’re all set/ }),
     ).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Added to your plan" }),
+      page.getByRole("heading", { name: "Billing set up" }),
     ).toBeVisible();
     await expect(
       page.getByRole("link", { name: /secure payment/ }),
