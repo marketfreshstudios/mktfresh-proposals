@@ -155,6 +155,7 @@ export async function approveBilling(
   provider: StripeProvider,
   p: Proposal,
   approvalId: string,
+  setupIntent?: string,
 ): Promise<void> {
   const link = p.billing_links.find((l) => l.provider === "stripe");
   const approvals = (link?.metadata?.approval ?? []) as BillingApproval[];
@@ -174,6 +175,14 @@ export async function approveBilling(
     "Payment setup needs staff review",
     409,
   );
+  const newCard = setupIntent
+    ? await provider.confirmedNewCard(
+        setupIntent,
+        link.external_customer_id,
+        p.id,
+        approval.id,
+      )
+    : undefined;
   let added: Awaited<ReturnType<StripeProvider["applyApproval"]>>;
   try {
     added = await provider.applyApproval(
@@ -195,6 +204,7 @@ export async function approveBilling(
         proposal_title: p.title,
         currency: p.currency.toLowerCase(),
       },
+      newCard,
     );
   } catch (error) {
     if (!(error instanceof NeedsReview)) throw error;
@@ -229,6 +239,35 @@ export async function approveBilling(
       email_template_key: "billing_updated",
     });
   });
+}
+
+/** Starts entering a different card for a pending approval. */
+export async function startApprovalCard(
+  provider: StripeProvider,
+  p: Proposal,
+  approvalId: string,
+) {
+  const link = p.billing_links.find((l) => l.provider === "stripe");
+  const approvals = (link?.metadata?.approval ?? []) as BillingApproval[];
+  check(
+    !!p.client_signed_at &&
+      approvals.some((a) => a.id === approvalId) &&
+      link?.external_customer_id,
+    "This approval is no longer pending",
+    409,
+  );
+  check(provider.browser, "A different card can't be entered here", 409);
+  return {
+    ...(await provider.startNewCard(
+      link.external_customer_id,
+      p.id,
+      approvalId,
+    )),
+    publishable_key: provider.browser.publishableKey,
+    ...(provider.browser.account
+      ? { stripe_account: provider.browser.account }
+      : {}),
+  };
 }
 
 /**

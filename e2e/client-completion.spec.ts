@@ -253,7 +253,11 @@ test("client completion: exact charges, one contact footer, reading width, email
     ).toBe(true);
     const file = `${name}-${width}-${theme}.png`;
     if (process.env.CAPTURE_EDITOR_EVIDENCE === "1")
-      await page.screenshot({ path: `${dir}/${file}`, fullPage });
+      await page.screenshot({
+        path: `${dir}/${file}`,
+        fullPage,
+        animations: "disabled",
+      });
     captures.push({ file, frame, width, theme });
   }
   const line = (i: QuoteItem) => i.sublines[0].id;
@@ -270,6 +274,31 @@ test("client completion: exact charges, one contact footer, reading width, email
       mode,
     })),
     added_existing: [],
+  });
+  // Stripe.js can't load in tests; this stand-in mounts plain fields where
+  // Stripe's card fields go and answers confirmSetup like Stripe does.
+  await page.addInitScript(() => {
+    (window as any).Stripe = () => ({
+      elements: () => ({
+        create: () => {
+          const handlers: Record<string, () => void> = {};
+          return {
+            on: (event: string, fn: () => void) => (handlers[event] = fn),
+            mount: (node: HTMLElement) => {
+              node.innerHTML =
+                "<style>.stand-in{display:grid;gap:12px;font-size:14px;color:inherit}.stand-in label{display:grid;gap:6px;opacity:.85}.stand-in span{display:grid;grid-template-columns:1fr 1fr;gap:12px}.stand-in input{font:inherit;font-size:16px;padding:12px 14px;border-radius:10px;border:1px solid currentColor;background:transparent;color:inherit;opacity:1}</style>" +
+                '<div class="stand-in"><label>Card number<input value="5555 5555 5555 4444"></label><span><label>Expiration<input value="08 / 28"></label><label>CVC<input value="123"></label></span><label>ZIP<input value="29710"></label></div>';
+              setTimeout(() => handlers.ready?.(), 0);
+            },
+            destroy: () => {},
+          };
+        },
+      }),
+      confirmSetup: async () =>
+        (window as any).__decline
+          ? { error: { message: "Your card was declined." } }
+          : { setupIntent: { id: "seti_test", status: "succeeded" } },
+    });
   });
   async function open(p: typeof initial) {
     current = structuredClone(p);
@@ -349,8 +378,10 @@ test("client completion: exact charges, one contact footer, reading width, email
         name: "Invoiced separately",
       });
       await expect(separate).toContainText("Website setup");
-      await expect(separate).toContainText("Nothing to pay here.");
-      await expect(page.locator(".flow-totals")).toHaveCount(0);
+      await expect(separate).not.toContainText("Nothing to pay here.");
+      await expect(
+        page.locator(".flow-result-summary .flow-totals"),
+      ).toHaveCount(0);
       await capture("billing-monthly-manual", "1e", width, theme, true);
       // The billing step keeps one task; the proposal is a step away.
       await page
@@ -388,7 +419,7 @@ test("client completion: exact charges, one contact footer, reading width, email
       ).toBeVisible();
       await expect(page.getByRole("region", { name: /^Step / })).toHaveCount(2);
       await expect(
-        page.getByRole("region", { name: "Added to your plan" }),
+        page.getByRole("region", { name: "Billing set up" }),
       ).toContainText("Additional support");
       await expect(
         page.getByRole("link", { name: "Continue to secure payment" }),
@@ -411,7 +442,7 @@ test("client completion: exact charges, one contact footer, reading width, email
       ];
       await open(existing);
       await expect(
-        page.getByRole("heading", { name: "Added to your plan", exact: true }),
+        page.getByRole("heading", { name: "Billing set up", exact: true }),
       ).toBeVisible();
       await expect(
         page.getByRole("link", { name: /Continue to secure payment/ }),
@@ -433,7 +464,8 @@ test("client completion: exact charges, one contact footer, reading width, email
               line_ids: [line(monthly)],
               items: [{ line_id: line(monthly), name: monthly.name }],
               interval: "month",
-              first_charge: 1_900_000_000,
+              first_charge: null,
+              new_card: true,
             },
           ],
         },
@@ -446,16 +478,69 @@ test("client completion: exact charges, one contact footer, reading width, email
         }),
       ).toBeVisible();
       await expect(
-        page.getByText(/Charged to your Visa ending 4242\./),
-      ).toBeVisible();
-      await expect(
-        page.getByText(/Nothing is added until you approve\./),
+        page.getByText(
+          /is charged \$325 today, then on the \d+(st|nd|rd|th) of each month\./,
+        ),
       ).toBeVisible();
       const approve = page.getByRole("button", {
         name: /^Approve and add \$/,
       });
       await expect(approve).toBeVisible();
       await capture("existing-subscriber-approval", "1f", width, theme, true);
+      // A different card, entered in Stripe's fields inside the card.
+      await page.route("**/api/public/*/billing/card", (route) =>
+        route.fulfill({
+          json: {
+            client_secret: "seti_test_secret",
+            publishable_key: "pk_test_x",
+          },
+        }),
+      );
+      await page.getByRole("button", { name: "Use a different card" }).click();
+      await expect(page.locator(".new-card .stand-in")).toBeVisible();
+      await expect(
+        page.getByText(
+          /When you approve, this card is charged \$325 today, then on the/,
+        ),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "Use Visa ending 4242 instead" }),
+      ).toBeVisible();
+      await expect(
+        page.getByText(
+          "Secured by Stripe. This card is used only for this service.",
+        ),
+      ).toBeVisible();
+      await capture("existing-subscriber-new-card", "1f", width, theme, true);
+      if (width === 1440 && theme === "light") {
+        await page.evaluate(() => ((window as any).__decline = true));
+        await approve.click();
+        await expect(page.locator(".new-card").getByRole("alert")).toHaveText(
+          "Your card was declined.",
+        );
+        await capture(
+          "existing-subscriber-new-card-declined",
+          "1f",
+          width,
+          theme,
+          true,
+        );
+        await page.evaluate(() => ((window as any).__decline = false));
+        let sent: Record<string, string> = {};
+        await page.route("**/api/public/*/billing/approve", async (route) => {
+          sent = route.request().postDataJSON();
+          await route.fulfill({ json: { approved: true } });
+        });
+        await approve.click();
+        await expect.poll(() => sent.setup_intent).toBe("seti_test");
+        expect(sent.approval_id).toBe("approve:month");
+        await page.unroute("**/api/public/*/billing/approve");
+      }
+      await page.unroute("**/api/public/*/billing/card");
+      await page
+        .getByRole("button", { name: "Use Visa ending 4242 instead" })
+        .click();
+      await expect(page.locator(".new-card")).toHaveCount(0);
       if (width === 1440 && theme === "light") {
         let approved = "";
         await page.route("**/api/public/*/billing/approve", async (route) => {
@@ -466,7 +551,7 @@ test("client completion: exact charges, one contact footer, reading width, email
         await approve.click();
         await expect(
           page.getByRole("heading", {
-            name: "Added to your plan",
+            name: "Billing set up",
             exact: true,
           }),
         ).toBeVisible();

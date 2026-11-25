@@ -1684,6 +1684,7 @@ export function publicResult(
                       items: { line_id: string; name: string }[];
                       interval: "month" | "year";
                       first_charge: number | null;
+                      new_card?: boolean;
                     }[]
                   ).map((a) => ({
                     id: a.id,
@@ -1696,6 +1697,7 @@ export function publicResult(
                     })),
                     interval: a.interval,
                     first_charge: a.first_charge,
+                    new_card: a.new_card === true,
                   })),
                 }
               : {}),

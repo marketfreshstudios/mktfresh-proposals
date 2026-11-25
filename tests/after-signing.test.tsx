@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import {
   AfterSigning,
@@ -102,7 +102,7 @@ describe("AfterSigning", () => {
     expect(out).toContain("Set up your monthly billing");
     expect(out).toContain("First payment today");
     expect(out).toContain("Invoiced separately");
-    expect(out).toContain("Nothing to pay here.");
+    expect(out).not.toContain("Nothing to pay here.");
     expect(out).toContain("Continue to secure payment");
     expect(out).toContain("I’ll do this later");
     expect(out).not.toMatch(/·|—|…/);
@@ -116,7 +116,9 @@ describe("AfterSigning", () => {
     expect(out).toContain("Due today");
     expect(out).toContain("Save a card");
   });
-  it("1d: approval names the card and the amount, nothing added until approved", () => {
+  it("1d: approval names the card, today's full charge and the renewal date", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 10, 25, 12));
     const out = html({
       sessions: [],
       approvals: [
@@ -125,15 +127,20 @@ describe("AfterSigning", () => {
           kind: "add",
           card: { brand: "visa", last4: "4242" },
           interval: "month",
-          first_charge: Date.parse("2026-12-01T12:00:00Z") / 1000,
+          first_charge: null,
           lines: [line("r1", "Care Standard", 8500, "month")],
         },
       ],
     });
     expect(out).toContain("Approve your new monthly service");
     expect(out).toContain("Visa ending 4242");
-    expect(out).toContain("Nothing is added until you approve.");
+    expect(out).not.toContain("Nothing is added until you approve.");
+    expect(out).toContain(
+      "When you approve, your Visa ending 4242 is charged $85 today, then on the 25th of each month.",
+    );
+    expect(out).not.toContain("prorated");
     expect(out).toContain("Approve and add $85/mo");
+    vi.useRealTimers();
   });
   it("1e: one card and button per session; finished ones lose the button", () => {
     const out = html({
