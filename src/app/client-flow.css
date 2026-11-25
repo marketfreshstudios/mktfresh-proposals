@@ -1195,10 +1195,11 @@ label.flow-quote-line {
 .flow-result-split > :not(.flow-signed, .flow-result-summary) {
   grid-column: 1 / -1;
 }
+/* A short rise, no fade: text is never caught at low contrast, and nothing
+   moves sideways past the edge of the screen. */
 @keyframes flow-billing-in {
   from {
-    opacity: 0;
-    transform: translateX(16px);
+    transform: translateY(12px);
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -1215,12 +1216,6 @@ label.flow-quote-line {
   }
   .flow-result-split > :not(.flow-signed, .flow-result-summary) {
     order: 2;
-  }
-  @keyframes flow-billing-in {
-    from {
-      opacity: 0;
-      transform: translateY(12px);
-    }
   }
 }
 /* The billing column is half width: its cards stack. */
