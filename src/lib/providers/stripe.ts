@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { formatMoney } from "../money";
 import { stripeCustomerMatches } from "../client-billing";
 import { stripeAddress, normalizedPhone } from "../client-contact";
@@ -67,6 +68,8 @@ export type BillingApproval = {
   interval: "month" | "year";
   /** Kept for proposals approved before charges started on approval. */
   first_charge: number | null;
+  /** The client can enter a different card on the proposal. */
+  new_card?: boolean;
 };
 const productOf = (price: { product?: string | { id: string } }) =>
   typeof price.product === "string" ? price.product : price.product?.id;
@@ -79,6 +82,8 @@ export class StripeProvider implements BillingProvider {
   constructor(
     public api: StripeTransport,
     private repo: Repository,
+    /** What the browser needs to show Stripe's card fields. Test keys only. */
+    public browser?: { publishableKey: string; account?: string },
   ) {}
   async findCustomers(c: Client) {
     if (c.stripe_customer_id) {
@@ -264,7 +269,6 @@ export class StripeProvider implements BillingProvider {
     lines: BillingLine[],
     key: string,
     metadata: Record<string, unknown>,
-    options?: { declineAddsNothing?: boolean },
   ) {
     const settings = (
       await this.repo.entities<WorkspaceSettings>("workspace_settings")
@@ -379,6 +383,7 @@ export class StripeProvider implements BillingProvider {
           items: displayItems(group),
           interval,
           first_charge: null,
+          ...(this.browser ? { new_card: true } : {}),
         });
       } else {
         const session = await this.api.post<{
@@ -461,6 +466,7 @@ export class StripeProvider implements BillingProvider {
           items: displayItems([line]),
           interval: line.interval === "year" ? "year" : "month",
           first_charge: null,
+          ...(this.browser ? { new_card: true } : {}),
         });
         continue;
       }
@@ -527,7 +533,8 @@ export class StripeProvider implements BillingProvider {
     approval: BillingApproval,
     key: string,
     metadata: Record<string, unknown>,
-    options?: { declineAddsNothing?: boolean },
+    /** A card the client just entered on the proposal (from a SetupIntent). */
+    newCard?: string,
   ) {
     const settings = (
       await this.repo.entities<WorkspaceSettings>("workspace_settings")
@@ -567,15 +574,15 @@ export class StripeProvider implements BillingProvider {
             sc.invoice_settings?.default_payment_method) ===
           approval.payment_method,
       );
-      if (!usable || !(await this.workingCard(usable, sc)))
+      if (!newCard && (!usable || !(await this.workingCard(usable, sc))))
         throw new NeedsReview(
           "The card on file changed; the client needs to check out instead",
         );
       const subscriptions = await this.finishSetup(
         c.id,
         [line],
-        approval.payment_method,
-        key + ":own:" + line.id,
+        newCard ?? approval.payment_method,
+        key + (newCard ? ":own-card:" + newCard + ":" : ":own:") + line.id,
         { ...metadata, collection_method: settings.collection_method },
         { declineAddsNothing: true },
       );
@@ -588,7 +595,7 @@ export class StripeProvider implements BillingProvider {
       };
     }
     const existing = all.find((s) => s.id === approval.subscription_id);
-    if (!existing || !(await this.workingCard(existing, sc)))
+    if (!newCard && (!existing || !(await this.workingCard(existing, sc))))
       throw new NeedsReview(
         "The subscription or card on file changed; the client needs to check out instead",
       );
@@ -598,8 +605,10 @@ export class StripeProvider implements BillingProvider {
     const subscriptions = await this.finishSetup(
       c.id,
       lines,
-      approval.payment_method,
-      key + ":add:" + approval.interval,
+      newCard ?? approval.payment_method,
+      key +
+        (newCard ? ":add-card:" + newCard + ":" : ":add:") +
+        approval.interval,
       { ...metadata, collection_method: "charge_automatically" },
       { declineAddsNothing: true },
     );
@@ -614,6 +623,47 @@ export class StripeProvider implements BillingProvider {
       monthly_total: total("month"),
       yearly_total: total("year"),
     };
+  }
+  /** Starts entering a different card on the proposal: a SetupIntent the
+   * browser confirms with Stripe's own card fields. Card details never reach
+   * this server. */
+  async startNewCard(customer: string, proposal: string, approvalId: string) {
+    const intent = await this.api.post<{ id: string; client_secret: string }>(
+      "/v1/setup_intents",
+      {
+        customer,
+        usage: "off_session",
+        payment_method_types: ["card"],
+        metadata: { proposal_id: proposal, approval_id: approvalId },
+      },
+      `card:${proposal}:${approvalId}:${randomUUID()}`,
+    );
+    return { client_secret: intent.client_secret };
+  }
+  /** The card from a confirmed SetupIntent, checked against this customer,
+   * proposal and approval so a card can't be borrowed from elsewhere. */
+  async confirmedNewCard(
+    setupIntent: string,
+    customer: string,
+    proposal: string,
+    approvalId: string,
+  ) {
+    const intent = await this.api.get<{
+      status: string;
+      customer: string | null;
+      payment_method: string | null;
+      metadata: Record<string, string>;
+    }>(`/v1/setup_intents/${setupIntent}`, {});
+    check(
+      intent.status === "succeeded" &&
+        intent.customer === customer &&
+        intent.payment_method &&
+        intent.metadata.proposal_id === proposal &&
+        intent.metadata.approval_id === approvalId,
+      "That card couldn't be confirmed. Enter it again.",
+      409,
+    );
+    return intent.payment_method!;
   }
   async finishSetup(
     c: string,

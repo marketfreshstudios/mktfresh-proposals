@@ -58,7 +58,14 @@ import {
   selectedContent,
 } from "../lib/quote-model";
 import type { QuoteItem } from "../lib/model";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { accentText } from "../lib/branding";
 import { formatMoney, intervalSuffix } from "../lib/money";
 import { money, totals, renderBlocks, resolve } from "../lib/presentation";
@@ -72,6 +79,7 @@ import { DocumentCover } from "./document-cover";
 import { ClientSignatureBlock } from "./client-signature-block";
 import { SignatureForm } from "./signature";
 import { api, ApiError, Banner, Button, Icon, date } from "./ui";
+import type { CardSetup } from "./new-card";
 import { Skeleton } from "./foundation";
 import { Select, PasswordInput } from "./form-controls";
 import { StaffIconContext } from "./staff-icons";
@@ -245,6 +253,16 @@ function NewClientFlow({
   const jumpToTerms = useTermsJump("client");
   const [termsNotice, setTermsNotice] = useState<string | null>(null);
   const headers = { "x-proposal-password": password };
+  // Stable so the card form isn't restarted on every render.
+  const startCard = useCallback(
+    (approvalId: string) =>
+      api<CardSetup>(`/api/public/${token}/billing/card`, {
+        method: "POST",
+        headers: { "x-proposal-password": password },
+        body: JSON.stringify({ approval_id: approvalId }),
+      }),
+    [token, password],
+  );
   const signed = !!p && ["signed_by_client", "completed"].includes(p.status);
   const [questionRequest, setQuestionRequest] =
     useState<QuestionRequest | null>(null);
@@ -1104,13 +1122,17 @@ function NewClientFlow({
                           );
                         });
                     }}
-                    onApprove={(a) => {
+                    startCard={startCard}
+                    onApprove={(a, setupIntent) => {
                       setApproving(a.id);
                       setCheckoutError("");
                       api(`/api/public/${token}/billing/approve`, {
                         method: "POST",
                         headers,
-                        body: JSON.stringify({ approval_id: a.id }),
+                        body: JSON.stringify({
+                          approval_id: a.id,
+                          ...(setupIntent ? { setup_intent: setupIntent } : {}),
+                        }),
                       })
                         .then(() => load())
                         .catch((failure) =>

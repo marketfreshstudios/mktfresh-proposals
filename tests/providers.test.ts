@@ -650,3 +650,93 @@ it("D2 creates nothing when the saved card is declined on approval", async () =>
     calls.find((c) => c.path === "/v1/subscriptions")?.params,
   ).toMatchObject({ payment_behavior: "error_if_incomplete" });
 });
+
+it("a different card entered on the proposal is checked against the customer, proposal and approval, then bills that service alone", async () => {
+  const { repo, service, draft } = await setup();
+  let p = await service.send(draft.id, staff);
+  p = await service.sign(p.id, signature(p.revision), "client", clientActor, {
+    token: p.token!,
+    password: "",
+  });
+  const { api, calls } = transport(true);
+  const browser = { publishableKey: "pk_test_abc" };
+  const result = await bill(
+    p,
+    "stripe",
+    new StripeProvider(api, repo, browser),
+  );
+  const [approval] = result.metadata!.approval as BillingApproval[];
+  expect(approval.new_card).toBe(true);
+  const provider = new StripeProvider(api, repo, browser);
+  const intents: Record<string, any> = {
+    seti_ok: {
+      status: "succeeded",
+      customer: "cus_test",
+      payment_method: "pm_new",
+      metadata: { proposal_id: p.id, approval_id: approval.id },
+    },
+    seti_other: {
+      status: "succeeded",
+      customer: "cus_test",
+      payment_method: "pm_other",
+      metadata: { proposal_id: "someone-else", approval_id: approval.id },
+    },
+  };
+  const get = api.get.bind(api);
+  api.get = async <T,>(path: string, params: Record<string, string>) =>
+    path.startsWith("/v1/setup_intents/")
+      ? (intents[path.split("/").pop()!] as T)
+      : get<T>(path, params);
+  const post = api.post.bind(api);
+  api.post = async <T,>(
+    path: string,
+    params: Record<string, unknown>,
+    key: string,
+  ) =>
+    path === "/v1/setup_intents"
+      ? (calls.push({ path, params, key }),
+        { id: "seti_new", client_secret: "seti_new_secret" } as T)
+      : post<T>(path, params, key);
+
+  expect(await provider.startNewCard("cus_test", p.id, approval.id)).toEqual({
+    client_secret: "seti_new_secret",
+  });
+  expect(
+    calls.find((c) => c.path === "/v1/setup_intents")?.params,
+  ).toMatchObject({
+    customer: "cus_test",
+    usage: "off_session",
+    payment_method_types: ["card"],
+    metadata: { proposal_id: p.id, approval_id: approval.id },
+  });
+  await expect(
+    provider.confirmedNewCard("seti_other", "cus_test", p.id, approval.id),
+  ).rejects.toMatchObject({ status: 409 });
+  const card = await provider.confirmedNewCard(
+    "seti_ok",
+    "cus_test",
+    p.id,
+    approval.id,
+  );
+  expect(card).toBe("pm_new");
+  const lines = billingLines(p.versions.at(-1)!.quote).filter((l) =>
+    approval.line_ids.includes(l.id),
+  );
+  await provider.applyApproval(
+    { id: "cus_test", email: p.client.email, company: p.client.company },
+    lines,
+    approval,
+    "approve-test",
+    { currency: "usd", proposal_id: p.id, proposal_title: p.title },
+    card,
+  );
+  const created = calls.filter((c) => c.path === "/v1/subscriptions");
+  expect(created).toHaveLength(1);
+  expect(created[0].params).toMatchObject({
+    default_payment_method: "pm_new",
+    payment_behavior: "error_if_incomplete",
+  });
+  expect(
+    calls.some((c) => c.path.startsWith("/v1/subscriptions/sub_existing")),
+  ).toBe(false);
+});

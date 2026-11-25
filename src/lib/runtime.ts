@@ -71,9 +71,14 @@ function createRuntime(
         ? new StripeProvider(
             new StripeHttp(process.env.STRIPE_SECRET_KEY, repo),
             repo,
+            browserKey(process.env.STRIPE_PUBLISHABLE_KEY),
           )
         : account && stripeConnect
-          ? new StripeProvider(stripeConnect.transport(account), repo)
+          ? new StripeProvider(
+              stripeConnect.transport(account),
+              repo,
+              browserKey(process.env.STRIPE_CONNECT_PUBLISHABLE_KEY, account.id),
+            )
           : local
             ? new MockBillingProvider("stripe")
             : new UnconfiguredBillingProvider("Stripe"),
@@ -141,4 +146,12 @@ export async function allRuntimes() {
     console.error("Could not load a workspace billing connection.");
     return [];
   });
+}
+
+/** Stripe's publishable key for card fields on the proposal. Like the secret
+ * keys, only test-mode keys are used; anything else hides the card form. */
+function browserKey(key: string | undefined, account?: string) {
+  return key && /^pk_test_[A-Za-z0-9]+$/.test(key)
+    ? { publishableKey: key, ...(account ? { account } : {}) }
+    : undefined;
 }

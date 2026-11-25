@@ -1,5 +1,5 @@
 "use client";
-import type { ReactNode } from "react";
+import { useCallback, useRef, useState, type ReactNode } from "react";
 import {
   Check,
   CircleAlert,
@@ -14,6 +14,7 @@ import type { BillingGroup } from "../lib/billing-display";
 import { cardLabel } from "../lib/billing-confirmation";
 import { formatMoney } from "../lib/money";
 import { Button } from "./ui";
+import { NewCardForm, type CardSetup, type NewCardHandle } from "./new-card";
 
 /** One Checkout page the client still has to finish. */
 export type AfterSession = BillingGroup & { lines: BillingLine[] };
@@ -24,6 +25,8 @@ export type AfterApproval = {
   card: { brand: string; last4: string } | null;
   interval: "month" | "year";
   first_charge: number | null;
+  /** The client may enter a different card here. */
+  new_card?: boolean;
   lines: BillingLine[];
 };
 export type AfterConfirmation = {
@@ -105,7 +108,9 @@ export type AfterSigningProps = {
   files: { id: string; stage?: string }[];
   showCopy: boolean;
   onOpen: (session: AfterSession) => void;
-  onApprove: (approval: AfterApproval) => void;
+  onApprove: (approval: AfterApproval, setupIntent?: string) => void;
+  /** Starts Stripe's card fields for a different card on this approval. */
+  startCard?: (approvalId: string) => Promise<CardSetup>;
   onLater: () => void;
   onFinishBilling: () => void;
   onCheckAgain: () => void;
@@ -123,6 +128,17 @@ const ordinal = (n: number) =>
     "th");
 
 export function AfterSigning(props: AfterSigningProps) {
+  // A different card for an approval, entered in Stripe's own fields.
+  const [newCard, setNewCard] = useState(false);
+  const [cardReady, setCardReady] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const card = useRef<NewCardHandle>(null);
+  const onCardReady = useCallback((ready: boolean) => setCardReady(ready), []);
+  const { startCard } = props;
+  const start = useCallback(
+    (id: string) => startCard!(id),
+    [startCard],
+  );
   const { view, firstName, currency, cents, studio, contact, timezone } = props;
   const money = (amount: number) => formatMoney(amount, currency, cents);
   const day = (value?: string | number | null) =>
@@ -509,6 +525,7 @@ export function AfterSigning(props: AfterSigningProps) {
       <div className="after-signing" data-view="billing">
         {success}
         {props.checkoutError &&
+          !(approval && newCard) &&
           (approval
             ? note(
                 "danger",
@@ -555,16 +572,35 @@ export function AfterSigning(props: AfterSigningProps) {
                   </strong>
                 </p>
               )}
+              {newCard && (
+                <NewCardForm
+                  ref={card}
+                  approvalId={approval.id}
+                  start={start}
+                  error={props.checkoutError}
+                  onReady={onCardReady}
+                />
+              )}
               <p className="after-small">
-                {`When you approve, your ${approval.card ? cardLabel(approval.card) : "card on file"} is charged ${money(sum(approval.lines))} today, then ${renews(approval)}.`}
-                {contact.email ? (
+                {`When you approve, ${newCard ? "this card" : `your ${approval.card ? cardLabel(approval.card) : "card on file"}`} is charged ${money(sum(approval.lines))} today, then ${renews(approval)}.`}{" "}
+                {approval.new_card && props.startCard && !props.preview ? (
+                  <button
+                    type="button"
+                    className="flow-text-link"
+                    disabled={!!props.approving || confirming}
+                    onClick={() => setNewCard(!newCard)}
+                  >
+                    {newCard
+                      ? `Use ${approval.card ? cardLabel(approval.card) : "your card on file"} instead`
+                      : "Use a different card"}
+                  </button>
+                ) : contact.email ? (
                   <>
-                    {" "}
                     To use a different card, email{" "}
                     <a href={`mailto:${contact.email}`}>{contactFirst}</a>.
                   </>
                 ) : (
-                  ` To use a different card, contact ${contactFirst}.`
+                  `To use a different card, contact ${contactFirst}.`
                 )}
               </p>
             </section>
@@ -616,9 +652,21 @@ export function AfterSigning(props: AfterSigningProps) {
               props.preview ? null : (
                 <Button
                   variant="primary"
-                  busy={props.approving === approval.id}
-                  disabled={!!props.approving}
-                  onClick={() => props.onApprove(approval)}
+                  busy={props.approving === approval.id || confirming}
+                  disabled={
+                    !!props.approving || confirming || (newCard && !cardReady)
+                  }
+                  onClick={async () => {
+                    if (!newCard) return props.onApprove(approval);
+                    setConfirming(true);
+                    try {
+                      props.onApprove(approval, await card.current!.confirm());
+                    } catch {
+                      // Stripe's message is already shown under the fields.
+                    } finally {
+                      setConfirming(false);
+                    }
+                  }}
                 >
                   <Lock size={16} aria-hidden="true" />
                   {`Approve and add ${money(sum(approval.lines))}/${per(approval.interval)}`}
