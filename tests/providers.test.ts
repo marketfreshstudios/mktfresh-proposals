@@ -497,12 +497,10 @@ it("D2 leaves a multi-item subscription and its plan keys untouched on approval"
   const result = await bill(p, "stripe", new StripeProvider(api, repo));
   expect(result.status).toBe("succeeded");
   await approveFirst(p, result, new StripeProvider(api, repo));
-  expect(
-    calls.some((c) => c.path === "/v1/subscriptions/sub_existing"),
-  ).toBe(false);
-  expect(
-    calls.filter((c) => c.path === "/v1/subscriptions"),
-  ).toHaveLength(1);
+  expect(calls.some((c) => c.path === "/v1/subscriptions/sub_existing")).toBe(
+    false,
+  );
+  expect(calls.filter((c) => c.path === "/v1/subscriptions")).toHaveLength(1);
 });
 
 it("Checkout permits only the configured methods in subscription, invoice-setup and scheduled-setup modes", async () => {
@@ -620,7 +618,7 @@ it("D2 creates nothing when the saved card is declined on approval", async () =>
   });
   const { api, calls } = transport(true);
   const get = api.get.bind(api);
-  api.get = async <T,>(path: string, params: Record<string, string>) => {
+  api.get = async <T>(path: string, params: Record<string, string>) => {
     const result = (await get(path, params)) as any;
     for (const s of result?.data ?? [result])
       if (s?.object === undefined && s?.items)
@@ -629,7 +627,7 @@ it("D2 creates nothing when the saved card is declined on approval", async () =>
   };
   const result = await bill(p, "stripe", new StripeProvider(api, repo));
   const post = api.post.bind(api);
-  api.post = async <T,>(
+  api.post = async <T>(
     path: string,
     params: Record<string, unknown>,
     key: string,
@@ -683,12 +681,12 @@ it("a different card entered on the proposal is checked against the customer, pr
     },
   };
   const get = api.get.bind(api);
-  api.get = async <T,>(path: string, params: Record<string, string>) =>
+  api.get = async <T>(path: string, params: Record<string, string>) =>
     path.startsWith("/v1/setup_intents/")
       ? (intents[path.split("/").pop()!] as T)
       : get<T>(path, params);
   const post = api.post.bind(api);
-  api.post = async <T,>(
+  api.post = async <T>(
     path: string,
     params: Record<string, unknown>,
     key: string,

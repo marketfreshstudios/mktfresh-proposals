@@ -490,7 +490,10 @@ test("client completion: exact charges, one contact footer, reading width, email
       // A different card, entered in Stripe's fields inside the card.
       await page.route("**/api/public/*/billing/card", (route) =>
         route.fulfill({
-          json: { client_secret: "seti_test_secret", publishable_key: "pk_test_x" },
+          json: {
+            client_secret: "seti_test_secret",
+            publishable_key: "pk_test_x",
+          },
         }),
       );
       await page.getByRole("button", { name: "Use a different card" }).click();
@@ -504,16 +507,24 @@ test("client completion: exact charges, one contact footer, reading width, email
         page.getByRole("button", { name: "Use Visa ending 4242 instead" }),
       ).toBeVisible();
       await expect(
-        page.getByText("Secured by Stripe. This card is used only for this service."),
+        page.getByText(
+          "Secured by Stripe. This card is used only for this service.",
+        ),
       ).toBeVisible();
       await capture("existing-subscriber-new-card", "1f", width, theme, true);
       if (width === 1440 && theme === "light") {
         await page.evaluate(() => ((window as any).__decline = true));
         await approve.click();
-        await expect(
-          page.locator(".new-card").getByRole("alert"),
-        ).toHaveText("Your card was declined.");
-        await capture("existing-subscriber-new-card-declined", "1f", width, theme, true);
+        await expect(page.locator(".new-card").getByRole("alert")).toHaveText(
+          "Your card was declined.",
+        );
+        await capture(
+          "existing-subscriber-new-card-declined",
+          "1f",
+          width,
+          theme,
+          true,
+        );
         await page.evaluate(() => ((window as any).__decline = false));
         let sent: Record<string, string> = {};
         await page.route("**/api/public/*/billing/approve", async (route) => {

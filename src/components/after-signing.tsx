@@ -135,10 +135,7 @@ export function AfterSigning(props: AfterSigningProps) {
   const card = useRef<NewCardHandle>(null);
   const onCardReady = useCallback((ready: boolean) => setCardReady(ready), []);
   const { startCard } = props;
-  const start = useCallback(
-    (id: string) => startCard!(id),
-    [startCard],
-  );
+  const start = useCallback((id: string) => startCard!(id), [startCard]);
   const { view, firstName, currency, cents, studio, contact, timezone } = props;
   const money = (amount: number) => formatMoney(amount, currency, cents);
   const day = (value?: string | number | null) =>
@@ -549,10 +546,7 @@ export function AfterSigning(props: AfterSigningProps) {
         <h1>{heading}</h1>
         <div className="after-cards">
           {approval ? (
-            <section
-              className="after-card"
-              aria-label="New service"
-            >
+            <section className="after-card" aria-label="New service">
               <header className="after-card-head">
                 <h2 className="after-eyebrow">
                   {intervalWord(approval.lines) === "yearly"

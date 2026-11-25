@@ -77,7 +77,10 @@ function createRuntime(
           ? new StripeProvider(
               stripeConnect.transport(account),
               repo,
-              browserKey(process.env.STRIPE_CONNECT_PUBLISHABLE_KEY, account.id),
+              browserKey(
+                process.env.STRIPE_CONNECT_PUBLISHABLE_KEY,
+                account.id,
+              ),
             )
           : local
             ? new MockBillingProvider("stripe")

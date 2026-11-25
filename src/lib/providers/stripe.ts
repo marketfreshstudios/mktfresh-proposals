@@ -3,7 +3,13 @@ import { formatMoney } from "../money";
 import { stripeCustomerMatches } from "../client-billing";
 import { stripeAddress, normalizedPhone } from "../client-contact";
 import { appOrigin, AppUrlSchema } from "../links";
-import { AppError, check, type Client, type BillingLine, type Item } from "../model";
+import {
+  AppError,
+  check,
+  type Client,
+  type BillingLine,
+  type Item,
+} from "../model";
 import {
   NeedsReview,
   type BillingProvider,

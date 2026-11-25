@@ -258,7 +258,11 @@ export async function startApprovalCard(
   );
   check(provider.browser, "A different card can't be entered here", 409);
   return {
-    ...(await provider.startNewCard(link.external_customer_id, p.id, approvalId)),
+    ...(await provider.startNewCard(
+      link.external_customer_id,
+      p.id,
+      approvalId,
+    )),
     publishable_key: provider.browser.publishableKey,
     ...(provider.browser.account
       ? { stripe_account: provider.browser.account }

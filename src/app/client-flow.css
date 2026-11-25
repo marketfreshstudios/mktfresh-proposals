@@ -1164,9 +1164,17 @@ label.flow-quote-line {
   color: var(--ink-muted);
   font-size: 13px;
 }
+.client-flow .after-small .flow-text-link {
+  /* Inline in a sentence, so it keeps the sentence's line height (inline
+     links are exempt from the 44px tap-target rule). */
+  display: inline;
+  min-height: 0;
+}
 .client-flow .flow-text-link:disabled {
   opacity: 0.5;
   cursor: default;
+}
+
 /* Signed, billing still open: what was signed stays on the left and the
    billing step slides in on the right. Phones stack it, billing first. */
 .flow-result.flow-result-split {

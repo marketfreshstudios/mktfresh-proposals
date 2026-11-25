@@ -1,5 +1,11 @@
 "use client";
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
 import { Lock } from "lucide-react";
 
 /** What the server returns to start entering a different card. */
@@ -15,7 +21,10 @@ export type NewCardHandle = {
 
 type StripeElement = {
   mount(node: HTMLElement): void;
-  on(event: "ready" | "change", handler: (e: { complete?: boolean }) => void): void;
+  on(
+    event: "ready" | "change",
+    handler: (e: { complete?: boolean }) => void,
+  ): void;
   destroy(): void;
 };
 type StripeElements = {
@@ -89,9 +98,7 @@ export const NewCardForm = forwardRef<
 >(function NewCardForm(props, ref) {
   const host = useRef<HTMLDivElement>(null);
   const stripe = useRef<{ js: StripeJs; elements: StripeElements }>(undefined);
-  const [state, setState] = useState<"loading" | "ready" | "failed">(
-    "loading",
-  );
+  const [state, setState] = useState<"loading" | "ready" | "failed">("loading");
   const [cardError, setCardError] = useState("");
   const { approvalId, start, onReady } = props;
 
@@ -165,7 +172,8 @@ export const NewCardForm = forwardRef<
       });
       if (result.error || result.setupIntent?.status !== "succeeded") {
         const message =
-          result.error?.message ?? "That card couldn’t be saved. Try another card.";
+          result.error?.message ??
+          "That card couldn’t be saved. Try another card.";
         setCardError(message);
         throw new Error(message);
       }

@@ -370,8 +370,13 @@ for (const width of [1440, 1024, 768, 375]) {
     test.setTimeout(90000);
     await page.setViewportSize({ width, height: 1060 });
     const f = await clientFixture(page);
-    const inspect = async (state: string) =>
-      axe(page, ".client-flow", `${state} at ${width}px`);
+    const inspect = async (state: string) => {
+      // Contrast is checked on the settled screen, not mid fade-in.
+      await page.evaluate(() =>
+        Promise.all(document.getAnimations().map((a) => a.finished)),
+      );
+      await axe(page, ".client-flow", `${state} at ${width}px`);
+    };
     const name = (state: string) =>
       width === 1440 || width === 375 ? `${state}-${width}` : undefined;
     await f.open("read");
