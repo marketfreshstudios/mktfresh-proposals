@@ -485,7 +485,12 @@ export function AfterSigning(props: AfterSigningProps) {
     <div className="after-actions">
       {primary}
       {later && (
-        <Button variant="ghost" onClick={props.onLater}>
+        <Button
+          variant="ghost"
+          // Not while an approval is being charged: a stray click can't land here.
+          disabled={!!props.approving || confirming}
+          onClick={props.onLater}
+        >
           I’ll do this later
         </Button>
       )}

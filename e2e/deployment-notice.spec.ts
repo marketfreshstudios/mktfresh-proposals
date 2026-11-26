@@ -196,9 +196,10 @@ test("Reload drains a pending workspace save, waits for it and preserves changes
     .getByRole("button", { name: "Reload", exact: true })
     .click();
   await expect.poll(() => entered).toBe(true);
-  await expect(
-    notice(page).getByRole("button", { name: "Saving…" }),
-  ).toBeVisible();
+  // Busy keeps the label: a spinner, disabled, same size.
+  const reload = notice(page).getByRole("button", { name: "Reload" });
+  await expect(reload).toHaveAttribute("aria-busy", "true");
+  await expect(reload).toBeDisabled();
   expect(f.settings.business_name).not.toBe("Updated workspace");
   const reloaded = page.waitForEvent("load");
   allow();

@@ -1,4 +1,5 @@
 "use client";
+import { LoaderCircle } from "lucide-react";
 import { PanelCard } from "./editor/tools-panel";
 import { PanelHeading } from "./editor/panel-heading";
 import { Select, Switch } from "./form-controls";
@@ -988,6 +989,7 @@ function BandSettings({
           <button
             type="button"
             disabled={resetBusy}
+            aria-busy={resetBusy || undefined}
             onClick={async () => {
               setResetBusy(true);
               setResetError("");
@@ -1007,7 +1009,14 @@ function BandSettings({
               }
             }}
           >
-            {resetBusy ? "Resetting…" : resetLabel}
+            {resetBusy && (
+              <LoaderCircle
+                className="btn-spinner"
+                size={14}
+                aria-hidden="true"
+              />
+            )}
+            {resetLabel}
           </button>
           {!panel && (
             <>

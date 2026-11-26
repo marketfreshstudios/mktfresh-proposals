@@ -609,12 +609,33 @@ test("client completion: exact charges, one contact footer, reading width, email
       await expect(page.locator(".new-card")).toHaveCount(0);
       if (width === 1440 && theme === "light") {
         let approved = "";
+        let release: () => void = () => {};
+        const held = new Promise<void>((r) => (release = r));
         await page.route("**/api/public/*/billing/approve", async (route) => {
           approved = route.request().postDataJSON().approval_id;
           current = structuredClone(existing);
+          await held;
           await route.fulfill({ json: { approved: true } });
         });
+        const before = (await approve.boundingBox())!;
         await approve.click();
+        // Busy keeps the label and size: a spinner replaces the lock icon.
+        await expect(approve).toHaveAttribute("aria-busy", "true");
+        await expect(approve).toBeDisabled();
+        await expect(approve).toHaveText(/Approve and add \$325\/mo/);
+        await expect(
+          page.getByRole("button", { name: "I’ll do this later" }),
+        ).toBeDisabled();
+        const during = (await approve.boundingBox())!;
+        expect(Math.abs(during.width - before.width)).toBeLessThan(2);
+        await capture(
+          "existing-subscriber-approving",
+          "1f",
+          width,
+          theme,
+          true,
+        );
+        release();
         await expect(
           page.getByRole("heading", {
             name: "Billing set up",

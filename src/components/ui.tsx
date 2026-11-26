@@ -1,4 +1,5 @@
 "use client";
+import { LoaderCircle } from "lucide-react";
 import { StaffIconContext, staffIcons } from "./staff-icons";
 import { DisclosureChevron } from "./disclosure-chevron";
 import {
@@ -70,13 +71,18 @@ export function Button({
         type="button"
         {...props}
         disabled={props.disabled || busy}
+        aria-busy={busy || undefined}
         title={
           props.title ?? (staff && iconOnly ? props["aria-label"] : undefined)
         }
         className={`btn ${variant} ${staff && iconOnly ? "icon-only" : ""} ${props.className ?? ""}`}
       >
-        {icon && (!staff || iconOnly) && <Icon name={icon} />}{" "}
-        {busy ? "Working…" : children}
+        {/* Busy keeps the label, so the button doesn't change size; a
+            spinner takes the place of its icon. */}
+        {busy && (
+          <LoaderCircle className="btn-spinner" size={16} aria-hidden="true" />
+        )}
+        {icon && (!staff || iconOnly) && <Icon name={icon} />} {children}
       </button>
       {note && <small className="muted">{note}</small>}
     </span>

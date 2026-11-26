@@ -1961,3 +1961,28 @@ details[open] > summary > .disclosure-marker > .disclosure-chevron {
 button.btn[role="tab"] {
   border-radius: var(--radius-navigation-button);
 }
+
+/* A busy button keeps its label and size: a spinner replaces its icon and
+   the button is disabled (owner, 25 Nov). */
+.btn[aria-busy="true"] > svg:not(.btn-spinner) {
+  display: none;
+}
+.btn-spinner {
+  flex: none;
+  vertical-align: -2px;
+  margin-inline-end: 6px;
+  animation: btn-spin 900ms linear infinite;
+}
+.btn > .btn-spinner {
+  margin-inline-end: 0;
+}
+@keyframes btn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn-spinner {
+    animation-duration: 2.4s;
+  }
+}
