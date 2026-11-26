@@ -151,11 +151,19 @@ export class QboConnection {
 
   /** A connection made in the other environment (a sandbox company after
    * going live) counts as not connected, so it can never be billed. */
+  /** The stored row, whichever QuickBooks environment wrote it. */
+  private async stored() {
+    return this.repo.providerCredential<ConnectionRow>(this.id);
+  }
+
+  private matches(row: ConnectionRow | null) {
+    return !!row && (row.environment ?? "sandbox") === this.environment;
+  }
+
+  /** The connection for this environment; another environment's row counts as none. */
   private async read() {
-    const row = await this.repo.providerCredential<ConnectionRow>(this.id);
-    return row && (row.environment ?? "sandbox") !== this.environment
-      ? null
-      : row;
+    const row = await this.stored();
+    return this.matches(row) ? row : null;
   }
 
   private redirectUri() {
@@ -376,19 +384,27 @@ export class QboConnection {
   private async exclusive<T>(run: (locked: ConnectionRow) => Promise<T>) {
     const until = Date.now() + 28000;
     do {
-      const row = await this.read();
-      if (!row?.lease || row.lease.until <= Date.now()) {
-        const locked = {
+      // Compare-and-swap against the stored row itself: a row left by the
+      // other environment (a sandbox connection after switching to
+      // production) is replaced, never waited on.
+      const stored = await this.stored();
+      const row = this.matches(stored) ? stored : null;
+      if (!stored?.lease || stored.lease.until <= Date.now()) {
+        const lease = { id: randomUUID(), until: Date.now() + LEASE_MS };
+        const locked: ConnectionRow = {
           ...row,
           id: this.id,
-          lease: { id: randomUUID(), until: Date.now() + LEASE_MS },
+          environment: this.environment,
+          lease,
         };
-        if (await this.repo.replaceProviderCredential(this.id, row, locked)) {
+        if (
+          await this.repo.replaceProviderCredential(this.id, stored, locked)
+        ) {
           try {
             return await run(locked);
           } finally {
-            const current = await this.read();
-            if (current?.lease?.id === locked.lease.id) {
+            const current = await this.stored();
+            if (current?.lease?.id === lease.id) {
               const { lease: _, ...rest } = current;
               await this.repo.replaceProviderCredential(
                 this.id,
