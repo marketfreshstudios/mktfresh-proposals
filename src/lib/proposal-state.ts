@@ -63,6 +63,18 @@ export const billingOpen = (p: Proposal) =>
   p.billing_links.some(
     (l) => l.status !== "succeeded" || l.metadata?.requires_checkout === true,
   ) || p.jobs.some((j) => j.kind === "billing" && j.status !== "done");
+/** What billing is waiting on, in the words of the proposal's Billing
+ * section: the client's checkout or approval, else billing still running.
+ * The client-wait states use the same warning color everywhere. */
+export function billingWait(p: Proposal) {
+  const stripe = p.billing_links.find((l) => l.provider === "stripe");
+  if (stripe?.metadata?.requires_checkout === true)
+    return ((stripe.metadata.approval ?? []) as unknown[]).length &&
+      !((stripe.metadata.checkout ?? []) as unknown[]).length
+      ? "Waiting for client approval"
+      : "Waiting for checkout";
+  return billingOpen(p) ? "Billing in progress" : undefined;
+}
 export const canCountersign = (
   p: Proposal,
   user: Actor,
@@ -109,7 +121,10 @@ export function nextAction(p: Proposal) {
   if (p.status === "sent") return "Client opens the link";
   if (p.status === "declined" || p.status === "expired")
     return "Duplicate to try again";
-  if (billingOpen(p)) return "Client sets up payment";
+  const wait = billingWait(p);
+  if (wait === "Waiting for checkout") return "Client completes checkout";
+  if (wait === "Waiting for client approval") return "Client approves billing";
+  if (wait) return "Billing is being set up";
   return "Nothing left to do";
 }
 

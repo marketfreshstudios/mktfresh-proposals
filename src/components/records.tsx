@@ -121,6 +121,7 @@ import {
   needsCountersign,
   billingIssues,
   billingOpen,
+  billingWait,
   nextAction,
   inView,
   listViews,
@@ -188,8 +189,11 @@ export function ProposalBadges({ p }: { p: Proposal }) {
           ? ["Billing issue", "danger"]
           : subscriptionNotLinked(p)
             ? ["Subscription not linked", "warning"]
-            : p.client_signed_at && billingOpen(p)
-              ? ["Payment setup pending", "info"]
+            : p.client_signed_at && billingWait(p)
+              ? [
+                  billingWait(p)!,
+                  billingWait(p) === "Billing in progress" ? "info" : "warning",
+                ]
               : null;
   return (
     <span className="pills">
@@ -2763,7 +2767,7 @@ export function RecordV4({
     : needsLink
       ? "Subscription not linked"
       : resend
-        ? "Payment setup pending"
+        ? (billingWait(p) ?? "Waiting for checkout")
         : adopted
           ? "Linked"
           : actualSigned &&
