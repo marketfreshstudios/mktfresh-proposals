@@ -19,6 +19,7 @@ import {
 import {
   adoptedStripeSubscription,
   needsStripeLink,
+  subscriptionNotLinked,
   stripeLink,
 } from "../src/lib/stripe-subscription-link";
 import { clientActor, setup, staff } from "./helpers";
@@ -217,7 +218,19 @@ it("lists only the client's test subscriptions and adopts read-only, preserving 
   const f = await fixture();
   f.sub.metadata.after_paid_invoices = "35";
   expect(needsStripeLink(f.proposal)).toBe(true);
+  expect(subscriptionNotLinked(f.proposal)).toBe(true);
   expect(inView(f.proposal, "billing-issues")).toBe(true);
+  // While the client still has payment to set up, nothing is "not linked".
+  const waiting = structuredClone(f.proposal);
+  waiting.billing_links = [
+    {
+      provider: "stripe",
+      status: "succeeded",
+      metadata: { requires_checkout: true },
+    } as never,
+  ];
+  expect(subscriptionNotLinked(waiting)).toBe(false);
+  expect(inView(waiting, "billing-issues")).toBe(false);
   const options = await stripeSubscriptionOptions(
     f.repo,
     f.proposal,

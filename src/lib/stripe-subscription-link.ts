@@ -83,6 +83,12 @@ export function needsStripeLink(p: Proposal) {
   );
 }
 
+/** A subscription really is missing: nothing is still waiting on the
+ * client or on automatic billing (then it's "Payment setup pending"). */
+export function subscriptionNotLinked(p: Proposal) {
+  return needsStripeLink(p) && !stripeLinkBlocker(p);
+}
+
 export function stripeLinkBlocker(p: Proposal) {
   const link = stripeLink(p);
   if (

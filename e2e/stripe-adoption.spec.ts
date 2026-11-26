@@ -155,12 +155,12 @@ test("billing card links a client's subscription and shows progress or recorded 
   await expect(
     page
       .getByRole("tabpanel", { name: "Billing issues" })
-      .getByText("Needs linking", { exact: true }),
+      .getByText("Subscription not linked", { exact: true }),
   ).toBeVisible();
   await page.goto(`/proposals/${draft.id}?view=record`);
   const billing = page.locator(".record-billing-card");
   await expect(
-    billing.getByText("Needs linking", { exact: true }),
+    billing.getByText("Subscription not linked", { exact: true }),
   ).toBeVisible();
   await billing.scrollIntoViewIfNeeded();
   await shot("needs-linking-1440");

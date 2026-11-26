@@ -82,7 +82,7 @@ import {
 } from "./stripe-subscription-link";
 import {
   adoptedStripeSubscription,
-  needsStripeLink,
+  subscriptionNotLinked,
   stripeLinkBlocker,
 } from "../lib/stripe-subscription-link";
 import { QuickBooksBilling } from "./quickbooks-billing";
@@ -186,10 +186,10 @@ export function ProposalBadges({ p }: { p: Proposal }) {
         ? ["Needs countersign", "warning"]
         : p.client_signed_at && billingIssues(p)
           ? ["Billing issue", "danger"]
-          : needsStripeLink(p)
-            ? ["Needs linking", "warning"]
+          : subscriptionNotLinked(p)
+            ? ["Subscription not linked", "warning"]
             : p.client_signed_at && billingOpen(p)
-              ? ["Billing to finish", "info"]
+              ? ["Payment setup pending", "info"]
               : null;
   return (
     <span className="pills">
@@ -2530,7 +2530,7 @@ export function RecordV4({
     ["sent", "viewed"].includes(p.status) &&
     (!expires || Date.parse(expires) > Date.now());
   const [linkingStripe, setLinkingStripe] = useState(false);
-  const needsLink = needsStripeLink(p);
+  const needsLink = subscriptionNotLinked(p);
   const linkBlocked = needsLink ? stripeLinkBlocker(p) : undefined;
   const stripe = p.billing_links.find((link) => link.provider === "stripe");
   const adopted = adoptedStripeSubscription(stripe);
@@ -2697,7 +2697,7 @@ export function RecordV4({
   const stripeChip = adopted
     ? { text: "Linked", tone: "success" }
     : needsLink
-      ? { text: "Needs linking", tone: "warning" }
+      ? { text: "Subscription not linked", tone: "warning" }
       : bankState === "failed" || stripe?.status === "failed"
         ? { text: "Needs attention", tone: "danger" }
         : bankState === "processing"
@@ -2758,11 +2758,12 @@ export function RecordV4({
     (native &&
       (issues ||
         recordJobs.some((job) => job.status === "failed" || !!job.last_error)));
-  const billingStatus =
-    needsLink && !issues && !resend
-      ? "Needs linking"
-      : issues || resend
-        ? "Needs attention"
+  const billingStatus = issues
+    ? "Needs attention"
+    : needsLink
+      ? "Subscription not linked"
+      : resend
+        ? "Payment setup pending"
         : adopted
           ? "Linked"
           : actualSigned &&
@@ -3772,7 +3773,7 @@ export function RecordV4({
                     : "Monthly"
                 }
                 end={
-                  // Needs linking shows its chip by the Link button instead.
+                  // Subscription not linked shows its chip by the Link button instead.
                   (!needsLink || !resend || !p.token) && (
                     <span className={`pill ${stripeChip.tone}`}>
                       {stripeChip.text}
@@ -3801,7 +3802,9 @@ export function RecordV4({
                       </Button>
                     )}
                     {resend && (
-                      <span className="pill warning">Needs linking</span>
+                      <span className="pill warning">
+                        Subscription not linked
+                      </span>
                     )}
                   </div>
                 ) : stripe &&

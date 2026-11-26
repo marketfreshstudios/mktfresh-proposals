@@ -150,7 +150,7 @@ export function Status({
         {s.name}
       </span>
       {billingPending && ["completed", "signed_by_client"].includes(status) && (
-        <span className="pill info">Billing to finish</span>
+        <span className="pill info">Payment setup pending</span>
       )}
       {status === "signed_by_client" && (
         <span className="pill warning">

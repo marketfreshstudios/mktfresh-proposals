@@ -85,7 +85,7 @@ it("uses display-only status words and accessible tags/skeletons", () => {
   const html = renderToStaticMarkup(
     <Status status="signed_by_client" ai billingPending />,
   );
-  for (const word of ["Won", "Needs countersign", "Billing to finish", "AI"])
+  for (const word of ["Won", "Needs countersign", "Payment setup pending", "AI"])
     expect(html).toContain(word);
   expect(renderToStaticMarkup(<Skeleton />)).toContain('role="status"');
 });
