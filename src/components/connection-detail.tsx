@@ -275,7 +275,7 @@ const queueTitles: Record<Queue, string> = {
   waiting: "Waiting on QuickBooks",
   drafts: "Draft invoices to review",
   customers: "QuickBooks customers to choose",
-  stripe: "Proposals with Stripe billing to finish",
+  stripe: "Proposals with payment setup pending",
 };
 const proposalLink = (p: Proposal) => `/proposals/${p.id}`;
 const proposalLabel = (p: Proposal) => `${p.client.company} | ${p.title}`;
@@ -506,7 +506,7 @@ export function BillingConnectionDetail({
                     "proposal has",
                     "proposals have",
                   )}{" "}
-                  Stripe billing to finish
+                  payment setup pending
                 </strong>
                 {stripeIssues.length > 0 && (
                   <ul>
