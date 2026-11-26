@@ -191,7 +191,8 @@ export function DeploymentNotice({
         <Button
           variant="primary"
           className="notice-reload"
-          disabled={busy || blocked || failed}
+          busy={busy}
+          disabled={blocked || failed}
           onClick={async () => {
             setBusy(true);
             const from = location.href;
@@ -206,7 +207,7 @@ export function DeploymentNotice({
             }
           }}
         >
-          {busy ? "Saving…" : "Reload"}
+          Reload
         </Button>
       </div>
     </>

@@ -5,6 +5,7 @@ import {
   signatureCss,
   type SignaturePresentation,
 } from "../lib/signature-presentation";
+import { LoaderCircle } from "lucide-react";
 import { Field, Banner } from "./ui";
 import type { SignatureInput } from "../lib/model";
 export function SignatureForm({
@@ -307,9 +308,13 @@ export function SignatureForm({
         className="btn primary"
         type="submit"
         disabled={busy || !!reason || !consent}
+        aria-busy={busy || undefined}
         aria-describedby="signature-reason"
       >
-        {busy ? "Sealing your signed copy…" : error ? "Try again" : label}
+        {busy && (
+          <LoaderCircle className="btn-spinner" size={16} aria-hidden="true" />
+        )}
+        {error ? "Try again" : label}
       </button>
       <p
         id="signature-reason"

@@ -254,12 +254,12 @@ test("client redesign: every responsive state, safe preview and signature retrie
       await page
         .getByRole("button", { name: "Sign proposal", exact: true })
         .click();
-      await expect(
-        page.getByRole("button", {
-          name: "Sealing your signed copy…",
-          exact: true,
-        }),
-      ).toBeDisabled();
+      const sealing = page.getByRole("button", {
+        name: "Sign proposal",
+        exact: true,
+      });
+      await expect(sealing).toBeDisabled();
+      await expect(sealing).toHaveAttribute("aria-busy", "true");
       const submitted = signPosts;
       await page.keyboard.press("Enter");
       expect(signPosts).toBe(submitted);
