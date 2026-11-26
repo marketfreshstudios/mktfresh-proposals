@@ -69,6 +69,54 @@ export const qboUuid = (key: string) =>
     .slice(0, 32)
     .replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, "$1-$2-$3-$4-$5");
 
+type QboFault = { code?: string; Message?: string; Detail?: string };
+
+/** Intuit's support reference for one response, when it sent one. */
+const intuitTid = (response: Response) =>
+  response.headers.get("intuit_tid") ?? undefined;
+
+const faultsOf = (data: unknown): QboFault[] => {
+  const errors = (data as { Fault?: { Error?: unknown } } | null)?.Fault?.Error;
+  return Array.isArray(errors) ? (errors as QboFault[]) : [];
+};
+
+/** Plain-language suffix that lets staff and Intuit support find the request. */
+export function qboReference(tid?: string) {
+  return tid ? ` QuickBooks reference: ${tid}.` : "";
+}
+
+/** What QuickBooks said went wrong, without echoing the request. */
+export function qboFaultSummary(faults: QboFault[]) {
+  const first = faults[0];
+  if (!first) return "";
+  const parts = [first.code, first.Message].filter(Boolean).join(" ");
+  const detail = (first.Detail ?? "").replace(/\s+/g, " ").trim().slice(0, 240);
+  return [parts, detail].filter(Boolean).join(": ");
+}
+
+/**
+ * One structured server log line per failed QuickBooks call. It carries
+ * Intuit's reference, the status and the error codes only: never tokens,
+ * request bodies or QuickBooks records.
+ */
+function logQboError(entry: {
+  operation: string;
+  status?: number;
+  tid?: string;
+  faults?: QboFault[];
+}) {
+  console.warn(
+    JSON.stringify({
+      event: "qbo_error",
+      operation: entry.operation,
+      status: entry.status,
+      intuit_tid: entry.tid ?? null,
+      codes: (entry.faults ?? []).map((f) => f.code ?? null),
+      messages: (entry.faults ?? []).map((f) => f.Message ?? null),
+    }),
+  );
+}
+
 export class QboReconnect extends AppError {
   constructor() {
     super(409, "Reconnect QuickBooks in Studio, then retry billing.");
@@ -263,6 +311,12 @@ export class QboConnection {
       throw new AppError(502, "QuickBooks sign-in is temporarily unavailable");
     });
     const result = (await response.json().catch(() => null)) ?? {};
+    if (!response.ok)
+      logQboError({
+        operation: "token:" + params.grant_type,
+        status: response.status,
+        tid: intuitTid(response),
+      });
     if (
       !response.ok &&
       params.grant_type === "refresh_token" &&
@@ -467,7 +521,10 @@ export class QboConnection {
         "QuickBooks is unavailable. Try billing again shortly.",
       );
     });
+    const tid = intuitTid(response);
+    const operation = path.split("?")[0].split("/")[0];
     if (response.status === 401 || response.status === 403) {
+      logQboError({ operation, status: response.status, tid });
       const row = await this.read();
       if (
         !row?.lease &&
@@ -483,26 +540,32 @@ export class QboConnection {
       }
       throw new QboReconnect();
     }
-    if (response.status === 429 || response.status >= 500)
+    if (response.status === 429 || response.status >= 500) {
+      logQboError({ operation, status: response.status, tid });
       throw new AppError(
         502,
-        "QuickBooks is unavailable. Try billing again shortly.",
+        "QuickBooks is unavailable. Try billing again shortly." +
+          qboReference(tid),
       );
+    }
     const data = await response.json().catch(() => null);
-    if (
-      data?.Fault?.Error?.some(
-        (fault: { code?: string }) => fault.code === "600",
-      )
-    )
+    const faults = faultsOf(data);
+    if (!response.ok || !data || faults.length)
+      logQboError({ operation, status: response.status, tid, faults });
+    if (faults.some((fault) => fault.code === "600"))
       throw new AppError(
         502,
-        "QuickBooks already received the request. Retry to check the invoice.",
+        "QuickBooks already received the request. Retry to check the invoice." +
+          qboReference(tid),
       );
-    check(
-      response.ok && data && !data.Fault,
-      "QuickBooks rejected the request. Check the customer, items, and invoice settings.",
-      422,
-    );
+    if (!response.ok || !data || data.Fault) {
+      const summary = qboFaultSummary(faults);
+      throw new AppError(
+        422,
+        `QuickBooks rejected the request${summary ? ` (${summary})` : ""}. Check the customer, items, and invoice settings.` +
+          qboReference(tid),
+      );
+    }
     // Connection freshness is informational and cannot invalidate a provider write.
     try {
       const current = await this.read();

@@ -4,7 +4,7 @@ import { Sheet } from "./foundation";
 import { post } from "./ui";
 import { useStaffAccount } from "./staff-account-context";
 import { staffInitials, themes } from "../lib/staff-account-model";
-import { Bell, CreditCard, LogOut, UserRound } from "lucide-react";
+import { Bell, CreditCard, LogOut, UserRound, LifeBuoy } from "lucide-react";
 
 export function StaffThemeOptions({ menu = false }: { menu?: boolean }) {
   const account = useStaffAccount();
@@ -107,6 +107,9 @@ export function StudioAccount({
             )}
             <a href="/account/notifications">
               <Bell size={16} aria-hidden="true" /> Notifications
+            </a>
+            <a href="mailto:hello@yeswell.co?subject=Yeswell%20support">
+              <LifeBuoy size={16} aria-hidden="true" /> Help and support
             </a>
             <div className="account-menu-theme">
               <span>Theme</span>
