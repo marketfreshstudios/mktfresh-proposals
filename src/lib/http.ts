@@ -1602,11 +1602,7 @@ async function handleRoute(
         "Only a super admin can manage QuickBooks",
         403,
       );
-      check(
-        qbo instanceof QboProvider,
-        "QuickBooks sandbox OAuth is not configured",
-        503,
-      );
+      check(qbo instanceof QboProvider, "QuickBooks isn't set up", 503);
       if (path[2] === "authorize" && method === "POST") {
         check(sameOrigin(req), "Same-origin request required", 403);
         const result = await qbo.connection.authorize(
@@ -1894,7 +1890,7 @@ async function handleRoute(
       }
       check(
         provider === "qbo" && rt.worker.providers.qbo instanceof QboProvider,
-        "QuickBooks sandbox credentials required",
+        "QuickBooks isn't connected",
         503,
       );
       return json({ items: await rt.worker.providers.qbo.items("") });
