@@ -1252,3 +1252,63 @@ label.flow-quote-line {
 .flow-result-split .after-cards:has(> .after-card + .after-card) {
   grid-template-columns: minmax(0, 1fr);
 }
+
+/* Billing being set up after signing: a spinner, a line saying what's
+   happening, and a moving bar, so the wait reads as progress. */
+.client-flow .after-preparing,
+.client-flow .new-card-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0 0;
+  color: var(--ink);
+  font-size: 15px;
+}
+.client-flow .after-preparing svg,
+.client-flow .new-card-status svg {
+  flex: none;
+  color: var(--accent);
+}
+.client-flow .spin {
+  animation: flow-spin 900ms linear infinite;
+}
+@keyframes flow-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.client-flow .after-preparing-bar {
+  position: relative;
+  height: 4px;
+  margin-top: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-sunken);
+}
+.client-flow .after-preparing-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 40%;
+  border-radius: inherit;
+  background: var(--accent);
+  animation: flow-progress 1.4s ease-in-out infinite;
+}
+@keyframes flow-progress {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .client-flow .spin {
+    animation-duration: 2.4s;
+  }
+  .client-flow .after-preparing-bar::after {
+    animation: none;
+    width: 100%;
+    opacity: 0.5;
+  }
+}

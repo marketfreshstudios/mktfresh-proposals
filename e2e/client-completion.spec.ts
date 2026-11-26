@@ -287,14 +287,18 @@ test("client completion: exact charges, one contact footer, reading width, email
     (window as any).Stripe = () => ({
       elements: () => ({
         create: () => {
-          const handlers: Record<string, () => void> = {};
+          const handlers: Record<string, (e?: unknown) => void> = {};
           return {
             on: (event: string, fn: () => void) => (handlers[event] = fn),
             mount: (node: HTMLElement) => {
               node.innerHTML =
                 "<style>.stand-in{display:grid;gap:12px;font-size:14px;color:inherit}.stand-in label{display:grid;gap:6px;opacity:.85}.stand-in span{display:grid;grid-template-columns:1fr 1fr;gap:12px}.stand-in input{font:inherit;font-size:16px;padding:12px 14px;border-radius:10px;border:1px solid currentColor;background:transparent;color:inherit;opacity:1}</style>" +
                 '<div class="stand-in"><label>Card number<input value="5555 5555 5555 4444"></label><span><label>Expiration<input value="08 / 28"></label><label>CVC<input value="123"></label></span><label>ZIP<input value="29710"></label></div>';
-              setTimeout(() => handlers.ready?.(), 0);
+              // Like Stripe: an empty "change" while the fields load.
+              setTimeout(() => {
+                (handlers.change as any)?.({ empty: true });
+                handlers.ready?.();
+              }, 0);
             },
             destroy: () => {},
           };
@@ -465,6 +469,9 @@ test("client completion: exact charges, one contact footer, reading width, email
       await expect(
         page.getByRole("region", { name: "Preparing" }),
       ).toBeVisible();
+      await expect(page.locator(".after-preparing")).toHaveText(
+        "Getting your billing ready. This takes a few seconds.",
+      );
       await expect(
         page.getByRole("heading", { name: /You’re all set/ }),
       ).toHaveCount(0);
@@ -580,6 +587,9 @@ test("client completion: exact charges, one contact footer, reading width, email
         );
         // A fresh setup was requested (dev Strict Mode may ask twice).
         await expect.poll(() => setups).toBeGreaterThan(0);
+        await expect(page.locator(".new-card .stand-in")).toBeVisible();
+        await page.waitForTimeout(300);
+        await expect(failure).toContainText("Your card was declined.");
         await page.unroute("**/api/public/*/billing/approve");
         let sent: Record<string, string> = {};
         await page.route("**/api/public/*/billing/approve", async (route) => {

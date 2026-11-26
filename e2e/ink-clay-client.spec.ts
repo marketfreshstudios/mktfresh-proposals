@@ -373,7 +373,14 @@ for (const width of [1440, 1024, 768, 375]) {
     const inspect = async (state: string) => {
       // Contrast is checked on the settled screen, not mid fade-in.
       await page.evaluate(() =>
-        Promise.all(document.getAnimations().map((a) => a.finished)),
+        Promise.all(
+          document
+            .getAnimations()
+            .filter(
+              (a) => a.effect?.getComputedTiming().iterations !== Infinity,
+            )
+            .map((a) => a.finished),
+        ),
       );
       await axe(page, ".client-flow", `${state} at ${width}px`);
     };
