@@ -288,6 +288,7 @@ for (const delivery of ["draft", "email"] as const) {
         ...f.settings,
         qbo_custom_item_ref: "123:45",
         qbo_term_ref: "123:6",
+        qbo_ar_account_ref: "123:109",
         qbo_invoice_delivery: delivery,
       },
     };
@@ -304,6 +305,10 @@ for (const delivery of ["draft", "email"] as const) {
       external_object_id: "20",
     });
     expect(mock.creates).toHaveLength(1);
+    // The QuickBooks link names the company so it survives the sign-in page.
+    expect(
+      (result.metadata?.invoice as { url?: string } | undefined)?.url,
+    ).toMatch(/\/app\/invoice\?txnId=20&companyId=123$/);
     expect(mock.creates[0]).toMatchObject({
       requestId: expect.stringMatching(/^[0-9a-f]{40}$/),
       body: {
@@ -312,6 +317,7 @@ for (const delivery of ["draft", "email"] as const) {
         DocNumber: proposalInvoiceRef(p.id),
         BillEmail: { Address: "billing@example.test" },
         SalesTermRef: { value: "6" },
+        ARAccountRef: { value: "109" },
         Line: [
           {
             Amount: 700,

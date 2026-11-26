@@ -318,6 +318,21 @@ export class QboProvider implements BillingProvider {
     }));
   }
 
+  /** Accounts Receivable accounts, for the workspace's invoice A/R default. */
+  async receivableAccounts() {
+    const { realm } = await this.connection.access();
+    const { QueryResponse } = await this.query<{
+      Account?: { Id: string; Name: string; FullyQualifiedName?: string }[];
+    }>(
+      "select * from Account where AccountType = 'Accounts Receivable' and Active = true orderby Name maxresults 100",
+      realm,
+    );
+    return (QueryResponse.Account ?? []).map((account) => ({
+      id: recordRef(realm, account.Id),
+      name: account.FullyQualifiedName || account.Name,
+    }));
+  }
+
   private reference(ref: string | null, realm: string) {
     if (ref?.startsWith(realm + ":")) return ref.slice(realm.length + 1);
     if (this.config.realm === realm && ref && !ref.includes(":")) return ref;
@@ -393,6 +408,9 @@ export class QboProvider implements BillingProvider {
       const terms = metadata.term_ref
         ? this.reference(String(metadata.term_ref), realm)
         : prefs?.DefaultTerms?.value;
+      const receivable = metadata.ar_account_ref
+        ? this.reference(String(metadata.ar_account_ref), realm)
+        : undefined;
       const body = {
         CustomerRef: { value: c.id },
         EmailStatus: "NotSet",
@@ -400,6 +418,7 @@ export class QboProvider implements BillingProvider {
         ...(prefs?.CustomTxnNumbers ? { DocNumber: reference } : {}),
         ...(email ? { BillEmail: { Address: email } } : {}),
         ...(terms ? { SalesTermRef: { value: terms } } : {}),
+        ...(receivable ? { ARAccountRef: { value: receivable } } : {}),
         ...(currency && Preferences?.CurrencyPrefs?.MultiCurrencyEnabled
           ? { CurrencyRef: { value: currency } }
           : {}),
@@ -529,7 +548,7 @@ export class QboProvider implements BillingProvider {
             ? "Sent"
             : "Draft",
       currency: invoice.CurrencyRef?.value,
-      url: `https://app.${this.connection.environment === "production" ? "" : "sandbox."}qbo.intuit.com/app/invoice?txnId=${encodeURIComponent(invoice.Id)}`,
+      url: `https://app.${this.connection.environment === "production" ? "" : "sandbox."}qbo.intuit.com/app/invoice?txnId=${encodeURIComponent(invoice.Id)}&companyId=${encodeURIComponent(realm)}`,
       realm,
     };
   }

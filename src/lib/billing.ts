@@ -317,6 +317,7 @@ export async function bill(
             send_invoice: workspace?.qbo_invoice_delivery === "email",
             billing_email: billingEmail,
             term_ref: workspace?.qbo_term_ref ?? null,
+            ar_account_ref: workspace?.qbo_ar_account_ref ?? null,
             ...(choice ? { customer_choice: choice } : {}),
           }
         : { billing_start: "on_signature", trial_days: 0 };

@@ -1014,6 +1014,17 @@ export function WorkspaceStudio({
               emptyLabel="Use QuickBooks default"
               onChange={(qbo_term_ref) => change({ qbo_term_ref }, true)}
             />
+            <QuickBooksPicker
+              label="A/R account for invoices"
+              kind="accounts"
+              initial={draft.qbo_ar_account_ref}
+              enabled={data.connections?.qbo_connection?.state === "connected"}
+              disabled={!owner}
+              emptyLabel="Use QuickBooks default"
+              onChange={(qbo_ar_account_ref) =>
+                change({ qbo_ar_account_ref }, true)
+              }
+            />
           </div>
         </details>
       </>
