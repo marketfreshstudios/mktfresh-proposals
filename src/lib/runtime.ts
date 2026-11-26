@@ -34,9 +34,12 @@ function createRuntime(
       ? new SupabaseStorage(db)
       : new LocalStorage(join(dir, "files"));
   const test = process.env.BILLING_MODE === "test";
+  // Live billing is for the platform workspace only (owner, 25 Nov);
+  // every other workspace stays in test mode.
+  const live = billingLive() && workspaceId === LOCAL_WORKSPACE_ID;
   const qboConfigured =
-    test &&
-    process.env.QBO_ENVIRONMENT === "sandbox" &&
+    ((test && process.env.QBO_ENVIRONMENT === "sandbox") ||
+      (live && process.env.QBO_ENVIRONMENT === "production")) &&
     process.env.QBO_CLIENT_ID &&
     process.env.QBO_CLIENT_SECRET &&
     Buffer.from(process.env.INTEGRATION_ENCRYPTION_KEY ?? "", "base64")
@@ -65,13 +68,20 @@ function createRuntime(
         ? new MockBillingProvider("qbo")
         : new UnconfiguredBillingProvider("QuickBooks"),
     stripe:
-      test &&
+      (test || live) &&
       workspaceId === LOCAL_WORKSPACE_ID &&
       process.env.STRIPE_SECRET_KEY
         ? new StripeProvider(
-            new StripeHttp(process.env.STRIPE_SECRET_KEY, repo),
+            new StripeHttp(
+              process.env.STRIPE_SECRET_KEY,
+              repo,
+              fetch,
+              undefined,
+              undefined,
+              live,
+            ),
             repo,
-            browserKey(process.env.STRIPE_PUBLISHABLE_KEY),
+            browserKey(process.env.STRIPE_PUBLISHABLE_KEY, undefined, live),
           )
         : account && stripeConnect
           ? new StripeProvider(
@@ -151,10 +161,14 @@ export async function allRuntimes() {
   });
 }
 
-/** Stripe's publishable key for card fields on the proposal. Like the secret
- * keys, only test-mode keys are used; anything else hides the card form. */
-function browserKey(key: string | undefined, account?: string) {
-  return key && /^pk_test_[A-Za-z0-9]+$/.test(key)
+/** BILLING_MODE=live: the platform workspace bills for real. */
+export const billingLive = () => process.env.BILLING_MODE === "live";
+
+/** Stripe's publishable key for card fields on the proposal. It must match
+ * the mode like the secret key; anything else hides the card form. */
+function browserKey(key: string | undefined, account?: string, live = false) {
+  return key &&
+    (live ? /^pk_live_[A-Za-z0-9]+$/ : /^pk_test_[A-Za-z0-9]+$/).test(key)
     ? { publishableKey: key, ...(account ? { account } : {}) }
     : undefined;
 }

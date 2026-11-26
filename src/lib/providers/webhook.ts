@@ -1,3 +1,4 @@
+import { liveMode } from "../catalog";
 import {
   acceptedAdoptedStepDown,
   readStripeAdoption,
@@ -25,6 +26,8 @@ export function verifyStripeWebhook(
   header: string,
   secret: string,
   now = Date.now(),
+  /** Live events only for the platform workspace's own account in live mode. */
+  live = false,
 ) {
   check(secret.startsWith("whsec_"), "Webhook signing secret required", 503);
   const fields = header.split(",").map((s) => s.split("="));
@@ -50,7 +53,13 @@ export function verifyStripeWebhook(
     400,
   );
   const payload = JSON.parse(raw);
-  check(payload.livemode === false, "Live webhook refused", 400);
+  check(
+    payload.livemode === live,
+    live
+      ? "Test webhook refused while billing is live"
+      : "Live webhook refused",
+    400,
+  );
   // Any snapshot API version is accepted: only IDs are read from the event,
   // and every object is fetched again from Stripe on the pinned API version.
   check(
@@ -89,7 +98,13 @@ export async function receiveStripeWebhook(
   secret: string,
   account?: string,
 ) {
-  const payload = verifyStripeWebhook(raw, signature, secret);
+  const payload = verifyStripeWebhook(
+    raw,
+    signature,
+    secret,
+    Date.now(),
+    liveMode(provider.api),
+  );
   check(
     payload.account === account,
     "Stripe webhook account does not match the connection.",
@@ -121,7 +136,7 @@ export async function receiveStripeWebhook(
   if (adopted) {
     const linked = adoptedStripeSubscription(stripeLink(adopted))!;
     check(
-      object.livemode === false &&
+      object.livemode === liveMode(provider.api) &&
         linked.id === object.id &&
         linked.customerId === object.customer &&
         linked.accountId === (account ?? null),
@@ -190,7 +205,7 @@ export async function executeStripeWebhook(
       {},
     );
     check(
-      session.livemode === false &&
+      session.livemode === liveMode(provider.api) &&
         session.status === "complete" &&
         session.customer === link.external_customer_id,
       "Checkout does not match test customer",
@@ -245,7 +260,7 @@ export async function executeStripeWebhook(
         { "expand[]": "payment_method" },
       );
       check(
-        intent.livemode === false &&
+        intent.livemode === liveMode(provider.api) &&
           intent.customer === session.customer &&
           intent.status === "succeeded",
         "Payment setup not complete for this test customer",
@@ -283,7 +298,7 @@ export async function executeStripeWebhook(
       });
       check(
         sub.id === id &&
-          sub.livemode === false &&
+          sub.livemode === liveMode(provider.api) &&
           sub.customer === session.customer,
         "Test subscription customer mismatch",
       );
@@ -318,7 +333,8 @@ export async function executeStripeWebhook(
         {},
       );
       check(
-        intent.livemode === false && intent.customer === session.customer,
+        intent.livemode === liveMode(provider.api) &&
+          intent.customer === session.customer,
         "Test payment customer mismatch",
       );
       method = intent.payment_method;
@@ -330,7 +346,7 @@ export async function executeStripeWebhook(
       );
       check(
         customer.id === session.customer &&
-          customer.livemode === false &&
+          customer.livemode === liveMode(provider.api) &&
           !customer.deleted,
         "Test customer required for saved payment details",
       );
@@ -342,7 +358,8 @@ export async function executeStripeWebhook(
         { "expand[]": "payment_intent.payment_method" },
       );
       check(
-        invoice.livemode === false && invoice.customer === session.customer,
+        invoice.livemode === liveMode(provider.api) &&
+          invoice.customer === session.customer,
         "Test invoice customer mismatch",
       );
       if (typeof invoice.payment_intent === "string") {
@@ -351,7 +368,8 @@ export async function executeStripeWebhook(
           {},
         );
         check(
-          intent.livemode === false && intent.customer === session.customer,
+          intent.livemode === liveMode(provider.api) &&
+            intent.customer === session.customer,
           "Test payment customer mismatch",
         );
         method = intent.payment_method;
@@ -361,7 +379,8 @@ export async function executeStripeWebhook(
       method = await provider.api.get<any>(`/v1/payment_methods/${method}`, {});
     if (method)
       check(
-        method.livemode === false && method.customer === session.customer,
+        method.livemode === liveMode(provider.api) &&
+          method.customer === session.customer,
         "Test payment method customer mismatch",
       );
     if (method?.type === "card")
@@ -496,7 +515,7 @@ export async function executeStripeWebhook(
     );
     if (adopted) {
       check(
-        sub.livemode === false &&
+        sub.livemode === liveMode(provider.api) &&
           sub.id === adopted.id &&
           sub.customer === adopted.customerId &&
           adopted.accountId === (provider.api.accountId ?? null),
@@ -557,7 +576,7 @@ export async function executeStripeWebhook(
       return;
     }
     check(
-      sub.livemode === false &&
+      sub.livemode === liveMode(provider.api) &&
         sub.customer === link.external_customer_id &&
         sub.metadata?.proposal_id === p.id &&
         (!sub.metadata.workspace_id ||
@@ -633,7 +652,7 @@ async function refreshCompletedBankPayment(
   for (const [index, sub] of subscriptions.entries())
     check(
       sub.id === payment.subscription_ids[index] &&
-        sub.livemode === false &&
+        sub.livemode === liveMode(provider.api) &&
         sub.customer === link.external_customer_id &&
         sub.metadata?.proposal_id === p.id &&
         (!sub.metadata.workspace_id ||

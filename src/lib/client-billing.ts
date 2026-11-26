@@ -1,3 +1,4 @@
+import { liveMode } from "./catalog";
 import { stripeTestDashboard } from "./stripe-connect-status";
 import type { Client, Item } from "./model";
 import type { StripeTransport, StripePage } from "./catalog";
@@ -83,8 +84,8 @@ async function billingSummary(
     "expand[]": "invoice_settings.default_payment_method",
   });
   check(
-    customer.livemode === false && !customer.deleted,
-    "Test-mode customer required",
+    customer.livemode === liveMode(api) && !customer.deleted,
+    "This Stripe customer is in the other mode (test or live)",
   );
   // A client may keep a separate billing address in Stripe. Yeswell never
   // changes it; the link is the customer ID.
@@ -138,7 +139,10 @@ async function billingSummary(
       ...(cursor ? { starting_after: cursor } : {}),
     });
     for (const sub of page.data) {
-      check(sub.livemode === false, "Test-mode subscription required");
+      check(
+        sub.livemode === liveMode(api),
+        "This Stripe subscription is in the other mode (test or live)",
+      );
       if (
         !["active", "trialing", "past_due", "unpaid", "paused"].includes(
           sub.status,
@@ -220,8 +224,8 @@ async function billingSummary(
     >("/v1/payment_methods", { customer: id, type: "card", limit: "1" });
     if (methods.data[0]?.card) {
       check(
-        methods.data[0].livemode === false,
-        "Test-mode payment method required",
+        methods.data[0].livemode === liveMode(api),
+        "This card is in the other Stripe mode (test or live)",
       );
       card = methods.data[0].card;
     }
@@ -256,7 +260,10 @@ export async function stripeCustomerMatchesByEmail(
       ...(cursor ? { starting_after: cursor } : {}),
     });
     for (const c of page.data) {
-      check(c.livemode === false && !c.deleted, "Test-mode customer required");
+      check(
+        c.livemode === liveMode(api) && !c.deleted,
+        "This Stripe customer is in the other mode (test or live)",
+      );
       const email = c.email?.toLowerCase();
       if (email && emails.has(email)) {
         const list = matches.get(email) ?? [];

@@ -310,19 +310,23 @@ export function BillingConnectionDetail({
   const managedStripe = !qbo && health?.stripe_platform === false;
   const stripeSetup = stripe?.state === "setting_up";
   const stripeDisconnecting = stripe?.state === "disconnecting";
+  const mode = health?.mode === "live" ? "live" : "test";
   const providerDashboard = qbo
-    ? quickBooksDashboard
-    : (stripe?.dashboardUrl ?? stripeTestDashboard);
+    ? connection?.environment === "production"
+      ? "https://app.qbo.intuit.com/app/homepage"
+      : quickBooksDashboard
+    : (stripe?.dashboardUrl ??
+      (mode === "live" ? "https://dashboard.stripe.com" : stripeTestDashboard));
   const connected = qbo ? connection?.state === "connected" : health?.stripe;
   const reconnect = qbo && connection?.state === "reconnect";
-  const mode = health?.mode === "live" ? "live" : "test";
-  const canSync = !qbo && connected && mode === "test";
+  // Products sync by lookup key in either mode; live prices need the same keys.
+  const canSync = !qbo && connected;
   const status = stripeDisconnecting
     ? "Disconnecting"
     : stripeSetup
       ? "Setting up | test mode"
       : connected
-        ? `Connected | ${qbo ? "sandbox" : mode + " mode"}`
+        ? `Connected | ${qbo ? (connection?.environment === "production" ? "live" : "sandbox") : mode + " mode"}`
         : reconnect
           ? "Reconnect needed"
           : health
@@ -1190,7 +1194,7 @@ export function BillingConnectionDetail({
                 {!qbo && busy === "sync" && !lastSync && (
                   <ConnectionPanel
                     title="Setting up Stripe products"
-                    subtitle="You can stay here while the test catalog syncs."
+                    subtitle="You can stay here while the catalog syncs."
                   >
                     <ConnectionSteps
                       steps={[

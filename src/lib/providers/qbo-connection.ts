@@ -19,7 +19,12 @@ const TOKEN_ENDPOINT =
   "https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer";
 const REVOKE_ENDPOINT =
   "https://developer.api.intuit.com/v2/oauth2/tokens/revoke";
-const API = "https://sandbox-quickbooks.api.intuit.com/v3/company";
+// Sandbox for test billing; production only when the platform workspace bills live.
+const API = {
+  sandbox: "https://sandbox-quickbooks.api.intuit.com/v3/company",
+  production: "https://quickbooks.api.intuit.com/v3/company",
+};
+export type QboEnvironment = keyof typeof API;
 const STATE_TTL = 600;
 const LEASE_MS = 90000;
 
@@ -39,6 +44,8 @@ type ConnectionRow = {
   company?: string;
   ciphertext?: string;
   status?: "connected" | "reconnect" | "disconnected";
+  /** Older rows have none: they were made in the sandbox. */
+  environment?: QboEnvironment;
   last_sync?: string;
   lease?: { id: string; until: number };
 };
@@ -51,7 +58,7 @@ type OAuthState = { id: string; actor: string; hash: string; until: number };
 export type QboConnectionStatus = {
   state: "not_connected" | "connected" | "reconnect";
   available: boolean;
-  environment: "sandbox";
+  environment: QboEnvironment;
   company?: string;
   realm?: string;
   last_sync?: string;
@@ -75,23 +82,32 @@ export class QboConnection {
     private fetcher: typeof fetch,
   ) {
     check(
-      config.environment === "sandbox",
-      "Only QuickBooks sandbox is permitted",
+      config.environment === "sandbox" || config.environment === "production",
+      "QuickBooks environment must be sandbox or production",
       503,
     );
     check(
       !config.realm || /^\d+$/.test(config.realm),
-      "QuickBooks sandbox realm required",
+      "QuickBooks realm required",
       503,
     );
+  }
+
+  get environment(): QboEnvironment {
+    return this.config.environment === "production" ? "production" : "sandbox";
   }
 
   private get id() {
     return this.repo.workspaceId;
   }
 
-  private read() {
-    return this.repo.providerCredential<ConnectionRow>(this.id);
+  /** A connection made in the other environment (a sandbox company after
+   * going live) counts as not connected, so it can never be billed. */
+  private async read() {
+    const row = await this.repo.providerCredential<ConnectionRow>(this.id);
+    return row && (row.environment ?? "sandbox") !== this.environment
+      ? null
+      : row;
   }
 
   private redirectUri() {
@@ -110,7 +126,7 @@ export class QboConnection {
       this.config.clientId &&
         this.config.clientSecret &&
         Buffer.from(this.config.encryptionKey, "base64").length === 32,
-      "QuickBooks sandbox OAuth is not configured",
+      "QuickBooks OAuth is not configured",
       503,
     );
     return {
@@ -137,7 +153,7 @@ export class QboConnection {
             ? "reconnect"
             : "not_connected",
       available: true,
-      environment: "sandbox",
+      environment: this.environment,
       company:
         row?.company ?? (legacyLocal ? "Local QuickBooks sandbox" : undefined),
       realm: row?.realm ?? (legacyLocal ? this.config.realm : undefined),
@@ -231,7 +247,7 @@ export class QboConnection {
       }>({ realm, accessToken: tokens.access_token }, `companyinfo/${realm}`);
       const company =
         info.CompanyInfo?.CompanyName || info.CompanyInfo?.LegalName;
-      check(company, "QuickBooks did not return a sandbox company", 502);
+      check(company, "QuickBooks did not return a company", 502);
       await this.finish(locked, this.connected(realm, company, tokens));
     });
   }
@@ -281,6 +297,7 @@ export class QboConnection {
       realm,
       company,
       status: "connected",
+      environment: this.environment,
       last_sync: new Date().toISOString(),
       ciphertext: encryptSecret(
         JSON.stringify(tokens),
@@ -430,7 +447,7 @@ export class QboConnection {
     body?: unknown,
     key?: string,
   ): Promise<T> {
-    const url = `${API}/${connection.realm}/${path}${path.includes("?") ? "&" : "?"}minorversion=75${key ? "&requestid=" + sha256(key).slice(0, 40) : ""}`;
+    const url = `${API[this.environment]}/${connection.realm}/${path}${path.includes("?") ? "&" : "?"}minorversion=75${key ? "&requestid=" + sha256(key).slice(0, 40) : ""}`;
     const response = await this.fetcher(url, {
       method: body === undefined ? "GET" : "POST",
       headers: {

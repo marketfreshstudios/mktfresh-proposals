@@ -11,6 +11,16 @@ export function requireTestStripeKey(key: string) {
     503,
   );
 }
+/** The key must match the mode: live keys only in live mode, and the
+ * other way round, so test and live can never be mixed. */
+export function requireStripeKey(key: string, live: boolean) {
+  if (!live) return requireTestStripeKey(key);
+  check(
+    /^(sk_live_|rk_live_)[A-Za-z0-9]+$/.test(key),
+    "Stripe live-mode key required while billing is live",
+    503,
+  );
+}
 function form(value: unknown, path: string, result: URLSearchParams) {
   if (value === undefined || value === null) return;
   if (Array.isArray(value))
@@ -28,8 +38,10 @@ export class StripeHttp implements StripeTransport {
     private fetcher: typeof fetch = fetch,
     private account?: string,
     private assertConnected?: () => Promise<void>,
+    /** The platform workspace's own account only, when BILLING_MODE is live. */
+    readonly livemode = false,
   ) {
-    requireTestStripeKey(key);
+    requireStripeKey(key, livemode);
     check(
       !account || /^acct_[a-zA-Z0-9]+$/.test(account),
       "Invalid Stripe account.",
@@ -39,6 +51,7 @@ export class StripeHttp implements StripeTransport {
     return this.account;
   }
   get dashboardUrl() {
+    if (this.livemode) return "https://dashboard.stripe.com";
     return this.account
       ? `https://dashboard.stripe.com/${this.account}/test`
       : stripeTestDashboard;
@@ -52,8 +65,10 @@ export class StripeHttp implements StripeTransport {
     key: string,
   ): Promise<T> {
     await this.assertConnected?.();
+    // Live actions never reuse a test-mode response under the same key.
     const id = sha256(
-      this.repo.workspaceId +
+      (this.livemode ? "live:" : "") +
+        this.repo.workspaceId +
         ":" +
         (this.account ? this.account + ":" : "") +
         key,
@@ -83,7 +98,7 @@ export class StripeHttp implements StripeTransport {
     params?: Record<string, unknown>,
     key?: string,
   ): Promise<T> {
-    requireTestStripeKey(this.key);
+    requireStripeKey(this.key, this.livemode);
     await this.assertConnected?.();
     check(
       /^\/v1\/[a-z_]+(?:\/[A-Za-z0-9_]+)*(?:\?.*)?$/.test(path),
@@ -112,7 +127,13 @@ export class StripeHttp implements StripeTransport {
       `Stripe request failed (${response.status}; ${data.error?.code ?? "provider_error"})`,
       502,
     );
-    check(data.livemode !== true, "Live Stripe response refused", 503);
+    check(
+      data.livemode === undefined || data.livemode === this.livemode,
+      this.livemode
+        ? "Test-mode Stripe response refused while billing is live"
+        : "Live Stripe response refused",
+      503,
+    );
     return data as T;
   }
 }
