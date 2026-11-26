@@ -12,6 +12,7 @@ import {
   Clock,
   Download,
   Info,
+  LoaderCircle,
   Lock,
   Mail,
 } from "lucide-react";
@@ -690,6 +691,11 @@ export function AfterSigning(props: AfterSigningProps) {
                 <span className="after-tag">Stripe</span>
               </header>
               {items(props.recurring)}
+              <p className="after-preparing" role="status">
+                <LoaderCircle className="spin" size={18} aria-hidden="true" />
+                Getting your billing ready. This takes a few seconds.
+              </p>
+              <div className="after-preparing-bar" aria-hidden="true" />
             </section>
           )}
           {addedCard}

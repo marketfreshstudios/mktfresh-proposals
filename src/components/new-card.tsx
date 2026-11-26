@@ -6,7 +6,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { Lock } from "lucide-react";
+import { LoaderCircle, Lock } from "lucide-react";
 
 /** What the server returns to start entering a different card. */
 export type CardSetup = {
@@ -23,7 +23,7 @@ type StripeElement = {
   mount(node: HTMLElement): void;
   on(
     event: "ready" | "change",
-    handler: (e: { complete?: boolean }) => void,
+    handler: (e: { complete?: boolean; empty?: boolean }) => void,
   ): void;
   destroy(): void;
 };
@@ -148,7 +148,14 @@ export const NewCardForm = forwardRef<
           setState("ready");
           onReady?.(true);
         });
-        element.on("change", () => onEdit.current?.());
+        // Stripe also reports a change while the fields load; only typing in
+        // a card counts as an edit (which clears the last error).
+        let typed = false;
+        element.on("change", (e) => {
+          if (!typed && e.empty !== false) return;
+          typed = true;
+          onEdit.current?.();
+        });
         element.mount(node);
         stripe.current = { js, elements };
       } catch {
@@ -183,6 +190,7 @@ export const NewCardForm = forwardRef<
     <div className="new-card">
       {state === "loading" && (
         <p className="new-card-status" role="status">
+          <LoaderCircle className="spin" size={16} aria-hidden="true" />
           Loading the card form…
         </p>
       )}
