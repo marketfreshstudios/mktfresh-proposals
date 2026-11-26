@@ -31,12 +31,16 @@ type PickerProps = {
   initial?: string | null;
   enabled: boolean;
   disabled?: boolean;
-  kind?: "items" | "terms";
+  kind?: "items" | "terms" | "accounts";
   emptyLabel: string;
   onChange?: (value: string | null) => void;
 };
 
-function useChoices(kind: "items" | "terms", search: string, enabled: boolean) {
+function useChoices(
+  kind: "items" | "terms" | "accounts",
+  search: string,
+  enabled: boolean,
+) {
   const [result, setResult] = useState<{
     search: string;
     choices: Choice[];
@@ -81,7 +85,7 @@ function useChoices(kind: "items" | "terms", search: string, enabled: boolean) {
 }
 
 export function QuickBooksPicker(props: PickerProps) {
-  return props.kind === "terms" ? (
+  return props.kind === "terms" || props.kind === "accounts" ? (
     <TermsPicker {...props} />
   ) : (
     <ItemPicker {...props} />
@@ -249,10 +253,15 @@ function TermsPicker({
   initial,
   enabled,
   disabled = false,
+  kind = "terms",
   emptyLabel,
   onChange,
 }: PickerProps) {
-  const result = useChoices("terms", "", enabled);
+  const result = useChoices(
+    kind === "accounts" ? "accounts" : "terms",
+    "",
+    enabled,
+  );
   const choices = result?.choices ?? [];
   const value = initial ?? "";
   return (
@@ -278,7 +287,12 @@ function TermsPicker({
           ))}
         </Select>
       </Field>
-      {!enabled && <small>Connect QuickBooks to choose invoice terms.</small>}
+      {!enabled && (
+        <small>
+          Connect QuickBooks to choose{" "}
+          {kind === "accounts" ? "an A/R account" : "invoice terms"}.
+        </small>
+      )}
       {result?.error && <small role="alert">{result.error}</small>}
     </div>
   );
