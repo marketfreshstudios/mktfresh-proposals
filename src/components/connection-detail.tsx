@@ -1335,7 +1335,9 @@ export function BillingConnectionDetail({
                     )}
                     <ConnectionFact label="Environment">
                       {qbo
-                        ? "Sandbox. Synthetic clients and amounts only."
+                        ? connection?.environment === "production"
+                          ? "Live. Real clients and invoices."
+                          : "Sandbox. Synthetic clients and amounts only."
                         : mode === "test"
                           ? "Test mode. No real charges."
                           : "Live mode"}
