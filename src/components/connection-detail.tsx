@@ -332,10 +332,18 @@ export function BillingConnectionDetail({
           : health
             ? "Not connected"
             : "Status unavailable";
-  const itemName = useQuickBooksItemName(
-    settings?.qbo_custom_item_ref,
-    qbo && !!connected,
-  );
+  // A mapping saved against another QuickBooks company (the sandbox, before
+  // going live) doesn't apply to this one, and billing refuses it.
+  const realm = connection?.realm;
+  const ofThisCompany = (ref?: string | null) =>
+    !!ref && (!realm || !ref.includes(":") || ref.startsWith(realm + ":"));
+  const itemRef = ofThisCompany(settings?.qbo_custom_item_ref)
+    ? settings?.qbo_custom_item_ref
+    : undefined;
+  const termRef = ofThisCompany(settings?.qbo_term_ref)
+    ? settings?.qbo_term_ref
+    : undefined;
+  const itemName = useQuickBooksItemName(itemRef, qbo && !!connected);
   const [termName, setTermName] = useState<string>();
   const money = useMoney();
   const timezone = settings?.timezone ?? "UTC";
@@ -631,8 +639,12 @@ export function BillingConnectionDetail({
   const totalProducts = catalog.length;
   const item =
     itemName ??
-    (settings?.qbo_custom_item_ref ? "Mapped in Billing defaults" : "Not set");
-  const terms = settings?.qbo_term_ref
+    (itemRef
+      ? "Mapped in Billing defaults"
+      : settings?.qbo_custom_item_ref
+        ? "Not set for this QuickBooks company. Choose one in Billing defaults."
+        : "Not set");
+  const terms = termRef
     ? (termName ?? "Set in Billing defaults")
     : "Use QuickBooks default";
   const paymentMethods =

@@ -815,7 +815,7 @@ test("owner review Studio presentation keeps semantic statuses, controls and mob
     has: page.getByRole("heading", { name: "QuickBooks", exact: true }),
   });
   await expect(qbo.locator(".connection-state")).toContainText(
-    "Sandbox configured",
+    "Ready to connect",
   );
   await expect(qbo.locator(".connection-state")).toHaveCSS(
     "color",

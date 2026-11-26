@@ -3634,11 +3634,11 @@ export function ConnectionsStudio({
         qbo?.state === "reconnect"
           ? "Reconnect needed"
           : qbo?.state === "connected"
-            ? `Connected to ${qbo.company ?? "QuickBooks"} | sandbox`
+            ? `Connected to ${qbo.company ?? "QuickBooks"} | ${qbo.environment === "production" ? "live" : "sandbox"}`
             : health?.qbo
-              ? "Sandbox configured"
+              ? "Ready to connect"
               : "Setup needed",
-      line: "One-time invoices stay in review until a sandbox connection is ready.",
+      line: "One-time invoices stay in review until QuickBooks is connected.",
       detail: `${withCount(data.proposals.filter((p) => p.billing_links.some((l) => l.provider === "qbo" && l.status !== "succeeded")).length, "proposal")} with invoices to review`,
       action:
         qbo?.state === "reconnect"
@@ -3944,7 +3944,7 @@ export function ConnectionsStudio({
                       <div className="connection-title">
                         <h3>{c.name}</h3>
                         <span
-                          className={`connection-state ${c.id === "assistants" && !connected.length ? "muted" : /^(Connected|Configured|Verified|Imported|Sandbox configured)\b/i.test(c.state) ? "success" : "warning"}`}
+                          className={`connection-state ${c.id === "assistants" && !connected.length ? "muted" : /^(Connected|Configured|Verified|Imported|Ready to connect)\b/i.test(c.state) ? "success" : "warning"}`}
                         >
                           {c.state}
                         </span>

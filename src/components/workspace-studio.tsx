@@ -895,8 +895,17 @@ export function WorkspaceStudio({
             </p>
           </div>
           <a href="/studio/connections/quickbooks">
-            <span className={data.connections?.qbo ? "success" : "warning"}>
-              ● {data.connections?.qbo ? "Sandbox configured" : "Not connected"}
+            <span
+              className={
+                data.connections?.qbo_connection?.state === "connected"
+                  ? "success"
+                  : "warning"
+              }
+            >
+              ●{" "}
+              {data.connections?.qbo_connection?.state === "connected"
+                ? `Connected | ${data.connections?.qbo_connection?.environment === "production" ? "live" : "sandbox"}`
+                : "Not connected"}
             </span>{" "}
             | {data.connections?.qbo ? "Manage" : "Connect"}
           </a>
