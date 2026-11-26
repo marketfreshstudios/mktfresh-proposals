@@ -132,3 +132,30 @@ it("a QuickBooks sandbox connection never counts as connected in production", as
     () => new QboConnection(repo, { ...config, environment: "staging" }, fetch),
   ).toThrow();
 });
+
+it("switching to production replaces a leftover sandbox connection instead of waiting on it", async () => {
+  const repo = new MemoryRepository();
+  await repo.put("provider_credentials", {
+    id: repo.workspaceId,
+    realm: "123",
+    company: "Sandbox Co",
+    status: "connected",
+  });
+  const production = new QboConnection(
+    repo,
+    {
+      clientId: "id",
+      clientSecret: "s",
+      encryptionKey: Buffer.alloc(32).toString("base64"),
+      environment: "production",
+    },
+    fetch,
+  );
+  const started = Date.now();
+  // No production tokens to revoke: the lock is taken over the sandbox row
+  // and the slot is cleared, ready for the production connection.
+  await production.disconnect();
+  expect(Date.now() - started).toBeLessThan(2000);
+  expect(await repo.providerCredential(repo.workspaceId)).toBeNull();
+  expect((await production.status()).state).toBe("not_connected");
+});
