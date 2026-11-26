@@ -4,7 +4,7 @@ import { PGlite } from "@electric-sql/pglite";
 import { expect, it } from "vitest";
 import type { StripeTransport } from "../src/lib/catalog";
 import type { Item, Proposal } from "../src/lib/model";
-import { inView } from "../src/lib/proposal-state";
+import { billingWait, inView } from "../src/lib/proposal-state";
 import { catalogQuoteItem } from "../src/lib/quote-model";
 import { MemoryRepository, mutate } from "../src/lib/repository";
 import { StripeProvider } from "../src/lib/providers/stripe";
@@ -416,4 +416,28 @@ it("adds a workspace-scoped lookup and uniqueness guard without granting access"
   } finally {
     await db.close();
   }
+});
+
+it("billing waits read like the Billing section: checkout, client approval, or in progress", async () => {
+  const f = await fixture();
+  const p = structuredClone(f.proposal);
+  p.billing_links = [
+    {
+      provider: "stripe",
+      status: "succeeded",
+      metadata: { requires_checkout: true, checkout: [{ id: "cs_1" }] },
+    } as never,
+  ];
+  expect(billingWait(p)).toBe("Waiting for checkout");
+  p.billing_links[0].metadata = {
+    requires_checkout: true,
+    approval: [{ id: "approve:month" }],
+  };
+  expect(billingWait(p)).toBe("Waiting for client approval");
+  p.billing_links[0].metadata = {};
+  p.billing_links[0].status = "pending";
+  expect(billingWait(p)).toBe("Billing in progress");
+  p.billing_links[0].status = "succeeded";
+  p.jobs = [];
+  expect(billingWait(p)).toBeUndefined();
 });

@@ -133,11 +133,9 @@ const statuses: Record<
 export function Status({
   status,
   ai = false,
-  billingPending = false,
 }: {
   status: string;
   ai?: boolean;
-  billingPending?: boolean;
 }) {
   const s = {
     ...(statuses[status] ?? statuses.draft),
@@ -149,9 +147,6 @@ export function Status({
         <Icon name={s.icon} />
         {s.name}
       </span>
-      {billingPending && ["completed", "signed_by_client"].includes(status) && (
-        <span className="pill info">Payment setup pending</span>
-      )}
       {status === "signed_by_client" && (
         <span className="pill warning">
           <Icon name="signature" />
