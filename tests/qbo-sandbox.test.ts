@@ -288,7 +288,6 @@ for (const delivery of ["draft", "email"] as const) {
         ...f.settings,
         qbo_custom_item_ref: "123:45",
         qbo_term_ref: "123:6",
-        qbo_ar_account_ref: "123:109",
         qbo_invoice_delivery: delivery,
       },
     };
@@ -317,7 +316,6 @@ for (const delivery of ["draft", "email"] as const) {
         DocNumber: proposalInvoiceRef(p.id),
         BillEmail: { Address: "billing@example.test" },
         SalesTermRef: { value: "6" },
-        ARAccountRef: { value: "109" },
         Line: [
           {
             Amount: 700,

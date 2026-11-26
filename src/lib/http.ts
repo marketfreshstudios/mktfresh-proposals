@@ -1571,11 +1571,7 @@ async function handleRoute(
     }
     if (path[0] === "connections" && path[1] === "qbo") {
       const qbo = rt.worker.providers.qbo;
-      if (
-        path[2] === "items" ||
-        path[2] === "terms" ||
-        path[2] === "accounts"
-      ) {
+      if (path[2] === "items" || path[2] === "terms") {
         check(method === "GET", "Method not allowed", 405);
         check(
           qbo instanceof QboProvider,
@@ -1598,11 +1594,7 @@ async function handleRoute(
           400,
         );
         return json(
-          path[2] === "items"
-            ? await qbo.items(search)
-            : path[2] === "accounts"
-              ? await qbo.receivableAccounts()
-              : await qbo.terms(),
+          path[2] === "items" ? await qbo.items(search) : await qbo.terms(),
         );
       }
       check(
@@ -2190,10 +2182,7 @@ async function handleRoute(
             qboDeliveryChanged ||
             entity.qbo_custom_item_ref !==
               (previous?.qbo_custom_item_ref ?? null) ||
-            (entity.qbo_term_ref ?? null) !==
-              (previous?.qbo_term_ref ?? null) ||
-            (entity.qbo_ar_account_ref ?? null) !==
-              (previous?.qbo_ar_account_ref ?? null)
+            (entity.qbo_term_ref ?? null) !== (previous?.qbo_term_ref ?? null)
           )
             check(
               user.staff_role === "owner",

@@ -158,7 +158,10 @@ export function QuickBooksBilling({
       </details>
       {draft && (
         <>
-          <p>Review it, then send from QuickBooks.</p>
+          <p>
+            Review it, then send from QuickBooks. If QuickBooks asks you to sign
+            in first, open the invoice again after you sign in.
+          </p>
           {invoiceUrl && (
             <a
               className="record-billing-external"
