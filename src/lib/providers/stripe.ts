@@ -17,6 +17,7 @@ import {
   paidInvoiceProgress,
 } from "../billing";
 import {
+  liveMode,
   resolveLookup,
   type StripeTransport,
   type StripePage,
@@ -97,8 +98,10 @@ export class StripeProvider implements BillingProvider {
         `/v1/customers/${c.stripe_customer_id}`,
         {},
       );
-      if (found.livemode !== false)
-        throw new NeedsReview("Test-mode customer required");
+      if (found.livemode !== liveMode(this.api))
+        throw new NeedsReview(
+          "This Stripe customer is in the other mode (test or live)",
+        );
       // Linked by ID. The customer's Stripe email may differ (a separate
       // billing address) and is never changed from here.
       if (found.deleted)

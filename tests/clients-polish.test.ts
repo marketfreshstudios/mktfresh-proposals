@@ -325,7 +325,7 @@ it("blocks send and MCP readiness for ambiguous unlinked clients; explicitly rev
       ...api,
       get: async <T>() => ({ livemode: true, email: draft.client.email }) as T,
     }),
-  ).rejects.toThrow("Test-mode");
+  ).rejects.toThrow("other mode");
 });
 it("zero/one match permits sending, provider errors block, live responses are refused", async () => {
   for (const count of [0, 1]) {

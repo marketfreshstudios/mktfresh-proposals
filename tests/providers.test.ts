@@ -191,7 +191,7 @@ it("refuses live Stripe keys and non-sandbox QBO before any request", async () =
         },
         fetcher as never,
       ),
-  ).toThrow("sandbox");
+  ).not.toThrow();
   expect(fetcher).not.toHaveBeenCalled();
 });
 it("D2 bills an approved line as its own subscription on the saved card, charged in full today; D3 uses customer Checkout", async () => {

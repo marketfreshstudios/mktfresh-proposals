@@ -4,6 +4,8 @@ import { ItemSchema, check, type Item } from "./model";
 import type { Repository } from "./repository";
 export type StripePage<T> = { data: T[]; has_more: boolean };
 export interface StripeTransport {
+  /** true only for the platform workspace's own account in live mode. */
+  readonly livemode?: boolean;
   readonly dashboardUrl?: string;
   readonly accountId?: string;
   get<T>(path: string, params: Record<string, string>): Promise<T>;
@@ -179,3 +181,7 @@ export async function createCustomFamily(
   await repo.put("custom_families", family);
   return family;
 }
+
+/** The Stripe mode a transport works in: every object it reads must match. */
+export const liveMode = (api?: { readonly livemode?: boolean } | null) =>
+  api?.livemode === true;

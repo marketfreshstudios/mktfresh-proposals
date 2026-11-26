@@ -77,7 +77,7 @@ export class QboProvider implements BillingProvider {
     const auth = await this.connection.access();
     check(
       !realm || realm === auth.realm,
-      "QuickBooks company changed. Reconnect the original sandbox to continue.",
+      "QuickBooks company changed. Reconnect the original QuickBooks company to continue.",
       409,
     );
     return this.connection.request<T>(
@@ -180,7 +180,7 @@ export class QboProvider implements BillingProvider {
     const { realm } = await this.connection.access();
     check(
       !expectedRealm || realm === expectedRealm,
-      "QuickBooks company changed. Reconnect the original sandbox to continue.",
+      "QuickBooks company changed. Reconnect the original QuickBooks company to continue.",
       409,
     );
     const id = qboUuid(
@@ -322,7 +322,7 @@ export class QboProvider implements BillingProvider {
     if (ref?.startsWith(realm + ":")) return ref.slice(realm.length + 1);
     if (this.config.realm === realm && ref && !ref.includes(":")) return ref;
     throw new NeedsReview(
-      "Choose a QuickBooks item or default for the connected sandbox, then retry billing.",
+      "Choose a QuickBooks item or default for the connected company, then retry billing.",
     );
   }
 
@@ -351,7 +351,7 @@ export class QboProvider implements BillingProvider {
     const { realm } = await this.connection.access();
     check(
       !metadata.realm || metadata.realm === realm,
-      "QuickBooks company changed. Reconnect the original sandbox to continue.",
+      "QuickBooks company changed. Reconnect the original QuickBooks company to continue.",
       409,
     );
     const id = qboUuid(this.repo.workspaceId + ":qbo-invoice:" + key);
@@ -529,7 +529,7 @@ export class QboProvider implements BillingProvider {
             ? "Sent"
             : "Draft",
       currency: invoice.CurrencyRef?.value,
-      url: `https://app.sandbox.qbo.intuit.com/app/invoice?txnId=${encodeURIComponent(invoice.Id)}`,
+      url: `https://app.${this.connection.environment === "production" ? "" : "sandbox."}qbo.intuit.com/app/invoice?txnId=${encodeURIComponent(invoice.Id)}`,
       realm,
     };
   }
@@ -547,7 +547,7 @@ export class QboProvider implements BillingProvider {
     const auth = await this.connection.access();
     check(
       !realm || auth.realm === realm,
-      "This invoice belongs to a different QuickBooks sandbox.",
+      "This invoice belongs to a different QuickBooks company.",
       409,
     );
     const { Invoice } = await this.connection.request<InvoiceReceipt>(

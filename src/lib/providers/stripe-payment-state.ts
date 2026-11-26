@@ -1,3 +1,4 @@
+import { liveMode } from "../catalog";
 import { check } from "../model";
 import type { StripeTransport } from "../catalog";
 
@@ -22,7 +23,7 @@ export async function bankPaymentState(
       });
       check(
         invoice.id === id &&
-          invoice.livemode === false &&
+          invoice.livemode === liveMode(api) &&
           invoice.customer === customer &&
           (typeof invoice.subscription === "string"
             ? invoice.subscription
@@ -35,7 +36,7 @@ export async function bankPaymentState(
         intent = await api.get<any>(`/v1/payment_intents/${intent}`, {});
       if (intent)
         check(
-          intent.livemode === false && intent.customer === customer,
+          intent.livemode === liveMode(api) && intent.customer === customer,
           "Test debit customer mismatch",
         );
       if (

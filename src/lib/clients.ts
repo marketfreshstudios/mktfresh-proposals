@@ -1,3 +1,4 @@
+import { liveMode } from "./catalog";
 import { canonical } from "./content";
 import {
   AppError,
@@ -94,7 +95,7 @@ export async function linkStripeCustomer(
     409,
   );
   if (customerId) {
-    check(api, "Stripe test credentials required", 503);
+    check(api, "Stripe isn't connected", 503);
     check(/^cus_[A-Za-z0-9]+$/.test(customerId), "Invalid Stripe customer ID");
     const candidate = await api.get<{
       livemode: boolean;
@@ -102,8 +103,8 @@ export async function linkStripeCustomer(
       email: string | null;
     }>(`/v1/customers/${customerId}`, {});
     check(
-      candidate.livemode === false && !candidate.deleted,
-      "Test-mode customer required",
+      candidate.livemode === liveMode(api) && !candidate.deleted,
+      "This Stripe customer is in the other mode (test or live)",
     );
     check(
       candidate.email?.toLowerCase() === client.email.toLowerCase(),

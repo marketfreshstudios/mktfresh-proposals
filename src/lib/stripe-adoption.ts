@@ -1,4 +1,5 @@
 import {
+  liveMode,
   resolveLookup,
   type StripePage,
   type StripeTransport,
@@ -26,7 +27,7 @@ import {
   type StripeSubscriptionOptions,
 } from "./stripe-subscription-link";
 
-type StripeRead = Pick<StripeTransport, "get" | "accountId">;
+type StripeRead = Pick<StripeTransport, "get" | "accountId" | "livemode">;
 type Price = {
   id: string;
   unit_amount: number | null;
@@ -156,7 +157,7 @@ async function verifyCustomer(api: StripeRead, id: string, client: Client) {
   }>(`/v1/customers/${id}`, {});
   check(
     found.id === id &&
-      found.livemode === false &&
+      found.livemode === liveMode(api) &&
       !found.deleted &&
       found.email?.toLowerCase() === client.email.toLowerCase(),
     "The connected Stripe customer does not match this client. Review the customer link.",
@@ -205,7 +206,7 @@ export async function stripeSubscriptionOptions(
   );
   for (const sub of subscriptions)
     check(
-      sub.livemode === false &&
+      sub.livemode === liveMode(api) &&
         sub.customer === id &&
         subscriptionId.test(sub.id),
       "Stripe returned a subscription for another customer or mode.",
@@ -261,10 +262,10 @@ export async function readStripeAdoption(
   identity: Pick<AdoptedStripeSubscription, "linkedAt" | "linkedBy">,
 ): Promise<AdoptedStripeSubscription> {
   check(
-    sub.livemode === false &&
+    sub.livemode === liveMode(api) &&
       subscriptionId.test(sub.id) &&
       customerId.test(sub.customer),
-    "Stripe test subscription required.",
+    "This Stripe subscription is in the other mode (test or live).",
     409,
   );
   const details = await choice(api, sub);
@@ -287,7 +288,7 @@ export async function readStripeAdoption(
     );
     check(
       schedule.id === sub.schedule &&
-        schedule.livemode === false &&
+        schedule.livemode === liveMode(api) &&
         schedule.customer === sub.customer &&
         schedule.subscription === sub.id,
       "Stripe schedule does not match this subscription.",
@@ -429,7 +430,7 @@ export async function linkStripeSubscription(
   check(
     sub.id === input.subscription_id &&
       sub.customer === id &&
-      sub.livemode === false &&
+      sub.livemode === liveMode(api) &&
       usableStatuses.has(sub.status),
     "This subscription is not available for this client.",
     409,

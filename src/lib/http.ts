@@ -624,7 +624,13 @@ async function handleRoute(
       const raw = await req.text();
       check(Buffer.byteLength(raw) < 2000000, "Request too large", 413);
       const signature = req.headers.get("stripe-signature") ?? "";
-      const webhook = verifyStripeWebhook(raw, signature, secret);
+      const webhook = verifyStripeWebhook(
+        raw,
+        signature,
+        secret,
+        Date.now(),
+        !isConnect && process.env.BILLING_MODE === "live",
+      );
       let workspaceId = LOCAL_WORKSPACE_ID;
       if (isConnect) {
         check(
@@ -1873,7 +1879,7 @@ async function handleRoute(
       if (provider === "stripe") {
         check(
           rt.worker.providers.stripe instanceof StripeProvider,
-          "Stripe test credentials required",
+          "Stripe isn't connected",
           503,
         );
         const result = await syncStripeCatalog(
@@ -1896,7 +1902,7 @@ async function handleRoute(
     if (path[0] === "custom-families" && method === "POST") {
       check(
         rt.worker.providers.stripe instanceof StripeProvider,
-        "Stripe test credentials required",
+        "Stripe isn't connected",
         503,
       );
       const input = z

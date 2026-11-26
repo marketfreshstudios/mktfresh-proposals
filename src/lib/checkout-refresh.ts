@@ -1,3 +1,4 @@
+import { liveMode } from "./catalog";
 import { AppError, check, type Proposal } from "./model";
 import { proposalLink, proposalOrigin } from "./links";
 import { billingLines } from "./quote-model";
@@ -311,7 +312,7 @@ export async function confirmCheckout(
   }>(`/v1/checkout/sessions/${sessionId}`, {});
   if (
     session.status !== "complete" ||
-    session.livemode !== false ||
+    session.livemode !== liveMode(provider.api) ||
     session.metadata?.proposal_id !== p.id
   )
     return false;

@@ -471,7 +471,7 @@ it("client billing is read-only, current and paginated; test-mode checks and una
       ...api,
       get: async <T>() => ({ livemode: true }) as T,
     }),
-  ).rejects.toThrow("Test-mode customer required");
+  ).rejects.toThrow("other mode (test or live)");
 });
 
 it("preview PDFs stay in PDF jobs, use current branding, and never queue mail on success or renderer failure", async () => {
