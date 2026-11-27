@@ -9,6 +9,7 @@ afterEach(() => vi.unstubAllEnvs());
 function hostedEnv() {
   vi.stubEnv("APP_MODE", "local");
   vi.stubEnv("DATA_DIR", mkdtempSync(join(tmpdir(), "oauth-platform-")));
+  vi.stubEnv("APP_URL", "https://acme.example.test");
   vi.stubEnv("OAUTH_ISSUER", "https://acme.example.test");
   vi.stubEnv("WORKSPACE_DOMAIN", "example.test");
   vi.stubEnv("DEV_STAFF_TOKEN", "t".repeat(48));

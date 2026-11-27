@@ -25,9 +25,11 @@ it("serves each workspace's connector from its own address", () => {
   expect(oauthServer(at("marketfresh.example.test")).issuer).toBe(
     "https://marketfresh.example.test",
   );
-  // Hosts that aren't a workspace address use OAUTH_ISSUER.
-  for (const host of ["app.example.test", "proposals.other.test"])
-    expect(oauthIssuer(at(host))).toBe("https://marketfresh.example.test");
+  // The shared address is its own issuer; other hosts use OAUTH_ISSUER.
+  expect(oauthIssuer(at("app.example.test"))).toBe("https://app.example.test");
+  expect(oauthIssuer(at("proposals.other.test"))).toBe(
+    "https://marketfresh.example.test",
+  );
   expect(oauthIssuer()).toBe("https://marketfresh.example.test");
   // One server per issuer, sharing one token store.
   expect(oauthServer(at("harbor.example.test"))).toBe(harbor);
