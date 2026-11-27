@@ -105,7 +105,7 @@ function fixture(options: { live?: boolean; account?: string } = {}) {
   );
   const connect = new StripeConnect(repo, config, fetcher);
   async function begin() {
-    const started = await connect.authorize(staff, origin, "test");
+    const started = await connect.authorize(staff, origin);
     const url = new URL(started.url);
     const state = url.searchParams.get("state")!;
     const callback = new URL(
@@ -129,7 +129,7 @@ function fixture(options: { live?: boolean; account?: string } = {}) {
 it("binds OAuth to the exact origin, staff actor, cookie and one-time state", async () => {
   const { connect, requests, begin } = fixture();
   await expect(
-    connect.authorize(staff, "https://other.example.test", "test"),
+    connect.authorize(staff, "https://other.example.test"),
   ).rejects.toThrow("configured Stripe Connect domain");
   const { callback, state } = await begin();
   await expect(connect.callback(staff, callback, "wrong")).rejects.toThrow(
@@ -325,13 +325,13 @@ it("connects from a workspace's own address through the registered callback", as
   try {
     const { connect } = fixture();
     const own = "https://harbor.example.test";
-    await expect(connect.authorize(staff, own, "test")).rejects.toThrow(
+    await expect(connect.authorize(staff, own)).rejects.toThrow(
       "configured Stripe Connect domain",
     );
     await expect(
-      connect.authorize(staff, "https://other.example.test", "test", "harbor"),
+      connect.authorize(staff, "https://other.example.test", "harbor"),
     ).rejects.toThrow("configured Stripe Connect domain");
-    const started = await connect.authorize(staff, own, "test", "harbor");
+    const started = await connect.authorize(staff, own, "harbor");
     const url = new URL(started.url);
     // Stripe still sees only the registered callback.
     expect(url.searchParams.get("redirect_uri")).toBe(redirectUri);

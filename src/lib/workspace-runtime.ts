@@ -8,13 +8,16 @@ export async function workspaceRuntime(workspaceId?: string) {
   return base.stripeConnect ? resolveStripeAccount(base) : base;
 }
 
-export async function stripeWebhookWorkspace(account: string) {
+export async function stripeWebhookWorkspace(
+  account: string,
+  mode: "test" | "live" = "test",
+) {
   if (process.env.APP_MODE === "local") return undefined;
   const { data, error } = await supabase()
     .from("provider_credentials")
     .select("workspace_id")
     .eq("data->>kind", "stripe_connect")
-    .eq("data->>account_hash", stripeAccountHash(account))
+    .eq("data->>account_hash", stripeAccountHash(account, mode))
     .maybeSingle();
   if (error) throw new Error("Stripe account routing is unavailable.");
   return data?.workspace_id as string | undefined;

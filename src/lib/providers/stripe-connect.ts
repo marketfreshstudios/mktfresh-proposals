@@ -10,11 +10,7 @@ import {
   oauthState,
   oauthStateSlug,
 } from "../oauth-bounce";
-import {
-  STRIPE_VERSION,
-  StripeHttp,
-  requireTestStripeKey,
-} from "./stripe-http";
+import { STRIPE_VERSION, StripeHttp, requireStripeKey } from "./stripe-http";
 import { stripeCustomerMatchesByEmail } from "../client-billing";
 import { syncStripeCatalog } from "../catalog";
 import { workspaceEvent } from "../studio";
@@ -33,9 +29,12 @@ type Config = {
   encryptionKey: string;
   redirectUri?: string;
   eventsConfigured: boolean;
+  /** Live Stripe Connect, when BILLING_MODE is live. */
+  live?: boolean;
 };
 type OAuthState = { id: string; hash: string; actor: string; expires: number };
-type Account = { id: string; mode: "test" };
+export type ConnectMode = "test" | "live";
+type Account = { id: string; mode: ConnectMode };
 type Connection = {
   id: string;
   kind: "stripe_connect";
@@ -45,6 +44,8 @@ type Connection = {
   connectedAt: string;
   actorName?: string;
   state: "connected" | "disconnected" | "disconnecting";
+  /** Absent on connections made before live mode: those are test. */
+  mode?: ConnectMode;
   products?: { count: number; at: string };
   customers?: { checked: number; linked: number; review: number };
   setupError?: boolean;
@@ -54,19 +55,22 @@ const stableId = (label: string) =>
   sha256(label)
     .slice(0, 32)
     .replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, "$1-$2-$3-$4-$5");
-export function stripeAccountHash(id: string) {
+export function stripeAccountHash(id: string, mode: ConnectMode = "test") {
   check(accountId.test(id), "Invalid Stripe account", 400);
-  return sha256("stripe-connect:test:" + id);
+  return sha256(`stripe-connect:${mode}:` + id);
 }
 
 export function stripeConnectConfig(): Config | undefined {
   const key = process.env.STRIPE_CONNECT_SECRET_KEY;
   const clientId = process.env.STRIPE_CONNECT_CLIENT_ID;
   const encryptionKey = process.env.INTEGRATION_ENCRYPTION_KEY;
+  const live = process.env.BILLING_MODE === "live";
   if (
-    process.env.BILLING_MODE !== "test" ||
+    (process.env.BILLING_MODE !== "test" && !live) ||
     !key ||
-    !/^sk_test_[a-zA-Z0-9]+$/.test(key) ||
+    !(
+      live ? /^(sk_live_|rk_live_)[a-zA-Z0-9]+$/ : /^sk_test_[a-zA-Z0-9]+$/
+    ).test(key) ||
     !clientId ||
     !/^ca_[a-zA-Z0-9]+$/.test(clientId) ||
     !encryptionKey ||
@@ -80,6 +84,7 @@ export function stripeConnectConfig(): Config | undefined {
     redirectUri: process.env.STRIPE_CONNECT_REDIRECT_URI,
     eventsConfigured:
       !!process.env.STRIPE_CONNECT_WEBHOOK_SECRET?.startsWith("whsec_"),
+    live,
   };
 }
 
@@ -95,11 +100,20 @@ export class StripeConnect {
       "The platform workspace uses its own Stripe account.",
       409,
     );
-    requireTestStripeKey(config.key);
+    requireStripeKey(config.key, !!config.live);
     this.id = stableId(repo.workspaceId + ":stripe-connect");
   }
-  private read() {
+  get mode(): ConnectMode {
+    return this.config.live ? "live" : "test";
+  }
+  /** The stored row, whichever mode wrote it. */
+  private stored() {
     return this.repo.providerCredential<Connection>(this.id);
+  }
+  /** This mode's connection; a test connection doesn't count in live mode. */
+  private async read() {
+    const row = await this.stored();
+    return row && (row.mode ?? "test") === this.mode ? row : null;
   }
   private callbackUrl() {
     const url = new URL(
@@ -123,17 +137,7 @@ export class StripeConnect {
   cookie(value: string, age: number) {
     return `${stripeConnectCookie}=${value}; HttpOnly; SameSite=Lax; Path=${stripeConnectCallback}; Max-Age=${age}${this.callbackUrl().protocol === "https:" ? "; Secure" : ""}`;
   }
-  async authorize(
-    actor: Actor,
-    origin: string,
-    mode: "test",
-    slug?: string | null,
-  ) {
-    check(
-      mode === "test",
-      "Live Stripe Connect is available after go-live.",
-      409,
-    );
+  async authorize(actor: Actor, origin: string, slug?: string | null) {
     const redirect = this.callbackUrl();
     check(
       oauthOriginAllowed(redirect, origin, slug),
@@ -169,7 +173,7 @@ export class StripeConnect {
   ) {
     const message =
       path === "token"
-        ? "Stripe could not authorize this test account. Try connecting again."
+        ? "Stripe could not authorize this account. Try connecting again."
         : "Stripe could not confirm the disconnection. Try again.";
     const response = await this.fetcher(
       "https://connect.stripe.com/oauth/" + path,
@@ -222,6 +226,9 @@ export class StripeConnect {
       "Stripe connection was not authorized.",
       400,
     );
+    // Compare-and-swap against the stored row: a connection left from the
+    // other mode (test, after going live) is replaced, not waited on.
+    const stored = await this.stored();
     const current = await this.read();
     check(
       !current || current.state === "disconnected",
@@ -236,33 +243,40 @@ export class StripeConnect {
     check(
       typeof id === "string" &&
         accountId.test(id) &&
-        result.livemode === false &&
+        result.livemode === !!this.config.live &&
         result.scope === "read_write",
-      "A Stripe test account with write access is required.",
+      this.config.live
+        ? "Connect a live Stripe account with write access."
+        : "A Stripe test account with write access is required.",
       409,
     );
     const platform = await new StripeHttp(
       this.config.key,
       this.repo,
       this.fetcher,
+      undefined,
+      undefined,
+      !!this.config.live,
     ).get<{ id: string }>("/v1/account");
     check(
       accountId.test(platform.id) && platform.id !== id,
       "Choose a Stripe account other than the Yeswell platform account.",
       409,
     );
-    const hash = stripeAccountHash(id);
+    const hash = stripeAccountHash(id, this.mode);
     check(
       !current || current.account_hash === hash,
       "Reconnect the same Stripe account to preserve billing links.",
       409,
     );
-    const account: Account = { id, mode: "test" };
+    const account: Account = { id, mode: this.mode };
     const detail = await new StripeHttp(
       this.config.key,
       this.repo,
       this.fetcher,
       id,
+      undefined,
+      !!this.config.live,
     ).get<{
       id: string;
       business_profile?: { name?: string };
@@ -284,9 +298,10 @@ export class StripeConnect {
       connectedAt: new Date().toISOString(),
       actorName: actor.staff_name,
       state: "connected",
+      mode: this.mode,
     };
     check(
-      await this.repo.replaceProviderCredential(this.id, current, row),
+      await this.repo.replaceProviderCredential(this.id, stored, row),
       "Stripe connection changed. Reload the page.",
       409,
     );
@@ -300,8 +315,8 @@ export class StripeConnect {
         decryptSecret(row.ciphertext, this.config.encryptionKey, this.id),
       ) as Account;
       check(
-        account.mode === "test" &&
-          stripeAccountHash(account.id) === row.account_hash,
+        account.mode === this.mode &&
+          stripeAccountHash(account.id, account.mode) === row.account_hash,
         "Invalid Stripe account.",
       );
       return account;
@@ -326,6 +341,7 @@ export class StripeConnect {
           409,
         );
       },
+      !!this.config.live,
     );
   }
   async status(): Promise<StripeConnectionStatus> {
@@ -527,7 +543,7 @@ export class StripeConnect {
     if (
       !row ||
       row.state === "disconnected" ||
-      stripeAccountHash(id) !== row.account_hash ||
+      stripeAccountHash(id, this.mode) !== row.account_hash ||
       (created && created < Math.floor(Date.parse(row.connectedAt) / 1000))
     )
       return;

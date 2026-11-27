@@ -324,7 +324,7 @@ export function BillingConnectionDetail({
   const status = stripeDisconnecting
     ? "Disconnecting"
     : stripeSetup
-      ? "Setting up | test mode"
+      ? `Setting up | ${mode} mode`
       : connected
         ? `Connected | ${qbo ? (connection?.environment === "production" ? "live" : "sandbox") : mode + " mode"}`
         : reconnect
@@ -496,7 +496,7 @@ export function BillingConnectionDetail({
       if (action === "stripe-authorize") {
         const { url } = await post<{ url: string }>(
           "/api/connections/stripe/authorize",
-          { mode: "test" },
+          {},
         );
         window.location.assign(url);
         return;
@@ -1009,7 +1009,7 @@ export function BillingConnectionDetail({
       {stripeSetup ? (
         <>
           <Banner
-            title={`Connected to ${stripe.accountName ?? "Stripe"} in test mode`}
+            title={`Connected to ${stripe.accountName ?? "Stripe"} in ${mode} mode`}
             tone={stripe.setupError ? "warning" : "info"}
           >
             {stripe.setupError
@@ -1038,8 +1038,10 @@ export function BillingConnectionDetail({
                       title: "Account connected",
                       icon: CircleCheck,
                       detail: stripe.accountSuffix
-                        ? `Ending in ${stripe.accountSuffix} | test mode`
-                        : "Test mode",
+                        ? `Ending in ${stripe.accountSuffix} | ${mode} mode`
+                        : mode === "live"
+                          ? "Live mode"
+                          : "Test mode",
                     },
                     {
                       title: stripe.products
@@ -1112,31 +1114,11 @@ export function BillingConnectionDetail({
                     <p>Stripe is set up by your Yeswell administrator.</p>
                   ) : managedStripe && owner ? (
                     <>
-                      <fieldset className="stripe-connection-mode">
-                        <legend>Start in</legend>
-                        <label>
-                          <input
-                            type="radio"
-                            name="stripe-connect-mode"
-                            defaultChecked
-                          />
-                          <span>
-                            <strong>Test mode</strong>
-                            <small>No real charges.</small>
-                          </span>
-                        </label>
-                        <label>
-                          <input
-                            type="radio"
-                            name="stripe-connect-mode"
-                            disabled
-                          />
-                          <span>
-                            <strong>Live mode</strong>
-                            <small>Available after go-live.</small>
-                          </span>
-                        </label>
-                      </fieldset>
+                      <p>
+                        {mode === "live"
+                          ? "Connects in live mode. Real charges."
+                          : "Connects in test mode. No real charges."}
+                      </p>
                       <Button
                         className="studio-primary"
                         disabled={!!busy || stripe?.available !== true}
@@ -1147,7 +1129,7 @@ export function BillingConnectionDetail({
                       <p>
                         {stripe?.available
                           ? "Sign in to Stripe and choose the account you already use."
-                          : "A Yeswell administrator must set up Stripe Connect in test mode."}
+                          : "A Yeswell administrator must set up Stripe Connect first."}
                       </p>
                     </>
                   ) : owner ? (
@@ -1213,7 +1195,7 @@ export function BillingConnectionDetail({
                         {
                           title: "Account configured",
                           icon: CircleCheck,
-                          detail: "Test mode",
+                          detail: mode === "live" ? "Live mode" : "Test mode",
                         },
                         {
                           title: "Syncing products",
@@ -1352,7 +1334,7 @@ export function BillingConnectionDetail({
                           : "Sandbox. Synthetic clients and amounts only."
                         : mode === "test"
                           ? "Test mode. No real charges."
-                          : "Live mode"}
+                          : "Live. Real charges."}
                     </ConnectionFact>
                     {connectedBy && (
                       <ConnectionFact label="Connected by">
