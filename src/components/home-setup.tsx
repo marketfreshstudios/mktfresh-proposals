@@ -19,7 +19,7 @@ import { withCount } from "../lib/count-label";
 
 const optionalStepNames = {
   team: "invite your team",
-  assistant: "connect Claude",
+  assistant: "connect Claude or ChatGPT",
   imports: "import from Proposify",
 };
 

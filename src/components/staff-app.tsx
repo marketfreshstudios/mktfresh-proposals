@@ -98,6 +98,7 @@ import { inView } from "../lib/proposal-state";
 import type { WorkspaceSettings } from "../lib/workspace";
 export type Data = {
   app_url: string;
+  mcp_url?: string;
   plan?: PlanState;
   connections?: ConnectionStatus | null;
   user: Actor & { staff_home_banner_dismissed?: boolean };
@@ -222,6 +223,7 @@ function StaffAppContent({
         account?: StaffAccount;
         signatory_version: string;
         app_url: string;
+        mcp_url?: string;
         plan?: PlanState;
         staff: Data["staff"];
       }>("/api/auth/session");
@@ -267,6 +269,7 @@ function StaffAppContent({
         settings: session.settings,
         workspace_defaults: session.workspace_defaults,
         app_url: session.app_url,
+        mcp_url: session.mcp_url,
         plan: session.plan,
         user: session.user,
         account: session.account,
@@ -876,6 +879,8 @@ export function Login({
             const result = await post("/api/auth/login", {
               email: f.get("email"),
               password: f.get("password"),
+              // Carried to the workspace when signing in on app.yeswell.co.
+              ...(appHost ? { next: nextStaffPage() } : {}),
             });
             if (result.handoff) {
               // Keep the button busy while the workspace address loads.

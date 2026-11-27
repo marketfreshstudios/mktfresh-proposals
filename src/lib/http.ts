@@ -157,7 +157,7 @@ import {
   saveAccountSignature,
   workspaceStaffPhotos,
 } from "./staff-account";
-import { oauthServer } from "./oauth-runtime";
+import { oauthServer, platformIssuer } from "./oauth-runtime";
 import { StripeProvider } from "./providers/stripe";
 import {
   approveBilling,
@@ -225,7 +225,12 @@ import {
   workspaceDomain,
 } from "./workspace-address";
 import { databaseAddresses, signInHost } from "./workspace-host";
-import { createHandoff, handoffNext, redeemHandoff } from "./sign-in-handoff";
+import {
+  createHandoff,
+  handoffNext,
+  handoffTarget,
+  redeemHandoff,
+} from "./sign-in-handoff";
 import { findWorkspace, supabaseFindWorkspaceDeps } from "./find-workspace";
 import { sendTrialEmails } from "./plan-email";
 import { deleteClosedWorkspaces } from "./workspace-deletion";
@@ -460,7 +465,11 @@ async function handleRoute(
         403,
       );
       const input = z
-        .object({ email: z.email(), password: z.string().min(1).max(200) })
+        .object({
+          email: z.email(),
+          password: z.string().min(1).max(200),
+          next: z.string().max(4000).optional(),
+        })
         .parse(await body(req));
       const session = await login(input.email, input.password).catch(
         async (error) => {
@@ -493,6 +502,7 @@ async function handleRoute(
           {
             two_step: membership.two_step_required === true,
             password_change: membership.password_change_required === true,
+            next: handoffTarget(input.next),
           },
         );
         const response = json({ authenticated: false, handoff: handoff.url });
@@ -1398,6 +1408,12 @@ async function handleRoute(
         app_url: workspaceOrigin(
           (settings ?? defaults)?.workspace_slug ?? null,
         ),
+        // One connector address for every workspace when workspaces have
+        // their own addresses; signing in picks the workspace.
+        mcp_url:
+          (platformIssuer() ??
+            workspaceOrigin((settings ?? defaults)?.workspace_slug ?? null)) +
+          "/mcp",
         plan: await workspacePlan(user.workspace_id),
         settings: settings
           ? {

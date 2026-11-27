@@ -3,7 +3,11 @@ import { OAuthServer } from "./oauth";
 import { LocalOAuthStore, SupabaseOAuthStore } from "./oauth-store";
 import { supabase } from "./repository";
 import { workspaceOrigin } from "./links";
-import { requestHost, workspaceSlugFromHost } from "./workspace-address";
+import {
+  requestHost,
+  workspaceDomain,
+  workspaceSlugFromHost,
+} from "./workspace-address";
 
 const servers = new Map<string, OAuthServer>();
 let store: LocalOAuthStore | SupabaseOAuthStore | undefined;
@@ -19,13 +23,39 @@ function defaultIssuer() {
 /** The connector's issuer for this request: a workspace's own address when
  * it's opened there (each workspace's MCP URL is {address}/mcp, and tokens
  * are bound to that resource), otherwise OAUTH_ISSUER. */
+/** The one connector address for every workspace (app.yeswell.co), where
+ * signing in decides the workspace. Null without WORKSPACE_DOMAIN. */
+export function platformIssuer() {
+  const domain = workspaceDomain();
+  return domain ? `https://app.${domain}` : null;
+}
+
+export function isPlatformHost(req: Request) {
+  const issuer = platformIssuer();
+  return (
+    !!issuer &&
+    requestHost(req).toLowerCase().replace(/:\d+$/, "") === new URL(issuer).host
+  );
+}
+
 export function oauthIssuer(req?: Request) {
+  if (req && isPlatformHost(req)) return platformIssuer()!;
   const slug = req ? workspaceSlugFromHost(requestHost(req)) : null;
   return slug ? workspaceOrigin(slug) : defaultIssuer();
 }
 
+/** The server for the shared address, used from a workspace's own address
+ * to finish a connection that started on app.yeswell.co. */
+export function platformOAuthServer() {
+  const issuer = platformIssuer();
+  return issuer ? serverFor(issuer) : null;
+}
+
 export function oauthServer(req?: Request) {
-  const issuer = oauthIssuer(req);
+  return serverFor(oauthIssuer(req));
+}
+
+function serverFor(issuer: string) {
   let server = servers.get(issuer);
   if (!server) {
     store ??=

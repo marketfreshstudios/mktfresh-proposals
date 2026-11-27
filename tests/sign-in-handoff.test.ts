@@ -5,6 +5,7 @@ import {
   HandoffExpired,
   createHandoff,
   handoffNext,
+  handoffTarget,
   redeemHandoff,
 } from "../src/lib/sign-in-handoff";
 
@@ -132,5 +133,53 @@ describe("signing in from app.yeswell.co", () => {
       "/set-password",
     );
     expect(handoffNext(flags)).toBe("/");
+  });
+});
+
+describe("continuing to an assistant connection after signing in", () => {
+  it("allows only the connect page as a next step", () => {
+    expect(handoffTarget("/oauth/connect?client_id=a&state=b")).toBe(
+      "/oauth/connect?client_id=a&state=b",
+    );
+    for (const bad of [
+      "/",
+      "/settings",
+      "https://evil.test/oauth/connect?x=1",
+      "//evil.test/oauth/connect?x=1",
+      "/oauth/connect",
+      "/oauth/connect?x=1#frag",
+      "/oauth/connect?x= 1",
+      "/oauth/connect?" + "a".repeat(4000),
+      42,
+      undefined,
+    ])
+      expect(handoffTarget(bad)).toBeUndefined();
+  });
+
+  it("goes to the connect page, or through two-step first", () => {
+    const next = "/oauth/connect?client_id=a";
+    expect(handoffNext({ ...flags, next })).toBe(next);
+    expect(handoffNext({ ...flags, two_step: true, next })).toBe(
+      "/login?state=two-step&next=" + encodeURIComponent(next),
+    );
+    expect(handoffNext({ ...flags, next: "https://evil.test" })).toBe("/");
+  });
+
+  it("carries the next step through the sealed pass", () => {
+    const next = "/oauth/connect?client_id=a";
+    const h = createHandoff(
+      appLogin,
+      "https://acme.example.test",
+      session,
+      { ...flags, next },
+      Date.now(),
+    );
+    const pass = decodeURIComponent(new URL(h.url).hash.slice(1));
+    const nonce = h.cookie.match(new RegExp(`^${HANDOFF_COOKIE}=([^;]+)`))![1];
+    const redeemed = redeemHandoff(
+      redeemOn("acme.example.test", `${HANDOFF_COOKIE}=${nonce}`),
+      pass,
+    );
+    expect(redeemed.flags.next).toBe(next);
   });
 });

@@ -119,9 +119,9 @@ export function workspaceSetup(data: {
     },
     {
       id: "assistant",
-      label: "Connect Claude",
+      label: "Connect Claude or ChatGPT",
       complete: data.assistants.some((a) => !a.revoked),
-      detail: "Claude can draft proposals for you to review",
+      detail: "Your assistant can draft proposals for you to review",
       href: "/studio/connections/assistants",
       action: "Connect",
     },
