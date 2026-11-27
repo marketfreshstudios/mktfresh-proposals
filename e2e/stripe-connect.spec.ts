@@ -79,8 +79,10 @@ test("another workspace connects in test mode, sees progress and can disconnect"
     await route.fulfill({ json: connection });
   });
   await page.goto(detail);
-  await expect(page.getByRole("radio", { name: /Test mode/ })).toBeChecked();
-  await expect(page.getByRole("radio", { name: /Live mode/ })).toBeDisabled();
+  // The mode follows the server's billing mode; there is no choice to make.
+  await expect(
+    page.getByText("Connects in test mode. No real charges."),
+  ).toBeVisible();
   if (capture)
     await page.screenshot({ path: directory + "/3c-connect-1440.png" });
   expect(
