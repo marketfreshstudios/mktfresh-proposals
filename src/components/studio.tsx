@@ -3718,13 +3718,17 @@ export function ConnectionsStudio({
             <ConnectionPanel title="Connect or reconnect an assistant">
               <div className="connection-panel-body">
                 <p>
-                  Add this endpoint in your assistant, choose automatic
-                  registration, then sign in and approve access.
+                  Add this address as a connector in Claude or ChatGPT, sign in
+                  to Yeswell when asked, then approve access. Everyone in your
+                  workspace uses the same address; signing in picks your
+                  workspace.
                 </p>
               </div>
               <dl>
-                <ConnectionFact label="Remote MCP endpoint">
-                  <code className="endpoint">{data.app_url}/mcp</code>
+                <ConnectionFact label="Connector address">
+                  <code className="endpoint">
+                    {data.mcp_url ?? `${data.app_url}/mcp`}
+                  </code>
                 </ConnectionFact>
                 <ConnectionFact label="Access">
                   Read proposals, draft proposals, and edit templates and saved

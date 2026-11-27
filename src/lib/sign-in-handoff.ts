@@ -22,7 +22,22 @@ export type HandoffSession = {
   refresh_token?: string;
   user_id: string;
 };
-export type HandoffFlags = { two_step: boolean; password_change: boolean };
+export type HandoffFlags = {
+  two_step: boolean;
+  password_change: boolean;
+  /** Where to go after signing in: only an assistant connection. */
+  next?: string;
+};
+
+/** The one page a sign-in started on app.yeswell.co may continue to: approving
+ * an assistant connection. Anything else signs in to the workspace home. */
+export function handoffTarget(value: unknown) {
+  return typeof value === "string" &&
+    value.length < 4000 &&
+    /^\/oauth\/connect\?[^\s#]*$/.test(value)
+    ? value
+    : undefined;
+}
 type Payload = HandoffSession &
   HandoffFlags & { host: string; nonce: string; exp: number };
 
@@ -100,6 +115,7 @@ export function redeemHandoff(
     flags: {
       two_step: payload.two_step === true,
       password_change: payload.password_change === true,
+      next: handoffTarget(payload.next),
     },
     /** Clears the binding cookie, so the pass can't be used twice. */
     clear: cookie(request, "", 0),
@@ -107,9 +123,12 @@ export function redeemHandoff(
 }
 
 /** Where the browser goes once the pass is redeemed. */
-export const handoffNext = (flags: HandoffFlags) =>
-  flags.two_step
-    ? "/login?state=two-step"
+export const handoffNext = (flags: HandoffFlags) => {
+  const next = handoffTarget(flags.next);
+  return flags.two_step
+    ? "/login?state=two-step" +
+        (next ? "&next=" + encodeURIComponent(next) : "")
     : flags.password_change
       ? "/set-password"
-      : "/";
+      : (next ?? "/");
+};
