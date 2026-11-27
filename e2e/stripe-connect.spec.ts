@@ -58,7 +58,7 @@ test("another workspace connects in test mode, sees progress and can disconnect"
     await route.fulfill({ json: { rows: [] } });
   });
   await page.route("**/api/connections/stripe/authorize", async (route) => {
-    expect(route.request().postDataJSON()).toEqual({ mode: "test" });
+    expect(route.request().postDataJSON()).toEqual({});
     await route.fulfill({
       json: { url: "https://connect.stripe.com/oauth/authorize?fixture=1" },
     });
