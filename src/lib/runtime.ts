@@ -15,7 +15,7 @@ import { MockMailer, ResendMailer, Worker } from "./jobs";
 import { MockBillingProvider, UnconfiguredBillingProvider } from "./billing";
 function createRuntime(
   workspaceId: string,
-  account?: { id: string; mode: "test" },
+  account?: { id: string; mode: "test" | "live" },
 ) {
   const local = process.env.APP_MODE === "local";
   if (local && (process.env.NODE_ENV === "production" || process.env.VERCEL))
@@ -34,12 +34,14 @@ function createRuntime(
       ? new SupabaseStorage(db)
       : new LocalStorage(join(dir, "files"));
   const test = process.env.BILLING_MODE === "test";
-  // Live billing is for the platform workspace only (owner, 25 Nov);
-  // every other workspace stays in test mode.
+  // The platform workspace bills on its own Stripe account; agencies bill on
+  // their own accounts through Stripe Connect, in the same mode.
   const live = billingLive() && workspaceId === LOCAL_WORKSPACE_ID;
+  // Every workspace connects its own QuickBooks company through the one
+  // Intuit app: sandbox in test mode, production once billing is live.
   const qboConfigured =
     ((test && process.env.QBO_ENVIRONMENT === "sandbox") ||
-      (live && process.env.QBO_ENVIRONMENT === "production")) &&
+      (billingLive() && process.env.QBO_ENVIRONMENT === "production")) &&
     process.env.QBO_CLIENT_ID &&
     process.env.QBO_CLIENT_SECRET &&
     Buffer.from(process.env.INTEGRATION_ENCRYPTION_KEY ?? "", "base64")
@@ -90,6 +92,7 @@ function createRuntime(
               browserKey(
                 process.env.STRIPE_CONNECT_PUBLISHABLE_KEY,
                 account.id,
+                account.mode === "live",
               ),
             )
           : local

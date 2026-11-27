@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { AppError, check } from "./model";
 import { supabase } from "./repository";
-import { requireTestStripeKey } from "./providers/stripe-http";
+import { requireStripeKey } from "./providers/stripe-http";
 import { verifyStripeWebhook } from "./providers/webhook";
 import { workspaceOrigin } from "./links";
 import { ResendMailer } from "./jobs";
@@ -66,10 +66,22 @@ function form(value: unknown, path: string, out: URLSearchParams) {
     );
   else out.append(path, String(value));
 }
+/** Whether a key for the current billing mode is set (test key while test, live key while live). */
+export function yeswellStripeConfigured() {
+  const key = process.env.YESWELL_STRIPE_SECRET_KEY ?? "";
+  return (
+    process.env.BILLING_MODE === "live"
+      ? /^(sk_live_|rk_live_)[A-Za-z0-9]+$/
+      : /^(sk_test_|rk_test_)[A-Za-z0-9]+$/
+  ).test(key);
+}
 export function yeswellStripe(fetcher: typeof fetch = fetch): StripeApi {
   const key = process.env.YESWELL_STRIPE_SECRET_KEY ?? "";
   if (!key) throw new AppError(503, "Billing isn't set up yet.");
-  requireTestStripeKey(key);
+  // Workspace subscriptions follow BILLING_MODE: live keys and live objects
+  // only when billing is live, test ones otherwise.
+  const live = process.env.BILLING_MODE === "live";
+  requireStripeKey(key, live);
   async function request<T>(
     path: string,
     method: string,
@@ -100,7 +112,13 @@ export function yeswellStripe(fetcher: typeof fetch = fetch): StripeApi {
       `Stripe request failed (${response.status}; ${data.error?.code ?? "provider_error"})`,
       502,
     );
-    check(data.livemode !== true, "Live Stripe response refused", 503);
+    check(
+      data.livemode === undefined || data.livemode === live,
+      live
+        ? "Test-mode Stripe response refused while billing is live"
+        : "Live Stripe response refused",
+      503,
+    );
     return data as T;
   }
   return {
@@ -136,6 +154,12 @@ export async function ensurePrices(
     for (const k of keys) {
       const key = lookupKey(k.kind, k.interval);
       if (priceCache.has(key)) continue;
+      // Live prices are created once, by hand, with the owner's approval.
+      check(
+        process.env.BILLING_MODE !== "live",
+        "Yeswell plan prices aren't set up in live Stripe yet.",
+        503,
+      );
       const created = await stripe.post<Price>(
         "/v1/prices",
         {
@@ -469,6 +493,7 @@ export async function handleBillingWebhook(
     signature,
     process.env.YESWELL_STRIPE_WEBHOOK_SECRET ?? "",
     now,
+    process.env.BILLING_MODE === "live",
   ) as {
     id: string;
     type: string;

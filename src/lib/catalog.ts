@@ -51,6 +51,9 @@ export async function syncStripeCatalog(
     for (const price of page.data) {
       if (
         !price.lookup_key ||
+        // Yeswell's own plan prices can share the platform's Stripe account;
+        // they bill workspaces, not clients, so they never enter a catalog.
+        price.lookup_key.startsWith("yeswell_") ||
         price.unit_amount === null ||
         !["month", "year"].includes(price.recurring?.interval ?? "")
       )

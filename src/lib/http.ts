@@ -244,6 +244,7 @@ import {
   previewSelection,
   startCheckout,
   yeswellStripe,
+  yeswellStripeConfigured,
 } from "./yeswell-billing";
 import {
   WorkspaceReadOnly,
@@ -629,7 +630,7 @@ async function handleRoute(
         signature,
         secret,
         Date.now(),
-        !isConnect && process.env.BILLING_MODE === "live",
+        process.env.BILLING_MODE === "live",
       );
       let workspaceId = LOCAL_WORKSPACE_ID;
       if (isConnect) {
@@ -638,7 +639,10 @@ async function handleRoute(
           "Stripe connected account required.",
           403,
         );
-        const routed = await stripeWebhookWorkspace(webhook.account);
+        const routed = await stripeWebhookWorkspace(
+          webhook.account,
+          process.env.BILLING_MODE === "live" ? "live" : "test",
+        );
         if (!routed) return json({ received: true, ignored: true });
         workspaceId = routed;
       } else {
@@ -1222,9 +1226,9 @@ async function handleRoute(
           )
           .map((m) => m.display_name || m.name);
         if (user.staff_role !== "owner") return json({ owner: false, owners });
-        const stripe = process.env.YESWELL_STRIPE_SECRET_KEY
-          ? yeswellStripe()
-          : null;
+        // A key for the other mode (test key while live) counts as not set
+        // up, so the page still loads and checkout stays closed.
+        const stripe = yeswellStripeConfigured() ? yeswellStripe() : null;
         return json({
           owner: true,
           owners,
@@ -1543,14 +1547,13 @@ async function handleRoute(
       if (method === "POST") {
         check(sameOrigin(req), "Same-origin request required", 403);
         if (path[2] === "authorize") {
-          const input = z
-            .object({ mode: z.literal("test") })
+          // The mode follows the server's billing mode, not the request.
+          z.object({ mode: z.enum(["test", "live"]).optional() })
             .strict()
             .parse(await body(req));
           const started = await connect.authorize(
             user,
             new URL(req.url).origin,
-            input.mode,
             await ownAddress(user.workspace_id),
           );
           const response = json({ url: started.url });
