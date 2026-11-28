@@ -112,7 +112,7 @@ export async function emailStudioPreview(
     display_name: actor.staff_name || actor.staff_email || "Staff",
     email: actor.staff_email || "",
     company_name: settings.company_name,
-    sending_domain: settings.sending_domain,
+    sending_domain: settings.sending_domain ?? "",
   };
   let logo: string | undefined, logo_error: string | undefined;
   if (p.workspace_settings?.logo && !key.startsWith("team_")) {
@@ -168,11 +168,9 @@ export async function sendEmailTest(
     sending_domain: sender.sending_domain,
     email: preview.p.workspace_settings?.email ?? "",
   });
-  check(
-    from,
-    "Set a verified sending domain in Workspace before sending a test",
-  );
+  check(from, "Email sending isn't set up yet. Contact Yeswell support.");
   if (from !== sender.email) sender.from_email = from;
+  if (!sender.sending_domain) sender.via_yeswell = true;
   check(preview.request_id, "Test request ID required");
   await mailer.send(
     {

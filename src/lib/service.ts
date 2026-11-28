@@ -852,19 +852,22 @@ export class ProposalService {
     const settings = (
       await this.repo.entities<WorkspaceSettings>("workspace_settings")
     )[0];
-    const domain = settings?.sending_domain?.toLowerCase();
-    check(
-      domain,
-      "Set the workspace's verified sending domain in Settings before sending",
-    );
+    check(settings, "Configure Workspace before sending", 409);
+    const domain = settings.sending_domain?.toLowerCase() ?? "";
     check(businessState(settings), businessStateError);
     const from = staffFromAddress(selected.email, settings);
-    check(from, "Choose a sender with a valid email address");
+    check(
+      from,
+      domain
+        ? "Choose a sender with a valid email address"
+        : "Email sending isn't set up yet. Contact Yeswell support.",
+    );
     const sender = {
       user_id: selected.user_id,
       display_name: selected.display_name,
       email: selected.email,
       ...(from === selected.email ? {} : { from_email: from }),
+      ...(domain ? {} : { via_yeswell: true }),
       company_name: settings.company_name,
       sending_domain: domain,
       ...(await staffProfileForProposal(this.repo, selected.user_id)),

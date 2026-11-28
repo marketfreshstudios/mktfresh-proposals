@@ -1197,22 +1197,24 @@ export function WorkspaceStudio({
           {text("Owner contact name", "owner")}
           {text("Contact email", "email", "email")}
         </div>
-        <Field label="Verified sending domain">
+        <Field label="Your own sending domain (optional)">
           <input
             value={draft.sending_domain}
             disabled={!owner}
+            placeholder="Leave empty to send through Yeswell"
             onChange={(e) => change({ sending_domain: e.target.value })}
           />
         </Field>
         <p className="muted">
-          {data.connections?.email
-            ? "Email provider configured"
-            : "Email provider not configured"}
-          . Verify SPF and DKIM with your provider.
+          {draft.sending_domain
+            ? "Proposals send from this domain. It only works after it's verified with Yeswell's email provider, with SPF and DKIM records at your DNS host."
+            : "Proposals send from Yeswell's address with the sender's name and your company on them. Replies go to the sender."}{" "}
+          To send from your own domain, email hello@yeswell.co before you enter
+          it here.
         </p>
         {!owner && (
           <p className="muted">
-            Only a super admin can change the verified sending domain.
+            Only a super admin can change the sending domain.
           </p>
         )}
         <div className="workspace-setting-row workspace-reminder-row">

@@ -68,10 +68,10 @@ export function workspaceSetup(data: {
     {
       id: "email",
       label: "Email sending",
-      complete: !!settings?.sending_domain && connections?.email === true,
+      complete: connections?.email === true,
       detail: settings?.sending_domain
         ? `Send proposals from ${settings.sending_domain}`
-        : "Set the verified domain that proposals come from",
+        : "Proposals go out from Yeswell under your name. Replies come to you.",
       href: "/studio/workspace?view=email-sending",
       action: "Set up",
     },

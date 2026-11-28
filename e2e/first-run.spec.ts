@@ -206,7 +206,8 @@ for (const width of [1440, 375]) {
         }
         await expect(setup.getByRole("progressbar")).toHaveAttribute(
           "value",
-          state === "day-one" ? "0" : "4",
+          // Email sending is done on day one: it goes through Yeswell.
+          state === "day-one" ? "1" : "4",
         );
         await expect(
           setup.getByRole("link", { name: "Connect: Connect Stripe" }),

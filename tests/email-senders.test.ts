@@ -104,7 +104,7 @@ it("defaults to the logged-in staff, supports re-send and freezes every client a
     ),
   ).toHaveLength(2);
 });
-it("rejects outsiders, a missing verified domain and AI sender changes", async () => {
+it("rejects outsiders, sending with no email set up and AI sender changes", async () => {
   const { repo, service, draft, settings, members } = await setup();
   await expect(
     service.send(
@@ -116,9 +116,11 @@ it("rejects outsiders, a missing verified domain and AI sender changes", async (
   ).rejects.toThrow("belongs to this workspace");
   settings.sending_domain = "";
   await repo.put("workspace_settings", settings);
+  vi.stubEnv("YESWELL_NOTIFICATIONS_EMAIL", "");
   await expect(service.send(draft.id, staff)).rejects.toThrow(
-    "Set the workspace",
+    "Email sending isn't set up yet",
   );
+  vi.unstubAllEnvs();
   await expect(
     service.send(
       draft.id,
@@ -128,6 +130,25 @@ it("rejects outsiders, a missing verified domain and AI sender changes", async (
     ),
   ).rejects.toThrow("AI assistants cannot send");
   expect((await repo.get(draft.id))!.sender).toBeUndefined();
+});
+it("sends from Yeswell under the sender's name when the workspace has no domain", async () => {
+  vi.stubEnv("YESWELL_NOTIFICATIONS_EMAIL", "notifications@yeswell.test");
+  const { repo, service, draft, settings, members } = await setup();
+  settings.sending_domain = "";
+  await repo.put("workspace_settings", settings);
+  const sent = await service.send(draft.id, staff);
+  expect(sent.sender).toMatchObject({
+    email: members[0].email,
+    from_email: "notifications@yeswell.test",
+    via_yeswell: true,
+    sending_domain: "",
+  });
+  const identity = emailIdentity(sent);
+  expect(identity.from).toBe(
+    `${JSON.stringify(`${members[0].display_name} at ${settings.company_name} via Yeswell`)} <notifications@yeswell.test>`,
+  );
+  expect(identity.reply_to).toBe(members[0].email);
+  vi.unstubAllEnvs();
 });
 it("new sends use a verified From for a changed off-domain email and keep prior sends' identity", async () => {
   const { repo, service, draft, settings, members } = await setup();

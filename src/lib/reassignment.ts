@@ -104,11 +104,11 @@ export class ReassignmentService {
         previous = people.find((m) => m.user_id === previousId);
       p.owner = owner;
       if (liveSenderAssignment(p)) {
-        const domain = settings?.sending_domain;
+        const domain = settings?.sending_domain ?? "";
         const from = settings && staffFromAddress(owner.email, settings);
         check(
-          domain && from,
-          "Set a verified sending domain in Workspace before reassigning the sender",
+          from,
+          "Email sending isn't set up yet. Contact Yeswell support.",
           400,
         );
         check(
@@ -127,6 +127,7 @@ export class ReassignmentService {
             p.workspace_settings?.company_name ?? settings!.company_name,
           sending_domain: domain,
           ...(from === owner.email ? {} : { from_email: from }),
+          ...(domain ? {} : { via_yeswell: true }),
         };
         // Unsent jobs must use the new sender; delivered snapshots remain immutable.
         const logged = await this.repo.emailLog<{

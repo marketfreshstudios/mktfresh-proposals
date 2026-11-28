@@ -82,8 +82,7 @@ export function HomeSetup({
       (data.connections ||
         row.id === "business-details" ||
         row.id === "brand" ||
-        row.id === "signatory" ||
-        (row.id === "email" && !data.settings?.sending_domain)),
+        row.id === "signatory"),
   );
   if (
     (data.user.workspace_id === LOCAL_WORKSPACE_ID && !knownIncomplete) ||

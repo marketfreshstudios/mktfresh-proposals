@@ -514,7 +514,9 @@ test("Studio v3 Staff permissions and Team actions retain the existing endpoints
   await page
     .getByRole("button", { name: "Email sending", exact: true })
     .click();
-  await expect(page.getByLabel("Verified sending domain")).toBeDisabled();
+  await expect(
+    page.getByLabel("Your own sending domain (optional)"),
+  ).toBeDisabled();
   await page.getByRole("button", { name: "Team", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "Invite", exact: true }),
@@ -963,7 +965,7 @@ test("all existing Workspace sections and settings stay reachable after the rest
       /Password by default/,
     ],
     "email-sending": [
-      /Verified sending domain/,
+      /Your own sending domain \(optional\)/,
       /Owner contact name/,
       /Contact email/,
       /Reply-to/,

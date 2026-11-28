@@ -10,8 +10,20 @@ export function workspaceSecuritySender(settings: SendingSettings) {
     : `notifications@${domain}`;
 }
 
+/**
+ * Client email for a workspace without its own sending domain goes out from
+ * Yeswell's address under the sender's name; replies go to the sender.
+ */
+export function yeswellAddress() {
+  const address = process.env.YESWELL_NOTIFICATIONS_EMAIL?.trim();
+  return address && /^[^@\s<>"]+@[^@\s<>"]+\.[^@\s<>"]+$/.test(address)
+    ? address
+    : null;
+}
+
 export function staffFromAddress(email: string, settings: SendingSettings) {
-  if (!settings.sending_domain || !email) return null;
+  if (!email) return null;
+  if (!settings.sending_domain) return yeswellAddress();
   return email.split("@").at(-1)?.toLowerCase() ===
     settings.sending_domain.toLowerCase()
     ? email
@@ -24,6 +36,8 @@ export type ProposalSender = {
   from_email?: string;
   company_name: string;
   sending_domain: string;
+  /** Sent from Yeswell's address because the workspace has no own domain. */
+  via_yeswell?: boolean;
   job_title?: string;
   phone?: string;
   photo_path?: string;
@@ -31,9 +45,11 @@ export type ProposalSender = {
 export function emailIdentity(p: Proposal) {
   const sender = p.sender;
   const name = sender
-    ? sender.from_email
-      ? sender.display_name
-      : `${sender.display_name} | ${sender.company_name}`
+    ? sender.via_yeswell
+      ? `${sender.display_name} at ${sender.company_name} via Yeswell`
+      : sender.from_email
+        ? sender.display_name
+        : `${sender.display_name} | ${sender.company_name}`
     : undefined;
   const email = sender?.email;
   if (!name || !email)
@@ -72,9 +88,8 @@ export function staffRecipients(p: Proposal) {
  * sender. Client email always comes from the agency.
  */
 export function yeswellFrom(name = "Yeswell") {
-  const address = process.env.YESWELL_NOTIFICATIONS_EMAIL?.trim();
-  if (!address || !/^[^@\s<>"]+@[^@\s<>"]+\.[^@\s<>"]+$/.test(address))
-    return null;
+  const address = yeswellAddress();
+  if (!address) return null;
   if (/[\r\n]/.test(name)) return null;
   return `${JSON.stringify(name)} <${address}>`;
 }
