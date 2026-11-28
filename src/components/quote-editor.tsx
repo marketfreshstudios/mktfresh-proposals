@@ -1355,12 +1355,17 @@ function QuoteEditorContent({
                 onChange={(e) => setSender(e.target.value)}
               >
                 {staff.map((s) => {
-                  const from =
-                    (settings && staffFromAddress(s.email, settings)) ??
-                    s.email;
+                  if (!settings?.sending_domain)
+                    return (
+                      <option key={s.user_id} value={s.user_id}>
+                        {s.display_name} at {settings?.company_name ?? ""} via
+                        Yeswell
+                      </option>
+                    );
+                  const from = staffFromAddress(s.email, settings) ?? s.email;
                   const name =
                     from === s.email
-                      ? `${s.display_name} | ${settings?.company_name ?? ""}`
+                      ? `${s.display_name} | ${settings.company_name}`
                       : s.display_name;
                   return (
                     <option key={s.user_id} value={s.user_id}>
@@ -1374,6 +1379,8 @@ function QuoteEditorContent({
               const selected = staff.find(
                 (person) => person.user_id === sender,
               );
+              if (selected && !settings?.sending_domain)
+                return <small>Replies go to {selected.email}.</small>;
               const from =
                 selected &&
                 settings &&
@@ -1496,12 +1503,12 @@ function QuoteEditorContent({
           {delivery === "email"
             ? "The client link is added automatically. "
             : "The app won't email this link or send automatic reminders unless you turn them on in the record. "}
-          {delivery === "email" && (
-            <>
-              From must match{" "}
-              {settings?.sending_domain || "the workspace’s verified domain"}.
-            </>
-          )}
+          {delivery === "email" &&
+            (settings?.sending_domain ? (
+              <>From must match {settings.sending_domain}.</>
+            ) : (
+              <>Sent from Yeswell's address under the sender's name.</>
+            ))}
         </small>
       </PanelCard>
       <footer className="send-panel-footer">

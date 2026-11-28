@@ -3650,14 +3650,11 @@ export function ConnectionsStudio({
     {
       id: "email",
       name: "Email sending",
-      state:
-        health?.email && data.settings?.sending_domain
-          ? "Configured"
-          : "Setup needed",
+      state: health?.email ? "Configured" : "Setup needed",
       line: "Proposals send from the selected staff member. Replies go to that person.",
       detail: data.settings?.sending_domain
         ? `${data.settings.sending_domain} | verify SPF and DKIM with your provider`
-        : "Add your verified sending domain in Workspace.",
+        : "Sent from Yeswell under each sender's name",
       action: "Settings",
     },
     {
@@ -3841,7 +3838,7 @@ export function ConnectionsStudio({
     );
   if (initial === "email") {
     const domain = data.settings?.sending_domain;
-    const emailReady = health?.email && !!domain;
+    const emailReady = !!health?.email;
     const emailSettings = "/studio/workspace?view=email-sending";
     return (
       <ConnectionDetailLayout
@@ -3858,8 +3855,10 @@ export function ConnectionsStudio({
             },
             {
               label: "Sending domain",
-              value: domain || "Not set",
-              detail: "Verify SPF and DKIM with your email provider.",
+              value: domain || "Yeswell",
+              detail: domain
+                ? "Verify SPF and DKIM with your email provider."
+                : "Proposals show the sender's name and company, via Yeswell.",
             },
             {
               label: "Email templates",
@@ -3879,9 +3878,12 @@ export function ConnectionsStudio({
                     icon: Mail,
                   },
                   {
-                    title: "Set up the domain",
-                    detail:
-                      "Verify the sending domain with your email provider.",
+                    title: domain
+                      ? "Set up the domain"
+                      : "Sent through Yeswell",
+                    detail: domain
+                      ? "Verify the sending domain with your email provider."
+                      : "Email comes from Yeswell's address with your name on it.",
                     icon: ShieldCheck,
                   },
                   {

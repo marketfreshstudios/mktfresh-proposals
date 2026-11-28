@@ -58,7 +58,10 @@ test("shared controls across Workspace and quote panels", async ({ page }) => {
     page.getByRole("heading", { name: "Email sending", exact: true }),
   ).toBeVisible();
   const inputMetrics = await page
-    .getByRole("textbox", { name: "Verified sending domain", exact: true })
+    .getByRole("textbox", {
+      name: "Your own sending domain (optional)",
+      exact: true,
+    })
     .evaluate(metrics);
   expect(selectMetrics).toEqual(inputMetrics);
   await shot(page, "workspace-fields-1440");

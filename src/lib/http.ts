@@ -2326,7 +2326,7 @@ async function handleRoute(
           if (entity.sending_domain !== (previous?.sending_domain ?? ""))
             check(
               user.staff_role === "owner",
-              "Only a super admin can change the verified sending domain",
+              "Only a super admin can change the sending domain",
               403,
             );
           if (
